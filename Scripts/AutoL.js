@@ -1,8 +1,8 @@
 module = {
     name: "AutoL",
-    description: "Automatically insults the player you killed.",
+    description: "Automatically insults the player you've killed.",
     category: "Player",
-    version: 1.1,
+    version: 2.0,
     author: "Tsikyng Kirisame, CzechHek",
     values: [onlyPlayer],
     onAttack: function (event) {
