@@ -1,0 +1,38 @@
+//Core 1.2
+
+scriptName = module.name || "Module";
+scriptAuthor = module.author || "Author";
+scriptVersion = parseFloat(module.version) || 1.0;
+
+function bool (name, boolean) {return value.createBoolean(name, boolean)};
+function block (name, id) {return value.createBlock(name, id)};
+function float (name, def, min, max) {return value.createFloat(name, def, min, max)};
+function int (name, def, min, max) {return value.createInteger(name, def, min, max)};
+function list (name, array, def) {return value.createList(name, array, def)};
+function text (name, text) {return value.createText(name, text)}; 
+
+function Module () {
+    this.getName = function () {return module.name || "Core Module"};
+    this.getDescription = function () {return module.description || ""};
+    this.getCategory = function () {return module.category || "Fun"};
+    this.getTag = function () {return module.tag || ""};
+    this.addValues = function (event) {for (i in module.values) event.add(module.values[i])};
+    this.onEnable = function () {module.onEnable && module.onEnable()}
+    this.onDisable = function () {module.onDisable && module.onDisable()}
+    this.onUpdate = function () {module.onUpdate && module.onUpdate()}
+    this.onMotion = function (event) {module.onMotion && module.onMotion(event)}
+    this.onRender2D = function (event) {module.onRender2D && module.onRender2D(event)}
+    this.onRender3D = function (event) {module.onRender3D && module.onRender3D(event)}
+    this.onAttack = function (event) {module.onAttack && module.onAttack(event)}
+    this.onJump = function (event) {module.onJump && module.onJump(event)}
+    this.onPacket = function (event) {module.onPacket && module.onPacket(event)}
+    this.onKey = function (event) {module.onKey && module.onKey(event)}
+    this.onMove = function (event) {module.onMove && module.onMove(event)}
+    this.onStep = function (event) {module.onStep && module.onStep(event)}
+    this.onStepConfirm = function (event) {module.onStepConfirm && module.onStepConfirm(event)}
+    this.onWorld = function (event) {module.onWorld && module.onWorld(event)}
+    this.onSession = function (event) {module.onSession && module.onSession(event)}
+}
+
+function onLoad() {moduleManager.registerModule(new Module());}
+function onDisable() {moduleManager.unregisterModule(new Module());}
