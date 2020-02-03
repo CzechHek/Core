@@ -1,3 +1,5 @@
+var target; onlyPlayer = value.createBoolean("OnlyPlayer", true);
+
 module = {
     name: "AutoL",
     description: "Automatically insults the player you've killed.",
@@ -16,5 +18,4 @@ module = {
     }
 }
 
-var target; onlyPlayer = bool("OnlyPlayer", true);
 script.import("Core.lib");
