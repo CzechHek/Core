@@ -1,4 +1,4 @@
-//Core 1.2
+//Core 1.3 - Simple, yet powerful ScriptAPI base
 
 scriptName = module.name || "Module";
 scriptAuthor = module.author || "Author";
@@ -12,26 +12,26 @@ function list (name, array, def) {return value.createList(name, array, def)};
 function text (name, text) {return value.createText(name, text)}; 
 
 function Module () {
-    this.getName = function () {return module.name || "Core Module"};
+    this.getName = function () {return module.name || "Module"};
     this.getDescription = function () {return module.description || ""};
     this.getCategory = function () {return module.category || "Fun"};
-    this.getTag = function () {return module.tag || ""};
-    this.addValues = function (event) {for (i in module.values) event.add(module.values[i])};
-    this.onEnable = function () {module.onEnable && module.onEnable()}
-    this.onDisable = function () {module.onDisable && module.onDisable()}
-    this.onUpdate = function () {module.onUpdate && module.onUpdate()}
-    this.onMotion = function (event) {module.onMotion && module.onMotion(event)}
-    this.onRender2D = function (event) {module.onRender2D && module.onRender2D(event)}
-    this.onRender3D = function (event) {module.onRender3D && module.onRender3D(event)}
-    this.onAttack = function (event) {module.onAttack && module.onAttack(event)}
-    this.onJump = function (event) {module.onJump && module.onJump(event)}
-    this.onPacket = function (event) {module.onPacket && module.onPacket(event)}
-    this.onKey = function (event) {module.onKey && module.onKey(event)}
-    this.onMove = function (event) {module.onMove && module.onMove(event)}
-    this.onStep = function (event) {module.onStep && module.onStep(event)}
-    this.onStepConfirm = function (event) {module.onStepConfirm && module.onStepConfirm(event)}
-    this.onWorld = function (event) {module.onWorld && module.onWorld(event)}
-    this.onSession = function (event) {module.onSession && module.onSession(event)}
+    module.tag && (this.getTag = function () {return module.tag});
+    module.values && (this.addValues = function (event) {for (i in module.values) event.add(module.values[i])});
+    module.onEnable && (this.onEnable = function () {module.onEnable()});
+    module.onDisable && (this.onDisable = function () {module.onDisable()});
+    module.onUpdate && (this.onUpdate = function () {module.onUpdate()});
+    module.onMotion && (this.onMotion = function (event) {module.onMotion(event)});
+    module.onRender2D && (this.onRender2D = function (event) {module.onRender2D(event)});
+    module.onRender3D && (this.onRender3D = function (event) {module.onRender3D(event)});
+    module.onAttack && (this.onAttack = function (event) {module.onAttack(event)});
+    module.onJump && (this.onJump = function (event) {module.onJump(event)});
+    module.onPacket && (this.onPacket = function (event) {module.onPacket(event)});
+    module.onKey && (this.onKey = function (event) {module.onKey(event)});
+    module.onMove && (this.onMove = function (event) {module.onMove(event)});
+    module.onStep && (this.onStep = function (event) {module.onStep(event)});
+    module.onStepConfirm && (this.onStepConfirm = function (event) {module.onStepConfirm(event)});
+    module.onWorld && (this.onWorld = function (event) {module.onWorld(event)});
+    module.onSession && (this.onSession = function (event) {module.onSession(event)});
 }
 
 function onLoad() {moduleManager.registerModule(new Module());}
