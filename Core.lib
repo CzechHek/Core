@@ -1,18 +1,11 @@
-//Core 1.3 - Simple, yet powerful ScriptAPI base
+//Core 1.4 - Simple, yet powerful ScriptAPI base
 
 scriptName = module.name || "Module";
 scriptAuthor = module.author || "Author";
 scriptVersion = parseFloat(module.version) || 1.0;
 
-function bool (name, boolean) {return value.createBoolean(name, boolean)};
-function block (name, id) {return value.createBlock(name, id)};
-function float (name, def, min, max) {return value.createFloat(name, def, min, max)};
-function int (name, def, min, max) {return value.createInteger(name, def, min, max)};
-function list (name, array, def) {return value.createList(name, array, def)};
-function text (name, text) {return value.createText(name, text)}; 
-
 function Module () {
-    this.getName = function () {return module.name || "Module"};
+    this.getName = function () {return scriptName};
     this.getDescription = function () {return module.description || ""};
     this.getCategory = function () {return module.category || "Fun"};
     module.tag && (this.getTag = function () {return module.tag});
@@ -25,7 +18,7 @@ function Module () {
     module.onRender3D && (this.onRender3D = function (event) {module.onRender3D(event)});
     module.onAttack && (this.onAttack = function (event) {module.onAttack(event)});
     module.onJump && (this.onJump = function (event) {module.onJump(event)});
-    module.onPacket && (this.onPacket = function (event) {module.onPacket(event)});
+    module.onPacket && (this.onPacket = function (event) {module.onPacket(event.getPacket())});
     module.onKey && (this.onKey = function (event) {module.onKey(event)});
     module.onMove && (this.onMove = function (event) {module.onMove(event)});
     module.onStep && (this.onStep = function (event) {module.onStep(event)});
@@ -34,5 +27,7 @@ function Module () {
     module.onSession && (this.onSession = function (event) {module.onSession(event)});
 }
 
-function onLoad() {moduleManager.registerModule(new Module());}
-function onDisable() {moduleManager.unregisterModule(new Module());}
+core = new Module();
+
+function onLoad() {moduleManager.registerModule(core)}
+function onDisable() {moduleManager.unregisterModule(core)}
