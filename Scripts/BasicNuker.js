@@ -12,7 +12,7 @@ clearcache = value.createBoolean("ClearCache", false);
 
 module = {
     name: "BasicNuker",
-    version: 3.0,
+    version: 3.1,
     author: "CzechHek",
     values: [range, priority, floor, floorY, undermine, fix, packets, maxsearch, maxblacklist, updateinterval, clearcache],
     onUpdate: function () {
@@ -47,4 +47,5 @@ function distance(a, b) {
     return Math.sqrt(Math.pow(Math.abs(a.getX() - b.getX()), 2) + Math.pow(Math.abs(a.getY() - b.getY()), 2) + Math.pow(Math.abs(a.getZ() - b.getZ()), 2));
 }
 
-script.import("Core.lib"); BlockPos = Java.type("net.minecraft.util.BlockPos"); EnumFacing = Java.type("net.minecraft.util.EnumFacing"); C07PacketPlayerDigging = Java.type("net.minecraft.network.play.client.C07PacketPlayerDigging"); AxisAlignedBB = Java.type("net.minecraft.util.AxisAlignedBB");C04PacketPlayerPosition = Java.type("net.minecraft.network.play.client.C03PacketPlayer.C04PacketPlayerPosition"); Blocks = Java.type("net.minecraft.init.Blocks"); blacklisted = []; fixed = true;
+script.import("Core.lib"); script.import("Packets.lib");
+BlockPos = Java.type("net.minecraft.util.BlockPos"); EnumFacing = Java.type("net.minecraft.util.EnumFacing"); Blocks = Java.type("net.minecraft.init.Blocks"); blacklisted = []; fixed = true;
