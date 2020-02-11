@@ -48,4 +48,4 @@ function distance(a, b) {
 }
 
 script.import("Core.lib"); script.import("Packets.lib");
-BlockPos = Java.type("net.minecraft.util.BlockPos"); EnumFacing = Java.type("net.minecraft.util.EnumFacing"); Blocks = Java.type("net.minecraft.init.Blocks"); blacklisted = []; fixed = true;
+BlockPos = Java.type("net.minecraft.util.BlockPos"); EnumFacing = Java.type("net.minecraft.util.EnumFacing"); Blocks = Java.type("net.minecraft.init.Blocks"); AxisAlignedBB = Java.type("net.minecraft.util.AxisAlignedBB"); blacklisted = []; fixed = true;
