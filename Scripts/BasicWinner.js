@@ -8,7 +8,7 @@ module = {
     author: "CzechHek",
     onPacket: function (event) {
         if (event instanceof S02PacketChat && event.getChatComponent().getUnformattedText().match("Opis slovo")) {
-            delay(~~(Math.random() * (maxdelay.get() - mindelay.get() + 1)) + mindelay.get(), function () {mc.thePlayer.sendChatMessage(event.getPacket().getChatComponent().getUnformattedText().split(" ")[4])});
+            delay(~~(Math.random() * (maxdelay.get() - mindelay.get() + 1)) + mindelay.get(), function () {mc.thePlayer.sendChatMessage(event.getChatComponent().getUnformattedText().split(" ")[4])});
         }
     },
 }
