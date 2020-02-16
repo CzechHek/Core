@@ -1,3 +1,6 @@
+idk = value.createInteger("Integer", 5, 0, 10);
+lol = value.createText("ok", "wtf");
+
 module = {
     name: "Example",
     description: "Description",
@@ -5,14 +8,7 @@ module = {
     author: "CzechHek",
     version: 0.35,
     tag: "tag me",
-    values: [
-        bool("bool", true),
-        block("block", 0),
-        float("float", 0.5, 0, 1),
-        int("int", 0, 0, 1),
-        list("list", ["1", "2"], "1"),
-        text("text", "text"),
-    ],
+    values: [idk, lol],
     onEnable: function () {},
     onDisable: function () {},
     onUpdate: function () {}, 
@@ -25,9 +21,11 @@ module = {
     onKey: function (event) {},
     onMove: function (event) {},
     onStep: function (event) {},
-    onStepConfirm: function (event) {},
+    onStepConfirm: function () {},
     onWorld: function (event) {},
-    onSession: function (event) {}
+    onSession: function () {},
+    onLoad: function () {},
+    onUnload: function () {}
 }
 
 script.import("Core.lib");
