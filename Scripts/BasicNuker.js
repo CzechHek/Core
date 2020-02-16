@@ -1,36 +1,46 @@
-range = value.createFloat("Range", 5.0, 1.0, 8.0);
-floorY = value.createInteger("Y", 69, 1, 255);
-floor = value.createList("Floor", ["Player", "Y"], "Y");
-priority = value.createList("Priority", ["Closest", "Furthest", "Coorinates"], "Closest");
-fix = value.createBoolean("AutoFix", true);
-undermine = value.createBoolean("Undermine", false);
-packets = value.createInteger("Packets", 4, 1, 10);
-maxsearch = value.createInteger("MaxSearch", 250, 1, 350);
-maxblacklist = value.createInteger("MaxBlacklist", 4, 0, 350);
-updateinterval = value.createInteger("UpdateInterval", 1, 1, 10);
-clearcache = value.createBoolean("ClearCache", false);
+list = [
+    range = value.createFloat("Range", 6.0, 1.0, 8.0),
+    floorY = value.createInteger("Y", 69, 1, 255),
+    floor = value.createList("Floor", ["Player", "Y"], "Y"),
+    priority = value.createList("Priority", ["Closest", "Furthest", "Highest", "Lowest", "None"], "Closest"),
+    fix = value.createBoolean("AutoFix", true),
+    undermine = value.createBoolean("Undermine", false),
+    packets = value.createInteger("Packets", 6, 1, 10),
+    maxsearch = value.createInteger("MaxSearch", 250, 1, 350),
+    maxpackets = value.createInteger("MaxPackets", 110, 60, 180),
+    autohaste = value.createBoolean("AutoHaste", false),
+    command = value.createText("Command", "/home")
+]
 
 module = {
     name: "BasicNuker",
-    version: 3.1,
+    version: 3.3,
     author: "CzechHek",
-    values: [range, priority, floor, floorY, undermine, fix, packets, maxsearch, maxblacklist, updateinterval, clearcache],
+    values: list,
     onUpdate: function () {
-        blocks = mc.thePlayer.ticksExisted % updateinterval.get() ? blocks : getBlocks();
-        if (clearcache.get()) blocks = [], blacklisted = [], clearcache.set(false);
-        if (blocks.length && mc.thePlayer.onGround) {
-            if (mc.thePlayer.getCurrentEquippedItem().getMaxDamage() - mc.thePlayer.getCurrentEquippedItem().getItemDamage() > 10) {
-                for (fixed = true, i = 0; i < packets.get(); i++) {
-                    mc.getNetHandler().addToSendQueue(new C07PacketPlayerDigging(C07PacketPlayerDigging.Action.START_DESTROY_BLOCK, blocks[i], EnumFacing.DOWN));
-                    if (updateinterval.get() > 1) blocks.shift();
-                    blacklisted.push(blocks[i].toString());
-                    if (blacklisted.length > maxblacklist.get()) blacklisted.shift();
-                } if (blacklisted.length > maxblacklist.get()) blacklisted.shift();
+        if (autohaste.get()) {
+            if (mc.thePlayer.getActivePotionEffect(Potion.digSpeed) && mc.thePlayer.getActivePotionEffect(Potion.digSpeed).getAmplifier()) (home && home < mc.thePlayer.ticksExisted) && (home = 0, mc.thePlayer.sendChatMessage("/back"));
+            else if (!home) home = mc.thePlayer.ticksExisted + 60, mc.thePlayer.sendChatMessage(command.get());
+        }
+        !(mc.thePlayer.ticksExisted % 20) && (count = 0, blacklisted = []);
+        sortedblocks = getBlocks();
+        if (sortedblocks.length && mc.thePlayer.onGround) {
+            if (mc.thePlayer.getCurrentEquippedItem().getMaxDamage() - mc.thePlayer.getCurrentEquippedItem().getItemDamage() > 15) {
+                for (i = 0; (count + 20 - mc.thePlayer.ticksExisted % 20) < maxpackets.get() && i < packets.get() && sortedblocks.length; i++) {
+                    blacklisted.push(sortedblocks[0].toString());
+                    mc.getNetHandler().addToSendQueue(new C07PacketPlayerDigging(C07PacketPlayerDigging.Action.START_DESTROY_BLOCK, sortedblocks.shift(), EnumFacing.DOWN));
+                } fixed = true;
             } else if (fixed) {
                 if (fix.get()) mc.thePlayer.sendChatMessage("/fix");
                 else chat.print("§cLow durability!"); fixed = false; 
             }
         }
+    },
+    onEnable: function () {
+        count = 0;
+    },
+    onPacket: function (event) {
+        event.getPacket().toString().match(".client.") && count++;
     }
 }
 
@@ -39,13 +49,26 @@ function getBlocks() {
     pos = new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY + 1.62, mc.thePlayer.posZ);
     for (blocks = [], i = 0; i < box.length && blocks.length < maxsearch.get(); i++) {
         block = new BlockPos(box.get(i).minX, box.get(i).minY, box.get(i).minZ);
-        if (~~mc.theWorld.getBlockState(block).getBlock().getPlayerRelativeBlockHardness(mc.thePlayer, mc.theWorld, block) >= 1 && distance(pos, block) <= range.get() && !~blacklisted.indexOf(block.toString()) && (undermine.get() || block.compareTo(mc.thePlayer.getPosition()) != -1)) blocks.push(block);
-    } return priority.get() == "Coordinates" ? blocks : blocks.sort(function (a, b) {return distance(pos, a) > distance(pos, b) ? (priority.get() == "Closest" ? 1 : -1) : (priority.get() == "Closest" ? -1 : 1)});
+        if (~~mc.theWorld.getBlockState(block).getBlock().getPlayerRelativeBlockHardness(mc.thePlayer, mc.theWorld, block) >= 1 && mc.thePlayer.getDistance(block.getX(), block.getY(), block.getZ()) <= range.get() && !~blacklisted.indexOf(block.toString()) && (undermine.get() || block.compareTo(mc.thePlayer.getPosition()) != -1)) blocks.push(block);
+    }
+    switch (priority.get()) {
+        case "Closest": return blocks.sort(function (a,b) {
+            return mc.thePlayer.getDistance(a.getX(), a.getY(), a.getZ()) > mc.thePlayer.getDistance(b.getX(), b.getY(), b.getZ()) ? 1 : -1;
+        });
+        case "Furthest": return blocks.sort(function (a,b) {
+            return mc.thePlayer.getDistance(a.getX(), a.getY(), a.getZ()) < mc.thePlayer.getDistance(b.getX(), b.getY(), b.getZ()) ? 1 : -1;
+        });
+        case "Highest": return blocks.sort(function (a,b) {
+            return a.getY() < b.getY() ? 1 : -1;
+        });
+        case "Lowest": return blocks.sort(function (a,b ) {
+            return a.getY() > b.getY() ? 1 : -1;
+        });
+        default: return blocks;
+    }
 }
 
-function distance(a, b) {
-    return Math.sqrt(Math.pow(Math.abs(a.getX() - b.getX()), 2) + Math.pow(Math.abs(a.getY() - b.getY()), 2) + Math.pow(Math.abs(a.getZ() - b.getZ()), 2));
-}
+var blacklisted = [], fixed = true, sortedblocks = [], count, home;
+BlockPos = Java.type("net.minecraft.util.BlockPos"); EnumFacing = Java.type("net.minecraft.util.EnumFacing"); Blocks = Java.type("net.minecraft.init.Blocks"); AxisAlignedBB = Java.type("net.minecraft.util.AxisAlignedBB"); Potion = Java.type("net.minecraft.potion.Potion");
 
 script.import("Core.lib"); script.import("Packets.lib");
-BlockPos = Java.type("net.minecraft.util.BlockPos"); EnumFacing = Java.type("net.minecraft.util.EnumFacing"); Blocks = Java.type("net.minecraft.init.Blocks"); AxisAlignedBB = Java.type("net.minecraft.util.AxisAlignedBB"); blacklisted = []; fixed = true;
