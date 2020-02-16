@@ -1,4 +1,4 @@
-//Core 1.4 - Simple, yet powerful ScriptAPI base
+//Core 1.5 - Simple, yet powerful ScriptAPI base
 
 scriptName = module.name || "Module";
 scriptAuthor = module.author || "Author";
@@ -18,16 +18,20 @@ function Module () {
     module.onRender3D && (this.onRender3D = function (event) {module.onRender3D(event)});
     module.onAttack && (this.onAttack = function (event) {module.onAttack(event)});
     module.onJump && (this.onJump = function (event) {module.onJump(event)});
-    module.onPacket && (this.onPacket = function (event) {module.onPacket(event.getPacket())});
+    module.onPacket && (this.onPacket = function (event) {module.onPacket(event)});
     module.onKey && (this.onKey = function (event) {module.onKey(event)});
     module.onMove && (this.onMove = function (event) {module.onMove(event)});
     module.onStep && (this.onStep = function (event) {module.onStep(event)});
-    module.onStepConfirm && (this.onStepConfirm = function (event) {module.onStepConfirm(event)});
+    module.onStepConfirm && (this.onStepConfirm = function () {module.onStepConfirm()});
     module.onWorld && (this.onWorld = function (event) {module.onWorld(event)});
-    module.onSession && (this.onSession = function (event) {module.onSession(event)});
+    module.onSession && (this.onSession = function () {module.onSession()});
 }
 
-core = new Module();
-
-function onLoad() {moduleManager.registerModule(core)}
-function onDisable() {moduleManager.unregisterModule(core)}
+function onLoad() {
+    moduleManager.registerModule(new Module ())
+    module.onLoad && module.onLoad();
+}
+function onDisable() {
+    module.onUnload && module.onUnload();
+    moduleManager.unregisterModule(new Module ())
+}
