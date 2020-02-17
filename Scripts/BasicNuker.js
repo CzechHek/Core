@@ -14,7 +14,7 @@ list = [
 
 module = {
     name: "BasicNuker",
-    version: 3.3,
+    version: 3.4,
     author: "CzechHek",
     values: list,
     onUpdate: function () {
@@ -49,23 +49,27 @@ function getBlocks() {
     pos = new BlockPos(mc.thePlayer.posX, mc.thePlayer.posY + 1.62, mc.thePlayer.posZ);
     for (blocks = [], i = 0; i < box.length && blocks.length < maxsearch.get(); i++) {
         block = new BlockPos(box.get(i).minX, box.get(i).minY, box.get(i).minZ);
-        if (~~mc.theWorld.getBlockState(block).getBlock().getPlayerRelativeBlockHardness(mc.thePlayer, mc.theWorld, block) >= 1 && mc.thePlayer.getDistance(block.getX(), block.getY(), block.getZ()) <= range.get() && !~blacklisted.indexOf(block.toString()) && (undermine.get() || block.compareTo(mc.thePlayer.getPosition()) != -1)) blocks.push(block);
+        if (~~mc.theWorld.getBlockState(block).getBlock().getPlayerRelativeBlockHardness(mc.thePlayer, mc.theWorld, block) >= 1 && distance(block) <= range.get() && !~blacklisted.indexOf(block.toString()) && (undermine.get() || block.compareTo(mc.thePlayer.getPosition()) != -1)) blocks.push(block);
     }
     switch (priority.get()) {
         case "Closest": return blocks.sort(function (a,b) {
-            return mc.thePlayer.getDistance(a.getX(), a.getY(), a.getZ()) > mc.thePlayer.getDistance(b.getX(), b.getY(), b.getZ()) ? 1 : -1;
+            return distance(a) > distance(b) ? 1 : -1;
         });
         case "Furthest": return blocks.sort(function (a,b) {
-            return mc.thePlayer.getDistance(a.getX(), a.getY(), a.getZ()) < mc.thePlayer.getDistance(b.getX(), b.getY(), b.getZ()) ? 1 : -1;
+            return distance(a) < distance(b) ? 1 : -1;
         });
         case "Highest": return blocks.sort(function (a,b) {
             return a.getY() < b.getY() ? 1 : -1;
         });
-        case "Lowest": return blocks.sort(function (a,b ) {
+        case "Lowest": return blocks.sort(function (a,b) {
             return a.getY() > b.getY() ? 1 : -1;
         });
         default: return blocks;
     }
+}
+
+function distance(b) {
+    return Math.sqrt(Math.pow(mc.thePlayer.posX - b.getX(), 2) + Math.pow(mc.thePlayer.posY + 1.62 - b.getY(), 2) + Math.pow(mc.thePlayer.posZ - b.getZ(), 2));
 }
 
 var blacklisted = [], fixed = true, sortedblocks = [], count, home;
