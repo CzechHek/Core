@@ -51,4 +51,4 @@ module = {
 
 var timer, packets = 0, cas = 0, slovo, potvrzeni;
 
-script.import("Core.lib"); script.import("Timing.lib"); script.import("Packets.lib");
+script.import("Core.lib");
