@@ -25,4 +25,3 @@ module = {
 scaffold = moduleManager.getModule("Scaffold"); tower = moduleManager.getModule("Tower");
 
 script.import("Core.lib");
-script.import("Movement.lib");
