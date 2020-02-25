@@ -75,4 +75,4 @@ function distance(b) {
 var blacklisted = [], fixed = true, sortedblocks = [], count, home;
 BlockPos = Java.type("net.minecraft.util.BlockPos"); EnumFacing = Java.type("net.minecraft.util.EnumFacing"); Blocks = Java.type("net.minecraft.init.Blocks"); AxisAlignedBB = Java.type("net.minecraft.util.AxisAlignedBB"); Potion = Java.type("net.minecraft.potion.Potion");
 
-script.import("Core.lib"); script.import("Packets.lib");
+script.import("Core.lib");
