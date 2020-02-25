@@ -13,4 +13,4 @@ module = {
     }
 }
 
-script.import("Core.lib"); script.import("Packets.lib");
+script.import("Core.lib");
