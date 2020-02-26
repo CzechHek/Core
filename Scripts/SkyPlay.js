@@ -18,4 +18,4 @@ module = {
 }
 
 leave = true; config = true;
-script.import("Core.lib"); script.import("Packets.lib");
+script.import("Core.lib");
