@@ -37,7 +37,7 @@ module = {
 
             drawFace(x.get() + 0.5, y.get() + 0.5, 8, 8, 8, 8, 44, 44, 64, 64);
 
-            var inc = 95 / KillAura.target.getMaxHealth();
+            var inc = 96 / KillAura.target.getMaxHealth();
             var end = inc * (KillAura.target.getHealth() > KillAura.target.getMaxHealth() ? KillAura.target.getMaxHealth() : KillAura.target.getHealth());
 
             drawRect(x.get() + 44, y.get() + 36, width - 44, height - 35.5, new Color(35, 35, 35).getRGB());
