@@ -73,7 +73,7 @@ module = {
 			var BorderColor = new Color(BorderRed.get(), BorderGreen.get(), BorderBlue.get(), BorderAlpha.get()).getRGB();
 
 			var inc = 96 / targetPlayer.getMaxHealth();
-			var end = inc * (targetPlayer.getHealth() > targetPlayer.getMaxHealth() || isValidHealth(targetPlayer.getMaxHealth()) ? targetPlayer.getMaxHealth() : targetPlayer.getHealth());
+			var end = inc * (targetPlayer.getHealth() > targetPlayer.getMaxHealth() || !isValidHealth(targetPlayer.getHealth()) ? targetPlayer.getMaxHealth() : targetPlayer.getHealth());
 
 			GL11.glPushMatrix();
 			GL11.glScaled(Scale.get(), Scale.get(), Scale.get());
