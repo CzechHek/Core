@@ -178,7 +178,7 @@ function getTargetEntity() {
 		if (calculateIntercept != null) {
 			distanceToEntity = mc.thePlayer.getDistanceToEntity(filteredEntityList[j]);
 			if (distanceToEntity < lowestDistance) {
-				distanceToEntity = lowestDistance;
+				lowestDistance = distanceToEntity;
 				pointedEntity = filteredEntityList[j];
 			}
 		}	
