@@ -1,160 +1,189 @@
 KillAura = Java.type("net.ccbluex.liquidbounce.LiquidBounce").moduleManager.getModule(Java.type("net.ccbluex.liquidbounce.features.module.modules.combat.KillAura").class);
-AntiBot = Java.type("net.ccbluex.liquidbounce.features.module.modules.misc.AntiBot");
 EntityPlayer = Java.type("net.minecraft.entity.player.EntityPlayer");
-Fonts = Java.type("net.ccbluex.liquidbounce.ui.font.Fonts");
 StringUtils = Java.type("net.minecraft.util.StringUtils");
 Gui = Java.type("net.minecraft.client.gui.Gui");
 GL11 = Java.type("org.lwjgl.opengl.GL11");
 Color = Java.type("java.awt.Color");
+targetPlayer = "";
 
+Fonts = Java.type("net.ccbluex.liquidbounce.ui.font.Fonts");
 FontList = Fonts.getFonts();
-
-list = [
-    value.createText("§7§lGeneral Settings", ""),
-    posX = value.createInteger("Position-X", 415, 0, 1000),
-    posY = value.createInteger("Position-Y", 320, 0, 1000),
-    scale = value.createFloat("Scale", 1, 0.2, 4),
-    value.createBoolean("", false),
-
-    value.createText("§7§lBackground Settings", ""),
-    backgroundRed = value.createInteger("Background-Red", 0, 0, 255),
-    backgroundGreen = value.createInteger("Background-Green", 0, 0, 255),
-    backgroundBlue = value.createInteger("Background-Blue", 0, 0, 255),
-    backgroundAlpha = value.createInteger("Background-Alpha", 60, 0, 255),
-    value.createBoolean("", false),
-
-    value.createText("§7§lBorder Settings", ""),
-    borderRed = value.createInteger("Border-Red", 255, 0, 255),
-    borderGreen = value.createInteger("Border-Green", 255, 0, 255),
-    borderBlue = value.createInteger("Border-Blue", 255, 0, 255),
-    borderAlpha = value.createInteger("Border-Alpha", 255, 0, 255),
-    value.createBoolean("", false),
-
-    value.createText("§7§lText Settings", ""),
-    textRed = value.createInteger("Text-Red", 255, 0, 255),
-    textGreen = value.createInteger("Text-Green", 255, 0, 255),
-    textBlue = value.createInteger("Text-Blue", 255, 0, 255), 
-    textFontName = value.createText('Font-Name ', Fonts.getFonts()[0].getDefaultFont().getFont().getName() + " - " + Fonts.getFonts()[0].getDefaultFont().getFont().getSize()),
-    textFont = value.createInteger("Font-Index", 0, 0, FontList.length - 1),
-    textShadow = value.createBoolean("Text-Shadow", true)
-]
 
 var font
 var ii
 
+
+list = [
+	value.createText("§7§lGeneral Settings", ""),
+	x = value.createInteger("X", 430, 0, 1000),
+	y = value.createInteger("Y", 310, 0, 1000),
+	Scale = value.createFloat("Scale", 1, 0.2, 4),
+	ShowTargetOnView = value.createBoolean('ShowTargetOnView', false),
+	value.createBoolean("", false),
+
+	value.createText("§7§lBackground Settings", ""),
+	BGRed = value.createInteger("BGRed", 0, 0, 255),
+	BGGreen = value.createInteger("BGGreen", 0, 0, 255),
+	BGBlue = value.createInteger("BGBlue", 0, 0, 255),
+	BGAlpha = value.createInteger("BGAlpha", 150, 0, 255),
+	value.createBoolean("", false),
+
+	value.createText("§7§lText Settings", ""),
+	TextRed = value.createInteger("TextRed", 255, 0, 255),
+	TextGreen = value.createInteger("TextGreen", 255, 0, 255),
+	TextBlue = value.createInteger("TextBlue", 255, 0, 255),
+	TextY = value.createFloat('TextY', 0, -5, 5),
+	ShadowText = value.createBoolean('ShadowText', true),
+	value.createBoolean("", false),
+
+	value.createText("§7§lBorder Settings", ""),
+	BorderValue = value.createBoolean('Border', true),
+	BorderRed = value.createInteger("BorderRed", 255, 0, 255),
+	BorderGreen = value.createInteger("BorderGreen", 255, 0, 255),
+	BorderBlue = value.createInteger("BorderBlue", 255, 0, 255),
+	BorderAlpha = value.createInteger("BorderAlpha", 255, 0, 255),
+	BorderStrength = value.createFloat("BorderStrength", 2, 0, 8),
+
+	FontValue = value.createInteger('', 0, 0, FontList.length - 1),
+	Font = value.createText('Font ', Fonts.getFonts()[0].getDefaultFont().getFont().getName())
+]
+
 module = {
-    name: "TargetInfo",
-    description: "Renders informations about current target.",
-    author: "natte && As丶One",
-    values: list,
-    onRender2D: function () {
-        backgroundColor = new Color(backgroundRed.get(), backgroundGreen.get(), backgroundBlue.get(), backgroundAlpha.get()).getRGB();
-        borderColor = new Color(borderRed.get(), borderGreen.get(), borderBlue.get(), borderAlpha.get()).getRGB();
-        textColor = new Color(textRed.get(), textGreen.get(), textBlue.get(), 255).getRGB();
+	name: "TargetInfo",
+	description: "Renders informations about current target.",
+	author: "natte && As丶One && Nvaros",
+	values: list,
+	onRender2D: function () {
+		var playerInView = getTargetEntity();
+		if (mc.thePlayer != null && (KillAura.target instanceof EntityPlayer || playerInView instanceof EntityPlayer)) {
+			targetPlayer = (KillAura.target instanceof EntityPlayer || !ShowTargetOnView.get()) ? KillAura.target : playerInView;
+			
+			var playerInfo = mc.getNetHandler().getPlayerInfo(targetPlayer.getUniqueID());
 
-        isAlive = (target = KillAura.target) && target.isEntityAlive() && target.getHealth() > 0;
-        isBot = AntiBot.isBot(KillAura.target);
+			var name = StringUtils.stripControlCodes(targetPlayer.getName());
+			var distance = mc.thePlayer.getDistanceToEntity(targetPlayer).toFixed(2);
+			var health = (targetPlayer.getHealth() / 2).toFixed(2);
+			var ping = playerInfo == null ? "0ms" : playerInfo.getResponseTime() + "ms";
 
-        canRender = isAlive && !isBot;
+			var width = 140;
+			var height = 44;
 
-        if (mc.thePlayer != null && KillAura.target instanceof EntityPlayer) {
-            playerInfo = mc.getNetHandler().getPlayerInfo(KillAura.target.getUniqueID());
+			var BGColor = new Color(BGRed.get(), BGGreen.get(), BGBlue.get(), BGAlpha.get()).getRGB();
+			var TextColor = new Color(TextRed.get(), TextGreen.get(), TextBlue.get()).getRGB();
+			var BorderColor = new Color(BorderRed.get(), BorderGreen.get(), BorderBlue.get(), BorderAlpha.get()).getRGB();
 
-            name = StringUtils.stripControlCodes(KillAura.target.getName());
-            distance = mc.thePlayer.getDistanceToEntity(KillAura.target).toFixed(2);
-            
-            health = (KillAura.target.getHealth() / 2).toFixed(2);
-            ping = playerInfo == null ? "0ms" : playerInfo.getResponseTime() + "ms";
+			var inc = 96 / targetPlayer.getMaxHealth();
+			var end = inc * (targetPlayer.getHealth() > targetPlayer.getMaxHealth() ? targetPlayer.getMaxHealth() : targetPlayer.getHealth());
 
-            width = 140;
-            height = 44;
+			GL11.glPushMatrix();
+			GL11.glScaled(Scale.get(), Scale.get(), Scale.get());
 
-            GL11.glPushMatrix();
-			GL11.glScaled(scale.get(), scale.get(), scale.get());
+			drawRect(x.get(), y.get(), x.get() + width, y.get() + height, BGColor);
+			if (BorderValue.get()) {
+				drawBorder(x.get(), y.get(), width, height, BorderStrength.get(), BorderColor);
+			}
+			
+			if (ShadowText.get()) {
+				font.drawStringWithShadow("Name: " + name, x.get() + 46.5, y.get() + 4 + TextY.get(), TextColor);
+				font.drawStringWithShadow("Distance: " + distance, x.get() + 46.5, y.get() + 12 + TextY.get(), TextColor);
+				font.drawStringWithShadow("Health: " + health, x.get() + 46.5, y.get() + 20 + TextY.get(), TextColor);
+				font.drawStringWithShadow("Ping: " + ping, x.get() + 46.5, y.get() + 28 + TextY.get(), TextColor);
+			} else {
+				font.drawString("Name: " + name, x.get() + 46.5, y.get() + 4 + TextY.get(), TextColor);
+				font.drawString("Distance: " + distance, x.get() + 46.5, y.get() + 12 + TextY.get(), TextColor);
+				font.drawString("Health: " + health, x.get() + 46.5, y.get() + 20 + TextY.get(), TextColor);
+				font.drawString("Ping: " + ping, x.get() + 46.5, y.get() + 28 + TextY.get(), TextColor);
+			}
 
-            // background
-            drawRect(posX.get(), posY.get(), width, height, backgroundColor);
+			drawFace(x.get() + 0.5, y.get() + 0.5, 8, 8, 8, 8, 44, 44, 64, 64);
 
-            // info
-            font.drawString("Name: " + name, posX.get() + 46.5, posY.get() + 4, textColor, textShadow.get());
-            font.drawString("Distance: " + distance, posX.get() + 46.5, posY.get() + 12, textColor, textShadow.get());
+			drawRect(x.get() + 44, y.get() + 36, x.get() + width, y.get() + 0.5 + height, new Color(35, 35, 35).getRGB());
+			drawRect(x.get() + 44, y.get() + 36, x.get() + 44 + end, y.get() + 0.5 + height, getHealthColor(targetPlayer));
 
-            if (canRender)
-                font.drawString("Health: " + health, posX.get() + 46.5, posY.get() + 20, textColor, textShadow.get());
-            font.drawString("Ping: " + ping, posX.get() + 46.5, posY.get() + (canRender ? 28 : 20), textColor, textShadow.get());
-
-            // face
-            drawFace(posX.get() + 0.5, posY.get() + 0.5, 8, 8, 8, 8, 44, 44, 64, 64);
-
-            inc = 96 / KillAura.target.getMaxHealth();
-            end = inc * (KillAura.target.getHealth() > KillAura.target.getMaxHealth() ? KillAura.target.getMaxHealth() : KillAura.target.getHealth());
-
-            // health bar background
-            if (canRender)
-                drawRect(posX.get() + 44, posY.get() + 36, width - 44, height - 35.5, new Color(35, 35, 35).getRGB());
-
-            // health bar
-            if (canRender)
-                drawRect(posX.get() + 44, posY.get() + 36, end, height - 35.5, getHealthColor(KillAura.target));
-
-            // border
-            drawBorder(posX.get(), posY.get(), width, height, 1.0, borderColor);
-
-            GL11.glPopMatrix();
-        }
-    },
-    onUpdate: function () {
-        if (ii != textFont.get()) {
-            ii = textFont.get()
-            font = Fonts.getFonts()[ii]
-            textFontName.set(font == mc.fontRendererObj ? 'Minecraft' : font.getDefaultFont().getFont().getName()  + " - " + font.getDefaultFont().getFont().getSize());
-        }
-    },
-    onEnable: function () {
-        setupFonts();
-    },
-    onLoad: function () {
-        setupFonts();
-    }
-}
-
-function setupFonts() {
-    if (ii != textFont.get()) {
-        ii = textFont.get()
-        font = Fonts.getFonts()[ii]
-        textFontName.set(font == mc.fontRendererObj ? 'Minecraft' : font.getDefaultFont().getFont().getName()  + " - " + font.getDefaultFont().getFont().getSize());
-    }
+			GL11.glPopMatrix();
+		}
+	},
+	onUpdate: function () {
+		if (ii != FontValue.get()) {
+			ii = FontValue.get();
+			font = Fonts.getFonts()[ii];
+			Font.set(font == mc.fontRendererObj ? 'Minecraft' : font.getDefaultFont().getFont().getName());
+		}
+	},
+	onEnable: function () {
+		ii = FontValue.get();
+		font = FontList[ii];
+		Font.set(font == mc.fontRendererObj ? 'Minecraft' : font.getDefaultFont().getFont().getName());
+	}
 }
 
 function drawFace(x, y, u, v, uWidth, vHeight, width, height, tileWidth, tileHeight) {
-    texture = KillAura.target.getLocationSkin();
+	var texture = targetPlayer.getLocationSkin();
 
-    mc.getTextureManager().bindTexture(texture);
+	mc.getTextureManager().bindTexture(texture);
 
-    GL11.glEnable(GL11.GL_BLEND);
-    GL11.glColor4f(1, 1, 1, 1);
+	GL11.glEnable(GL11.GL_BLEND);
+	GL11.glColor4f(1, 1, 1, 1);
 
-    Gui.drawScaledCustomSizeModalRect(x, y, u, v, uWidth, vHeight, width, height, tileWidth, tileHeight);
+	Gui.drawScaledCustomSizeModalRect(x, y, u, v, uWidth, vHeight, width, height, tileWidth, tileHeight);
 
-    GL11.glDisable(GL11.GL_BLEND);
+	GL11.glDisable(GL11.GL_BLEND);
 }
 
-function drawRect(x, y, width, height, color) {
-    Gui.drawRect(x, y, x + width, y + height, color);
+function drawRect(x1, y1, x2, y2, color) {
+	Gui.drawRect(x1, y1, x2, y2, color);
 }
 
-function drawBorder(x, y, width, height, lineSize, borderColor) {
-    Gui.drawRect(x, y, x + width, y + lineSize, borderColor);
-    Gui.drawRect(x, y, x + lineSize, y + height, borderColor);
-    Gui.drawRect(x + width, y, x + width - lineSize, y + height, borderColor);
-    Gui.drawRect(x, y + height, x + width, y + height - lineSize, borderColor);
+function drawBorder(x, y, width, height, thickness, color) {
+	drawRect(x - thickness, y - thickness, x + width + thickness, y, color);
+	drawRect(x - thickness, y + height, x + width + thickness, y + height + thickness, color);
+	drawRect(x - thickness, y, x, y + height, color);
+	drawRect(x + width, y, x + width + thickness, y + height, color);
 }
 
 function getHealthColor(player) {
-    var health = player.getHealth();
-    var maxHealth = player.getMaxHealth();
+	var health = player.getHealth();
+	var maxHealth = player.getMaxHealth();
 
-    return Color.HSBtoRGB(Math.max(0.0, Math.min(health, maxHealth) / maxHealth) / 3.0, 1.0, 0.75) | 0xFF000000;
+	return Color.HSBtoRGB(Math.max(0.0, Math.min(health, maxHealth) / maxHealth) / 3.0, 1.0, 0.75) | 0xFF000000;
+}
+
+function isValidEntity(entity) {
+	return mc.thePlayer.canEntityBeSeen(entity) &&  entity != mc.getRenderViewEntity() && entity instanceof EntityPlayer
+}
+
+function getTargetEntity() {
+
+	var entityBox;
+	var pointedEntity;
+	var list = [];
+	var filteredEntityList = [];
+	var calculateIntercept;
+	var lowestDistance = 1E5;
+	var distanceToEntity;
+
+	var lookVec = mc.thePlayer.getLookVec();
+	var eyePos = mc.getRenderViewEntity().getPositionEyes(1);
+	var vec = eyePos.addVector(lookVec.xCoord * 300, lookVec.yCoord * 300, lookVec.zCoord * 300);
+	list = mc.theWorld.loadedEntityList;
+	for (var i in list) {
+		if (isValidEntity(list[i])) {
+			filteredEntityList.push(list[i]);
+		}
+	}
+	
+	for (var j in filteredEntityList) {
+		entityBox = filteredEntityList[j].getEntityBoundingBox().expand(0.15, 0.2, 0.15);
+		calculateIntercept = entityBox.calculateIntercept(eyePos, vec);
+		if (calculateIntercept != null) {
+			distanceToEntity = mc.thePlayer.getDistanceToEntity(filteredEntityList[j]);
+			if (distanceToEntity < lowestDistance) {
+				distanceToEntity = lowestDistance;
+				pointedEntity = filteredEntityList[j];
+			}
+		}	
+	}
+	return pointedEntity;
 }
 
 script.import("Core.lib");
