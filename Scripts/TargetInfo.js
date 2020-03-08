@@ -62,7 +62,7 @@ module = {
 
 			var name = StringUtils.stripControlCodes(targetPlayer.getName());
 			var distance = mc.thePlayer.getDistanceToEntity(targetPlayer).toFixed(2);
-			var health = (targetPlayer.getHealth() / 2).toFixed(2);
+			var health = isValidHealth(targetPlayer.getHealth()) ? (targetPlayer.getHealth() / 2).toFixed(2) : "-"
 			var ping = playerInfo == null ? "0ms" : playerInfo.getResponseTime() + "ms";
 
 			var width = 140;
@@ -73,7 +73,7 @@ module = {
 			var BorderColor = new Color(BorderRed.get(), BorderGreen.get(), BorderBlue.get(), BorderAlpha.get()).getRGB();
 
 			var inc = 96 / targetPlayer.getMaxHealth();
-			var end = inc * (targetPlayer.getHealth() > targetPlayer.getMaxHealth() ? targetPlayer.getMaxHealth() : targetPlayer.getHealth());
+			var end = inc * (targetPlayer.getHealth() > targetPlayer.getMaxHealth() || isValidHealth(targetPlayer.getMaxHealth()) ? targetPlayer.getMaxHealth() : targetPlayer.getHealth());
 
 			GL11.glPushMatrix();
 			GL11.glScaled(Scale.get(), Scale.get(), Scale.get());
@@ -142,14 +142,18 @@ function drawBorder(x, y, width, height, thickness, color) {
 }
 
 function getHealthColor(player) {
-	var health = player.getHealth();
 	var maxHealth = player.getMaxHealth();
+	var health = isValidHealth(player.getHealth()) ? player.getHealth() : maxHealth;
 
 	return Color.HSBtoRGB(Math.max(0.0, Math.min(health, maxHealth) / maxHealth) / 3.0, 1.0, 0.75) | 0xFF000000;
 }
 
 function isValidEntity(entity) {
 	return mc.thePlayer.canEntityBeSeen(entity) &&  entity != mc.getRenderViewEntity() && entity.getName() != mc.thePlayer.getName() && entity instanceof EntityPlayer
+}
+
+function isValidHealth(health) {
+	return !isNaN(health) && health >= 0;
 }
 
 function getTargetEntity() {
