@@ -149,7 +149,7 @@ function getHealthColor(player) {
 }
 
 function isValidEntity(entity) {
-	return mc.thePlayer.canEntityBeSeen(entity) &&  entity != mc.getRenderViewEntity() && entity instanceof EntityPlayer
+	return mc.thePlayer.canEntityBeSeen(entity) &&  entity != mc.getRenderViewEntity() && entity.getName() != mc.thePlayer.getName() && entity instanceof EntityPlayer
 }
 
 function getTargetEntity() {
