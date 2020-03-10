@@ -1,4 +1,4 @@
-//Core 2.0 - Simple, yet powerful ScriptAPI base
+//Core 2.1 - Simple, yet powerful ScriptAPI base
 
 var module = module || {}, command = command || {};
 scriptName = module.name || command.name || "Module";
@@ -35,7 +35,7 @@ function Command() {
         prefix = Java.type("net.ccbluex.liquidbounce.LiquidBounce").commandManager.prefix;
         args[0] = args[0].replace(prefix, "");
         for (i in args) args[i] = args[i].toLowerCase();
-        if (args[0] == this.getName()) {
+        if (args.length == 1 && args[0] == this.getName()) {
             available = this.getAliases();
             chat.print("§8▏ §7Available commands§8: (§7" + available.length + "§8)");
             for (i in available) chat.print("§8▏ §6" + prefix + available[i]);
