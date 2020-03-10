@@ -28,4 +28,20 @@ module = {
     onUnload: function () {}
 }
 
+command = {
+    name: "name",
+    author: "you",
+    version: 69.96,
+    commands: ["command1", "command2"],
+    onExecute: function (args) {
+        switch (args[0]) {
+            case "command1":
+                chat.print("command1");
+                break
+            case (this.commands[1]):
+                chat.print("command2");
+        }
+    }
+}
+
 script.import("Core.lib");
