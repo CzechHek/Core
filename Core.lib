@@ -1,39 +1,58 @@
-//Core 1.6 - Simple, yet powerful ScriptAPI base
+//Core 2.0 - Simple, yet powerful ScriptAPI base
 
-scriptName = module.name || "Module";
-scriptAuthor = module.author || "Author";
-scriptVersion = parseFloat(module.version) || 1.0;
+var module = module || {}, command = command || {};
+scriptName = module.name || command.name || "Module";
+scriptAuthor = module.author || command.author || "Author";
+scriptVersion = parseFloat(module.version) || parseFloat(command.version) || 1.0;
 
-function Module () {
+function Module() {
     this.getName = function () {return scriptName};
     this.getDescription = function () {return module.description || ""};
     this.getCategory = function () {return module.category || "Fun"};
     module.tag && (this.getTag = function () {return module.tag});
-    module.values && (this.addValues = function (event) {for (i in module.values) event.add(module.values[i])});
+    module.values && (this.addValues = function (e) {for (i in module.values) e.add(module.values[i])});
     module.onEnable && (this.onEnable = function () {module.onEnable()});
     module.onDisable && (this.onDisable = function () {module.onDisable()});
     module.onUpdate && (this.onUpdate = function () {module.onUpdate()});
-    module.onMotion && (this.onMotion = function (event) {module.onMotion(event)});
-    module.onRender2D && (this.onRender2D = function (event) {module.onRender2D(event)});
-    module.onRender3D && (this.onRender3D = function (event) {module.onRender3D(event)});
-    module.onAttack && (this.onAttack = function (event) {module.onAttack(event)});
-    module.onJump && (this.onJump = function (event) {module.onJump(event)});
-    module.onPacket && (this.onPacket = function (event) {module.onPacket(event)});
-    module.onKey && (this.onKey = function (event) {module.onKey(event)});
-    module.onMove && (this.onMove = function (event) {module.onMove(event)});
-    module.onStep && (this.onStep = function (event) {module.onStep(event)});
+    module.onMotion && (this.onMotion = function (e) {module.onMotion(e)});
+    module.onRender2D && (this.onRender2D = function (e) {module.onRender2D(e)});
+    module.onRender3D && (this.onRender3D = function (e) {module.onRender3D(e)});
+    module.onAttack && (this.onAttack = function (e) {module.onAttack(e)});
+    module.onJump && (this.onJump = function (e) {module.onJump(e)});
+    module.onPacket && (this.onPacket = function (e) {module.onPacket(e)});
+    module.onKey && (this.onKey = function (e) {module.onKey(e)});
+    module.onMove && (this.onMove = function (e) {module.onMove(e)});
+    module.onStep && (this.onStep = function (e) {module.onStep(e)});
     module.onStepConfirm && (this.onStepConfirm = function () {module.onStepConfirm()});
-    module.onWorld && (this.onWorld = function (event) {module.onWorld(event)});
+    module.onWorld && (this.onWorld = function (e) {module.onWorld(e)});
     module.onSession && (this.onSession = function () {module.onSession()});
 }
 
-function onLoad() {
-    moduleManager.registerModule(new Module ())
-    module.onLoad && module.onLoad();
+function Command() {
+    this.getName = function () {return command.name || scriptName};
+    this.getAliases = function () {return command.commands};
+    this.execute = function (args) {
+        prefix = Java.type("net.ccbluex.liquidbounce.LiquidBounce").commandManager.prefix;
+        args[0] = args[0].replace(prefix, "");
+        for (i in args) args[i] = args[i].toLowerCase();
+        if (args[0] == this.getName()) {
+            available = this.getAliases();
+            chat.print("§8▏ §7Available commands§8: (§7" + available.length + "§8)");
+            for (i in available) chat.print("§8▏ §6" + prefix + available[i]);
+            chat.print("§8▏");
+            chat.print("§8▏ §7§l" + this.getName() + " §8" + (command.version || scriptVersion).toFixed(1) + " §7by §8" + (command.author || scriptAuthor));
+        } else command.execute(args);
+    }
 }
+
+function onLoad() {
+    Object.keys(module).length && (moduleManager.registerModule(new Module()), (module.onLoad && module.onLoad()));
+    Object.keys(command).length && commandManager.registerCommand(new Command());
+}
+
 function onDisable() {
-    module.onUnload && module.onUnload();
-    moduleManager.unregisterModule(new Module ())
+    Object.keys(module).length && ((module.onUnload && module.onUnload()), moduleManager.unregisterModule(new Module()));
+    Object.keys(command).length && commandManager.unregisterCommand(new Command());
 }
 
 //Movement util
@@ -80,7 +99,19 @@ function setSpeed(speed, strafe) {
 
 Keyboard = Java.type("org.lwjgl.input.Keyboard");
 
-//Packets util
+//Timing util
+
+function interval(ms, func) {
+	return timer = new Timer("setInterval", true), timer.schedule(func, 0, ms), timer;
+}
+
+function delay(ms, func) {
+	return timer = new Timer("setTimeout", true), timer.schedule(func, ms), timer;
+}
+
+Timer = Java.type("java.util.Timer");
+
+//Packets
 
 C00Handshake = Java.type("net.minecraft.network.handshake.client.C00Handshake");
 C00PacketKeepAlive = Java.type("net.minecraft.network.play.client.C00PacketKeepAlive");
@@ -193,15 +224,3 @@ S46PacketSetCompressionLevel = Java.type("net.minecraft.network.play.server.S46P
 S47PacketPlayerListHeaderFooter = Java.type("net.minecraft.network.play.server.S47PacketPlayerListHeaderFooter");
 S48PacketResourcePackSend = Java.type("net.minecraft.network.play.server.S48PacketResourcePackSend");
 S49PacketUpdateEntityNBT = Java.type("net.minecraft.network.play.server.S49PacketUpdateEntityNBT");
-
-//Timing utilities
-
-function interval(ms, func) {
-	return timer = new Timer("setInterval", true), timer.schedule(func, 0, ms), timer;
-}
-
-function delay(ms, func) {
-	return timer = new Timer("setTimeout", true), timer.schedule(func, ms), timer;
-}
-
-Timer = Java.type("java.util.Timer");
