@@ -41,7 +41,7 @@ function Command() {
             for (i in available) chat.print("§8▏ §6" + prefix + available[i]);
             chat.print("§8▏");
             chat.print("§8▏ §7§l" + this.getName() + " §8" + (command.version || scriptVersion).toFixed(1) + " §7by §8" + (command.author || scriptAuthor));
-        } else command.execute(args);
+        } else command.onExecute(args);
     }
 }
 
