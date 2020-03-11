@@ -19,9 +19,9 @@ Arrays = Java.type("java.util.Arrays");
 File = Java.type("java.io.File");
 
 command = {
-    commands: ["thememanager", "tm", "theme"],
+    commands: ["ThemeManager", "tm", "theme"],
     subcommands: ["folder", "list", "load", "save", "delete", "upload", "download", "onlinelist"],
-    author: "natte",
+    author: "natte, CzechHek",
     version: 2.1,
     onExecute: function (args) {
         folder = new File("LiquidBounce-1.8/themes/");
