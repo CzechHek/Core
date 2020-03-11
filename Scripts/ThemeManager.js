@@ -143,11 +143,6 @@ command = {
                         print("§ctheme with provided name not found");
                     } else {
                         file = new File("LiquidBounce-1.8/themes/" + args[2] + ".json");
-
-                        if (file.exists()) {
-                            print("§cTheme §7" + args[2] + " §calready exists");
-                            return;
-                        }
     
                         FileUtils.writeStringToFile(file, response);
                         print("§aDownloaded §7" + file.getName());
