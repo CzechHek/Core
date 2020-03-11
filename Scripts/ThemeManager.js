@@ -77,11 +77,6 @@ command = {
                 file = new File("LiquidBounce-1.8/themes/" + args[2] + ".json");
                 hudFile = new File("LiquidBounce-1.8/hud.json");
 
-                if (file.exists()) {
-                    print("§cTheme §7" + args[2] + " §calready exists");
-                    return;
-                }
-
                 FileUtils.copyFile(hudFile, file);
                 print("§aSaved §7" + file.getName());
                 break;
