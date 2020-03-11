@@ -1,4 +1,4 @@
-//Core 2.1 - Simple, yet powerful ScriptAPI base
+//Core 2.2 - Simple, yet powerful ScriptAPI base
 
 var module = module || {}, command = command || {};
 scriptName = module.name || command.name || "Module";
@@ -29,18 +29,20 @@ function Module() {
 }
 
 function Command() {
-    this.getName = function () {return command.name || scriptName};
+    this.getName = function () {return command.commands[0] || scriptName};
     this.getAliases = function () {return command.commands};
     this.execute = function (args) {
         prefix = Java.type("net.ccbluex.liquidbounce.LiquidBounce").commandManager.prefix;
         args[0] = args[0].replace(prefix, "");
         for (i in args) args[i] = args[i].toLowerCase();
-        if (args.length == 1 && args[0] == this.getName()) {
-            available = this.getAliases();
-            chat.print("§8▏ §7Available commands§8: (§7" + available.length + "§8)");
-            for (i in available) chat.print("§8▏ §6" + prefix + available[i]);
+        if (command.subcommands ? args.length == 1 || !~command.subcommands.indexOf(args[1]) : args.length > 1) {
+            chat.print("§8▏ §7§l" + this.getName() + " §8v" + (command.version || scriptVersion).toFixed(1) + " §7by §8" + (command.author || scriptAuthor));
             chat.print("§8▏");
-            chat.print("§8▏ §7§l" + this.getName() + " §8" + (command.version || scriptVersion).toFixed(1) + " §7by §8" + (command.author || scriptAuthor));
+            args.length > 1 && chat.print("§8▏ §cSyntax error in: " + prefix + args[0] + " " + args[1]);
+            chat.print("§8▏ §7Available commands§8: (§7" + (command.subcommands ? command.subcommands.length : 1) + "§8)");
+            if (command.subcommands) for (i in command.subcommands) chat.print("§8▏ §f" + prefix + args[0] + " " + command.subcommands[i]);
+            else chat.print("§8▏ §f" + prefix + args[0]);
+            command.commands.length > 1 && chat.print("§8▏ §7Available aliases§8: (§7" + command.commands.length + "§8) [§f" + prefix + command.commands.join("§7, §f" + prefix) + "§8]");
         } else command.onExecute(args);
     }
 }
