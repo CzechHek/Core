@@ -1,7 +1,7 @@
-//Core 2.2 - Simple, yet powerful ScriptAPI base
+//Core 2.3 - Simple, yet powerful ScriptAPI base
 
 var module = module || {}, command = command || {};
-scriptName = module.name || command.name || "Module";
+scriptName = module.name || command.commands[0] || "Module";
 scriptAuthor = module.author || command.author || "Author";
 scriptVersion = parseFloat(module.version) || parseFloat(command.version) || 1.0;
 
@@ -34,15 +34,17 @@ function Command() {
     this.execute = function (args) {
         prefix = Java.type("net.ccbluex.liquidbounce.LiquidBounce").commandManager.prefix;
         args[0] = args[0].replace(prefix, "");
+        commands = []; subcommands = [];
+        for (i in command.commands) command.commands[i].length && commands.push(command.commands[i].toLowerCase());
+        for (i in command.subcommands) command.subcommands[i].length && subcommands.push(command.subcommands[i].toLowerCase());
         for (i in args) args[i] = args[i].toLowerCase();
-        if (command.subcommands ? args.length == 1 || !~command.subcommands.indexOf(args[1]) : args.length > 1) {
-            chat.print("§8▏ §7§l" + this.getName() + " §8v" + (command.version || scriptVersion).toFixed(1) + " §7by §8" + (command.author || scriptAuthor));
-            chat.print("§8▏");
-            args.length > 1 && chat.print("§8▏ §cSyntax error in: " + prefix + args[0] + " " + args[1]);
-            chat.print("§8▏ §7Available commands§8: (§7" + (command.subcommands ? command.subcommands.length : 1) + "§8)");
-            if (command.subcommands) for (i in command.subcommands) chat.print("§8▏ §f" + prefix + args[0] + " " + command.subcommands[i]);
-            else chat.print("§8▏ §f" + prefix + args[0]);
-            command.commands.length > 1 && chat.print("§8▏ §7Available aliases§8: (§7" + command.commands.length + "§8) [§f" + prefix + command.commands.join("§7, §f" + prefix) + "§8]");
+        if (subcommands.length ? args.length == 1 || !~subcommands.indexOf(args[1]) : args.length > 1) {
+            chat.print("");
+            chat.print("§8▏ §7§l" + this.getName() + " §8v§l" + (command.version || scriptVersion).toFixed(1) + " §7by §8§l" + (command.author || scriptAuthor));
+            chat.print("§8▏ §7Available commands§8: (§7§l" + (subcommands ? subcommands.length : 1) + "§8)");
+            chat.print("§8▏ §f" + prefix + args[0] + (subcommands.length ? " §8[§f" + subcommands.join("§7, §f") + "§8]" : ""));
+            commands.length > 1 && chat.print("§8▏ §7Available aliases§8: (§7§l" + commands.length + "§8)"), chat.print("§8▏ §f" + prefix + commands.join("§7, §f" + prefix));
+            args.length > 1 && chat.print("§8▏ §cSyntax error: " + prefix + args[0] + " " + args[1]);
         } else command.onExecute(args);
     }
 }
