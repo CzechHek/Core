@@ -21,7 +21,7 @@ File = Java.type("java.io.File");
 command = {
     name: "thememanager",
     author: "natte",
-    version: 2.0,
+    version: 2.1,
     commands: ["thememanager folder", "thememanager list", "thememanager load", "thememanager save", "thememanager delete", "thememanager upload", "thememanager download", "thememanager onlinelist"],
     onExecute: function (args) {
         folder = new File("LiquidBounce-1.8/themes/");
@@ -135,7 +135,7 @@ command = {
                     response = post("https://natte.dev/thememanager/get", "name=" + args[2]);
 
                     if (response == "0") {
-                        print("§ctheme with provided name not found");
+                        print("§cTheme §7" + args[2] + " §cnot found");
                     } else {
                         file = new File("LiquidBounce-1.8/themes/" + args[2] + ".json");
     
