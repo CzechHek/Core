@@ -1,21 +1,27 @@
-module = {
-    name: "Reloader",
+command = {
+    commands: ["r"],
     author: "CzechHek",
-    onEnable: function () {
-        LiquidBounce.commandManager = new CommandManager();
-        LiquidBounce.commandManager.registerCommands();
-        scriptManager.reloadScripts();
-    },
-    onLoad: function () {
-        delay(200, function () {
-            LiquidBounce.clickGui = new ClickGui();
-            LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.clickGuiConfig);
+    onExecute: function () {       
+        try {
+            start = Instant.now();
+
+            LiquidBounce.commandManager = new CommandManager();
+            LiquidBounce.commandManager.registerCommands();
+            scriptManager.reloadScripts();
             LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.modulesConfig);
             LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.valuesConfig);
-            mc.currentScreen instanceof ClickGui && moduleManager.getModule("ClickGui").setState(true);
-        });
+            LiquidBounce.clickGui = new ClickGui();
+            LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.clickGuiConfig);
+
+            finish = Instant.now();
+            timeElapsed = Duration.between(start, finish).toMillis();
+
+            chat.print("§8▏ §7Reloaded in §8" + ((timeElapsed / 1000) % 60) + "s");
+        } catch (e) {
+            chat.print("§8▏ §c§l" + e);
+        }
     }
 }
 
-LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui"); CommandManager = Java.type("net.ccbluex.liquidbounce.features.command.CommandManager");
+LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); CommandManager = Java.type("net.ccbluex.liquidbounce.features.command.CommandManager"); ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui"); Instant = Java.type("java.time.Instant"); Duration = Java.type("java.time.Duration");
 script.import("Core.lib");
