@@ -10,7 +10,7 @@ module = {
     author: "CzechHek, yorik100",
     values: list,
     onEnable: function () {
-        id = mode.get() == "Custom" ? customid.get() : [26, 122, 49, 116, 58][["Bed", "Dragon_Egg", "Obsidian", "Enchanting_Table", "Crafting_Table"].indexOf(mode.get())];
+        id = [26, 122, 49, 116, 58][["Bed", "Dragon_Egg", "Obsidian", "Enchanting_Table", "Crafting_Table"].indexOf(mode.get())] || customid.get();
         fucker.get() && moduleManager.getModule("Fucker").getValue("Block").set(id);
         blockesp.get() && moduleManager.getModule("BlockESP").getValue("Block").set(id);
     },
