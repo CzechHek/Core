@@ -44,7 +44,7 @@ function Command() {
             chat.print("§8▏ §7Available subcommands§8: (§7§l" + (subcommands ? subcommands.length : 1) + "§8)");
             chat.print("§8▏ §f" + prefix + args[0] + (subcommands.length ? " §8[§f" + subcommands.join("§7, §f") + "§8]" : ""));
             commands.length > 1 && chat.print("§8▏ §7Available aliases§8: (§7§l" + commands.length + "§8)"), chat.print("§8▏ §f" + prefix + commands.join("§7, §f" + prefix));
-            args.length > 1 && chat.print("§8▏ §cSyntax error: " + prefix + args[0] + " " + args[1]);
+            args.length > 1 && chat.print("§8▏ §c§lSyntax error: " + prefix + args[0] + " " + args[1]);
         } else command.onExecute(args);
     }
 }
