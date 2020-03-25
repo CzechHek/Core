@@ -32,6 +32,10 @@ command = {
     author: "natte, CzechHek",
     version: 1.1,
     onExecute: function (args) {
+    	if (!new File("LiquidBounce-1.8/themes/").exists()) {
+    		new File("LiquidBounce-1.8/themes/").mkdir();
+    	}
+        
         try {
             switch (args[1]) {
                 case "script": {
