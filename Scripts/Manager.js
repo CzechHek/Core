@@ -25,6 +25,7 @@ File = Java.type("java.io.File");
 URL = Java.type("java.net.URL");
 
 baseUrl = "https://natte.dev/manager/"
+devMode = false;
 
 command = {
     commands: ["Manager", "m"],
@@ -35,7 +36,7 @@ command = {
     	if (!new File("LiquidBounce-1.8/themes/").exists()) {
     		new File("LiquidBounce-1.8/themes/").mkdir();
     	}
-        
+
         try {
             switch (args[1]) {
                 case "script": {
@@ -432,41 +433,49 @@ command = {
                 }
             }
         } catch (e) {
-            printError(e);
+        	printError("Error occured while executing command.");
+            if (devMode) {
+        		printError(e);
+        	}
         }
     }
 }
 
 function uploadFile(url, file) {
-    boundary = Long.toHexString(System.currentTimeMillis());
-    CRLF = "\r\n";
+	try {
+	    boundary = Long.toHexString(System.currentTimeMillis());
+	    CRLF = "\r\n";
 
-    con = new URL(url).openConnection();
-    con.setDoOutput(true);
-    con.setRequestProperty("User-Agent", "Mozilla/5.0");
-    con.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+	    con = new URL(url).openConnection();
+	    con.setDoOutput(true);
+	    con.setRequestProperty("User-Agent", "Mozilla/5.0");
+	    con.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
 
-    output = con.getOutputStream();
-    writer = new PrintWriter(new OutputStreamWriter(output, "UTF-8"), true);
+	    output = con.getOutputStream();
+	    writer = new PrintWriter(new OutputStreamWriter(output, "UTF-8"), true);
 
-    writer.append("--" + boundary).append(CRLF);
-    writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"" + file.getName() + "\"").append(CRLF);
-    writer.append("Content-Type: " + URLConnection.guessContentTypeFromName(file.getName())).append(CRLF);
-    writer.append("Content-Transfer-Encoding: binary").append(CRLF);
-    writer.append(CRLF).flush();
+	    writer.append("--" + boundary).append(CRLF);
+	    writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"" + file.getName() + "\"").append(CRLF);
+	    writer.append("Content-Type: " + URLConnection.guessContentTypeFromName(file.getName())).append(CRLF);
+	    writer.append("Content-Transfer-Encoding: binary").append(CRLF);
+	    writer.append(CRLF).flush();
 
-    Files.copy(file.toPath(), output);
+	    Files.copy(file.toPath(), output);
 
-    output.flush();
-    writer.append(CRLF).flush();
+	    output.flush();
+	    writer.append(CRLF).flush();
 
-    writer.append("--" + boundary + "--").append(CRLF).flush();
+	    writer.append("--" + boundary + "--").append(CRLF).flush();
 
-    input = con.getInputStream();
-    encoding = con.getContentEncoding();
-    encoding = encoding == null ? "UTF-8" : encoding;
-    body = IOUtils.toString(input, encoding);
-
+	    input = con.getInputStream();
+	    encoding = con.getContentEncoding();
+	    encoding = encoding == null ? "UTF-8" : encoding;
+	    body = IOUtils.toString(input, encoding);
+	} catch (e) {
+        if (devMode) {
+        	printError(e);
+        }
+	}
     return body;
 }
 
@@ -483,7 +492,9 @@ function downloadFile(url, file, name) {
         return true;
     } catch(e) {
         printError("Couldn't find '§4§l" + name + "§c'");
-        printError(e);
+        if (devMode) {
+        	printError(e);
+        }
         return false;
     }
 }
