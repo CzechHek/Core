@@ -97,6 +97,8 @@ command = {
                                 chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
                                 return;
                             }
+							
+							downloadLibs();
     
                             if (downloadFile(baseUrl + "scripts/" + args[3] + ".js", file = new File("LiquidBounce-1.8/scripts/" + args[3] + ".js"), args[3] + ".js")) {
                                 chat.print("§8▏ §aDownloaded '§2§l" + args[3] + ".js§a'");
@@ -554,6 +556,38 @@ function getFonts(themeFile) {
             for (i in fileList) if ((fileName = fileList[i].getName()).endsWith("tf") && Font.createFont(0, fontFile = (new File("LiquidBounce-1.8/fonts/" + fileName))).getName() == font.fontName) customFonts.push(fontFile);
         }
     } return customFonts;
+}
+
+function downloadLibs() {
+    libFolder = new File("LiquidBounce-1.8/scripts/lib");
+
+    if (!libFolder.exists()) {
+        libFolder.mkdir();
+    }
+
+
+    response = get(baseUrl + "list?type=libs");
+    
+    json = toJsonObject(response);
+    array = json.get("message").getAsJsonArray();
+    
+    for (i = 0; i < array.size(); i++) {
+        name = array.get(i).getAsString();
+
+        libFile = new File("LiquidBounce-1.8/scripts/lib/" + name);
+
+        if (!libFile.exists()) {
+            if (downloadFile(baseUrl + "libs/" + name, libFile, libFile.getName(), false)) {
+                if (devMode) {
+                    chat.print("§8▏ §aDownloaded '§2§l" + name + "§a'");
+                }
+            } else {
+                if (devMode) {
+                    printError("Couldn't download '§4§l" + name + "§c'");
+                }
+            }
+        }
+    }
 }
 
 script.import("Core.lib");
