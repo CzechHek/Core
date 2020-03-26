@@ -23,6 +23,8 @@ Thread = Java.type("java.lang.Thread");
 Long = Java.type("java.lang.Long");
 File = Java.type("java.io.File");
 URL = Java.type("java.net.URL");
+Font = Java.type("java.awt.Font");
+FileUtils = Java.type("org.apache.commons.io.FileUtils");
 
 baseUrl = "https://natte.dev/manager/"
 devMode = false;
@@ -521,6 +523,11 @@ function toJsonObject(content) {
 
 function printError(error) {
     chat.print("§8▏ §c§lError:§r§c " + error);
+}
+
+function hasFont(name, size) {
+    fonts = JSON.parse(FileUtils.readFileToString(new File("LiquidBounce-1.8/fonts/fonts.json")));
+    for (i in fonts) if (Font.createFont(0, new File("LiquidBounce-1.8/fonts/" + fonts[i].fontFile)).getName() == name && fonts[i].fontSize == size) return true;
 }
 
 script.import("Core.lib");
