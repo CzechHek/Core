@@ -1,4 +1,4 @@
-//Core 3.0 - Simple, yet powerful ScriptAPI base
+//Core 3.1 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -31,6 +31,8 @@ function Module(m) {
 }
 
 function Command(c) {
+    !Array.isArray(c.commands) && (c.commands = [c.commands || "Command"]);
+    !Array.isArray(c.subcommands) && (c.subcommands = [c.subcommands || ""]);
     this.getName = function () {return c.commands[0]};
     this.getAliases = function () {return c.commands};
     this.execute = function (args) {
@@ -45,20 +47,20 @@ function Command(c) {
             chat.print("§8▏ §7§l" + this.getName() + " §8v§l" + (c.version || scriptVersion).toFixed(1) + " §7by §8§l" + (c.author || scriptAuthor));
             chat.print("§8▏ §7Available subcommands§8: (§7§l" + (subcommands ? subcommands.length : 1) + "§8)");
             chat.print("§8▏ §f" + prefix + args[0] + (subcommands.length ? " §8[§f" + subcommands.join("§7, §f") + "§8]" : ""));
-            commands.length > 1 && chat.print("§8▏ §7Available aliases§8: (§7§l" + commands.length + "§8)"), chat.print("§8▏ §f" + prefix + commands.join("§7, §f" + prefix));
+            commands.length > 1 && (chat.print("§8▏ §7Available aliases§8: (§7§l" + commands.length + "§8)"), chat.print("§8▏ §f" + prefix + commands.join("§7, §f" + prefix)));
             args.length > 1 && chat.print("§8▏ §c§lSyntax error: " + prefix + args[0] + " " + args[1]);
-        } else c.onExecute(args);
+        } else if (c.onExecute) c.onExecute(args);
     }
 }
 
 function onLoad() {
-    for (i in module) Object.keys(module[i]) && (modulelist[i] = moduleManager.registerModule(new Module(module[i])), module[i].onLoad && module[i].onLoad());
-    for (i in command) Object.keys(command[i]) && (commandlist[i] = commandManager.registerCommand(new Command(command[i])), command[i].onLoad && command[i].onLoad());
+    for (i in module) Object.keys(module[i]).length && (modulelist[i] = moduleManager.registerModule(new Module(module[i])), module[i].onLoad && module[i].onLoad());
+    for (i in command) Object.keys(command[i]).length && (commandlist[i] = commandManager.registerCommand(new Command(command[i])), command[i].onLoad && command[i].onLoad());
 }
 
 function onDisable() {
-    for (i in modulelist) module[i].onUnload && module[i].onUnload(), moduleManager.unregisterModule(modulelist[i]);
-    for (i in commandlist) command[i].onUnload && command[i].onUnload(), moduleManager.unregisterCommand(commandlist[i]);
+    for (i in modulelist) (module[i].onUnload && module[i].onUnload()), moduleManager.unregisterModule(modulelist[i]);
+    for (i in commandlist) (command[i].onUnload && command[i].onUnload()), commandManager.unregisterCommand(commandlist[i]);
 }
 
 //Movement util
