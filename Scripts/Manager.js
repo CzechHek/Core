@@ -15,18 +15,19 @@ URLConnection = Java.type("java.net.URLConnection");
 Channels = Java.type("java.nio.channels.Channels");
 PrintWriter = Java.type("java.io.PrintWriter");
 Runnable = Java.type("java.lang.Runnable");
+Paths = Java.type("java.nio.file.Paths");
 Files = Java.type("java.nio.file.Files");
 Integer = Java.type("java.lang.Integer");
 System = Java.type("java.lang.System");
 Arrays = Java.type("java.util.Arrays");
 Thread = Java.type("java.lang.Thread");
+String = Java.type("java.lang.String");
 Long = Java.type("java.lang.Long");
-Font = Java.type("java.awt.Font");
 File = Java.type("java.io.File");
 URL = Java.type("java.net.URL");
 
 baseUrl = "https://natte.dev/manager/"
-devMode = false;
+devMode = true;
 
 command = {
     commands: ["Manager", "m"],
@@ -429,6 +430,31 @@ command = {
                             chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
                             break;
                         }
+
+                        case "test": {
+                            if (args.length <= 3) {
+                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                return;
+                            }
+            
+                            file = new File("LiquidBounce-1.8/themes/" + args[3] + ".json");
+            
+                            if (!file.exists()) {
+                                printError("Couldn't find '§4§l" + file.getName() + "§c'");
+                                return;
+                            }
+
+
+                            json = getFonts(file);
+
+                            for (i in json) { 
+                            	fontName = json[i][0];
+                            	fontSize = json[i][1];
+
+                            	chat.print(fontName + ": " + fontSize);
+                            }
+                        	break;
+                        }
                     }
                     break;
                 }
@@ -535,7 +561,7 @@ function getFonts(file) {
 	try {
 		content = FileUtils.readFileToString(file);
 
-		json = JSON.parse(content);
+        json = JSON.parse(content);
 
 		for (i = 0; i < json.length; i++) {
 		    elementObject = json[i];
@@ -546,7 +572,7 @@ function getFonts(file) {
 		    fontSize = fontObject.fontSize;
 
 		    if (fontName !== "Minecraft Font" && fontName !== "Roboto Medium" && fontName !== "Roboto Bold") {
-			array.push([fontName, fontSize]);
+		    	array.push([fontName, fontSize]);
 		    }
 		}
 
