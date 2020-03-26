@@ -571,7 +571,7 @@ function getFonts(file) {
 		    fontName = fontObject.fontName;
 		    fontSize = fontObject.fontSize;
 
-		    if (fontName !== "Minecraft Font" && fontName !== "Roboto Medium" && fontName !== "Roboto Bold") {
+		    if (fontName != "Minecraft Font" && (fontName != "Roboto Medium" && (fontSize != 35 || fontSize != 40)) && (fontName != "Roboto Bold" && fontSize != 180)) {
 		    	array.push([fontName, fontSize]);
 		    }
 		}
