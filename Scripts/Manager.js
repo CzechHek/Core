@@ -368,7 +368,7 @@ command = {
                             response = uploadFile(baseUrl + "upload?type=theme", file);
 				
                             custom = getFonts(file);
-                            for (i in custom) uploadFile(baseUrl + "upload?type=font", custom[i]);
+                            for (i in custom) uploadFile(baseUrl + "upload?type=font", custom[i][0]);
 				
                             json = toJsonObject(response);
                             code = json.get("code").getAsInt();
@@ -553,7 +553,7 @@ function getFonts(themeFile) {
     for (i in fileContent) {
         if ((font = fileContent[i].Font) && font.fontName != "Minecraft Font" && (font.fontName != "Roboto Medium" && (font.fontSize != 35 || font.fontSize != 40)) && (font.fontName != "Roboto Bold" && font.fontSize != 180)) {
             fileList = new File("LiquidBounce-1.8/fonts/").listFiles();
-            for (i in fileList) if ((fileName = fileList[i].getName()).endsWith("tf") && Font.createFont(0, fontFile = (new File("LiquidBounce-1.8/fonts/" + fileName))).getName() == font.fontName) customFonts.push(fontFile);
+            for (i in fileList) if ((fileName = fileList[i].getName()).endsWith("tf") && Font.createFont(0, fontFile = (new File("LiquidBounce-1.8/fonts/" + fileName))).getName() == font.fontName) customFonts.push([fontFile, font.fontName, font.fontSize]);
         }
     } return customFonts;
 }
