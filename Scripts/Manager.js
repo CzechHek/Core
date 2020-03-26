@@ -32,7 +32,7 @@ command = {
     commands: ["Manager", "m"],
     subcommands: ["script", "config", "theme"],
     author: "natte, CzechHek",
-    version: 1.2,
+    version: 1.3,
     onExecute: function (args) {
     	if (!new File("LiquidBounce-1.8/themes/").exists()) {
     		new File("LiquidBounce-1.8/themes/").mkdir();
@@ -492,7 +492,7 @@ function downloadFile(url, file, name, theme) {
 
         if (theme && devMode) {
             content = JSON.parse(FileUtils.readFileToString(file));
-            for (i in content) if (content[i].Font) chat.print(hasFont(content[i].Font.fontName, content[i].Font.fontSize));
+            for (i in content) if (content[i].Font) hasFont(content[i].Font.fontName, content[i].Font.fontSize);
         }
 
         return true;
@@ -530,12 +530,10 @@ function printError(error) {
 }
 
 function hasFont(name, size) {
-    if (name == "Minecraft Font" || (name == "Roboto Medium" && (size == 35 || size == 40)) || (name == "Roboto Bold" && size == 180)) return true;
+    if (name == "Minecraft Font" || (name == "Roboto Medium" && (size == 35 || size == 40)) || (name == "Roboto Bold" && size == 180)) return
     fonts = JSON.parse(FileUtils.readFileToString(new File("LiquidBounce-1.8/fonts/fonts.json")));
-    for (i in fonts) if (Font.createFont(0, new File("LiquidBounce-1.8/fonts/" + fonts[i].fontFile)).getName() == name && fonts[i].fontSize == size) return true;
-}
+    for (i in fonts) if (Font.createFont(0, new File("LiquidBounce-1.8/fonts/" + fonts[i].fontFile)).getName() == name && fonts[i].fontSize == size) return
 
-function loadFont(name, size) {
     fileList = new File("LiquidBounce-1.8/fonts/").listFiles();
     for (i in fileList) {
         if ((fileName = fileList[i].getName()).endsWith("tf") && Font.createFont(0, new File("LiquidBounce-1.8/fonts/" + fileName)).getName() == name) {
