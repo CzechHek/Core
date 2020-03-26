@@ -535,4 +535,24 @@ function hasFont(name, size) {
     for (i in fonts) if (Font.createFont(0, new File("LiquidBounce-1.8/fonts/" + fonts[i].fontFile)).getName() == name && fonts[i].fontSize == size) return true;
 }
 
+function loadFont(name, size) {
+    fileList = new File("LiquidBounce-1.8/fonts/").listFiles();
+    for (i in fileList) {
+        if ((fileName = fileList[i].getName()).endsWith("tf") && Font.createFont(0, new File("LiquidBounce-1.8/fonts/" + fileName)).getName() == name) {
+            (fontFile = JSON.parse(FileUtils.readFileToString(new File("LiquidBounce-1.8/fonts/fonts.json")))).push({fontFile:fileName, fontSize:size});
+            FileUtils.writeStringToFile(new File("LiquidBounce-1.8/fonts/fonts2.json"), JSON.stringify(fontFile));
+        }
+    }
+}
+
+function getFonts() {
+    file = JSON.parse(FileUtils.readFileToString(new File("LiquidBounce-1.8/hud.json")));
+    for (i in file) {
+        if ((font = file[i].Font) && font.fontName != "Minecraft Font" && (font.fontName != "Roboto Medium" && (font.fontSize != 35 || font.fontSize != 40)) && (font.fontName != "Roboto Bold" && font.fontSize != 180)) {
+            fileList = new File("LiquidBounce-1.8/fonts/").listFiles();
+            for (i in fileList) if ((fileName = fileList[i].getName()).endsWith("tf") && Font.createFont(0, fontFile = (new File("LiquidBounce-1.8/fonts/" + fileName))).getName() == font.fontName) return fontFile;
+        }
+    }
+}
+
 script.import("Core.lib");
