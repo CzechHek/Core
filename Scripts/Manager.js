@@ -544,13 +544,13 @@ function hasFont(name, size) {
 }
 
 function getFonts(themeFile) {
-    file = JSON.parse(FileUtils.readFileToString(themeFile));
+    file = JSON.parse(FileUtils.readFileToString(themeFile)); customFonts = [];
     for (i in file) {
         if ((font = file[i].Font) && font.fontName != "Minecraft Font" && (font.fontName != "Roboto Medium" && (font.fontSize != 35 || font.fontSize != 40)) && (font.fontName != "Roboto Bold" && font.fontSize != 180)) {
             fileList = new File("LiquidBounce-1.8/fonts/").listFiles();
-            for (i in fileList) if ((fileName = fileList[i].getName()).endsWith("tf") && Font.createFont(0, fontFile = (new File("LiquidBounce-1.8/fonts/" + fileName))).getName() == font.fontName) return fontFile;
+            for (i in fileList) if ((fileName = fileList[i].getName()).endsWith("tf") && Font.createFont(0, fontFile = (new File("LiquidBounce-1.8/fonts/" + fileName))).getName() == font.fontName) customFonts.push(fontFile);
         }
-    }
+    } return customFonts;
 }
 
 script.import("Core.lib");
