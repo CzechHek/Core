@@ -15,25 +15,24 @@ URLConnection = Java.type("java.net.URLConnection");
 Channels = Java.type("java.nio.channels.Channels");
 PrintWriter = Java.type("java.io.PrintWriter");
 Runnable = Java.type("java.lang.Runnable");
-Paths = Java.type("java.nio.file.Paths");
 Files = Java.type("java.nio.file.Files");
 Integer = Java.type("java.lang.Integer");
 System = Java.type("java.lang.System");
 Arrays = Java.type("java.util.Arrays");
 Thread = Java.type("java.lang.Thread");
-String = Java.type("java.lang.String");
 Long = Java.type("java.lang.Long");
 File = Java.type("java.io.File");
 URL = Java.type("java.net.URL");
+Font = Java.type("java.awt.Font");
 
 baseUrl = "https://natte.dev/manager/"
-devMode = true;
+devMode = false;
 
 command = {
     commands: ["Manager", "m"],
     subcommands: ["script", "config", "theme"],
     author: "natte, CzechHek",
-    version: 1.1,
+    version: 1.2,
     onExecute: function (args) {
     	if (!new File("LiquidBounce-1.8/themes/").exists()) {
     		new File("LiquidBounce-1.8/themes/").mkdir();
@@ -131,7 +130,7 @@ command = {
                             if (code == 0) {
                                 printError(message);
                             } else {
-                                chat.print("§8▏ §aUploaded '§4§l" + file.getName() + "§c'");
+                                chat.print("§8▏ §aUploaded '§2§l" + file.getName() + "§a'");
                             }
                             break;
                         }
@@ -241,7 +240,7 @@ command = {
                             if (code == 0) {
                                 printError(message);
                             } else {
-                                chat.print("§8▏ §aUploaded '§4§l" + file.getName() + "§c'");
+                                chat.print("§8▏ §aUploaded '§2§l" + file.getName() + "§a'");
                             }
                             break;
                         }
@@ -345,7 +344,7 @@ command = {
                                 return;
                             }
     
-                            if (downloadFile(baseUrl + "themes/" + args[3] + ".json", new File("LiquidBounce-1.8/themes/" + args[3] + ".json"), args[3] + ".json")) {
+                            if (downloadFile(baseUrl + "themes/" + args[3] + ".json", new File("LiquidBounce-1.8/themes/" + args[3] + ".json"), args[3] + ".json", true)) {
                                 chat.print("§8▏ §aDownloaded '§2§l" + args[3] + ".json§a'");
                             }
                             break;
@@ -373,7 +372,7 @@ command = {
                             if (code == 0) {
                                 printError(message);
                             } else {
-                                chat.print("§8▏ §aUploaded '§4§l" + file.getName() + "§c'");
+                                chat.print("§8▏ §aUploaded '§2§l" + file.getName() + "§a'");
                             }
                             break;
                         }
@@ -430,31 +429,6 @@ command = {
                             chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
                             break;
                         }
-
-                        case "test": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-            
-                            file = new File("LiquidBounce-1.8/themes/" + args[3] + ".json");
-            
-                            if (!file.exists()) {
-                                printError("Couldn't find '§4§l" + file.getName() + "§c'");
-                                return;
-                            }
-
-
-                            json = getFonts(file);
-
-                            for (i in json) { 
-                            	fontName = json[i][0];
-                            	fontSize = json[i][1];
-
-                            	chat.print(fontName + ": " + fontSize);
-                            }
-                        	break;
-                        }
                     }
                     break;
                 }
@@ -506,7 +480,7 @@ function uploadFile(url, file) {
     return body;
 }
 
-function downloadFile(url, file, name) {
+function downloadFile(url, file, name, theme) {
     try {
         con = new URL(url).openConnection();
    
@@ -515,6 +489,11 @@ function downloadFile(url, file, name) {
         output = new FileOutputStream(file);
         
         output.getChannel().transferFrom(channel, 0, Long.MAX_VALUE);
+
+        if (theme && devMode) {
+            content = JSON.parse(FileUtils.readFileToString(file));
+            for (i in content) if (content[i].Font) chat.print(hasFont(content[i].Font.fontName, content[i].Font.fontSize));
+        }
 
         return true;
     } catch(e) {
@@ -551,38 +530,9 @@ function printError(error) {
 }
 
 function hasFont(name, size) {
+    if (name == "Minecraft Font" || (name == "Roboto Medium" && (size == 35 || size == 40)) || (name == "Roboto Bold" && size == 180)) return true;
     fonts = JSON.parse(FileUtils.readFileToString(new File("LiquidBounce-1.8/fonts/fonts.json")));
     for (i in fonts) if (Font.createFont(0, new File("LiquidBounce-1.8/fonts/" + fonts[i].fontFile)).getName() == name && fonts[i].fontSize == size) return true;
-}
-
-function getFonts(file) {
-	array = [];
-
-	try {
-		content = FileUtils.readFileToString(file);
-
-        json = JSON.parse(content);
-
-		for (i = 0; i < json.length; i++) {
-		    elementObject = json[i];
-
-		    fontObject = elementObject.Font;
-
-		    fontName = fontObject.fontName;
-		    fontSize = fontObject.fontSize;
-
-		    if (fontName != "Minecraft Font" && (fontName != "Roboto Medium" && (fontSize != 35 || fontSize != 40)) && (fontName != "Roboto Bold" && fontSize != 180)) {
-		    	array.push([fontName, fontSize]);
-		    }
-		}
-
-	} catch(e) {
-		if (devMode) {
-			printError(e);
-		}
-	}
-
-	return array;
 }
 
 script.import("Core.lib");
