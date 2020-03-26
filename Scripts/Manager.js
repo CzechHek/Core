@@ -543,8 +543,8 @@ function hasFont(name, size) {
     }
 }
 
-function getFonts() {
-    file = JSON.parse(FileUtils.readFileToString(new File("LiquidBounce-1.8/hud.json")));
+function getFonts(themeFile) {
+    file = JSON.parse(FileUtils.readFileToString(themeFile));
     for (i in file) {
         if ((font = file[i].Font) && font.fontName != "Minecraft Font" && (font.fontName != "Roboto Medium" && (font.fontSize != 35 || font.fontSize != 40)) && (font.fontName != "Roboto Bold" && font.fontSize != 180)) {
             fileList = new File("LiquidBounce-1.8/fonts/").listFiles();
