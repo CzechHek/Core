@@ -1,4 +1,4 @@
-//Core 3.2 - Simple, yet powerful ScriptAPI base
+//Core 3.3 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -140,3 +140,7 @@ for (i in coreContainers) eval(coreContainers[i] + "=Java.type(\"net.minecraft.c
 
 //Other
 BlockPos = Java.type("net.minecraft.util.BlockPos"); EnumFacing = Java.type("net.minecraft.util.EnumFacing"); Vec3 = Java.type("net.minecraft.util.Vec3"); Vec3i = Java.type("net.minecraft.util.Vec3i"); Vec4b = Java.type("net.minecraft.util.Vec4b"); Vector3d = Java.type("net.minecraft.util.Vector3d"); AxisAlignedBB = Java.type("net.minecraft.util.AxisAlignedBB"); LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce");
+
+//Access public variables of LB modules (var name = Module name (case-sensitive!) + "Module", e. g. "KillAuraModule")
+var LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); 
+for (i in LiquidBounce.moduleManager.getModules().toArray()) if (!(LiquidBounce.moduleManager.getModules().toArray()[i] instanceof Java.type("net.ccbluex.liquidbounce.script.api.module.ScriptModule"))) eval(LiquidBounce.moduleManager.getModules().toArray()[i].getName().toString() + "Module=LiquidBounce.moduleManager.getModule(Java.type(\"net.ccbluex.liquidbounce.features.module.modules." + LiquidBounce.moduleManager.getModules().toArray()[i].getCategory().toString().toLowerCase() + "." + LiquidBounce.moduleManager.getModules().toArray()[i].getName().toString() + "\").class)");	
