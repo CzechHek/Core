@@ -1,4 +1,4 @@
-//Core 3.2 [Yide Edition] - Simple, yet powerful ScriptAPI base
+//Core 3.21 [Yide Edition] - Simple, yet powerful ScriptAPI base
 
 var name, author, version, description, modulelist = [];
 module = Array.isArray(module) ? module : [module || {}];
@@ -22,9 +22,16 @@ function Module(m) {
     m.onRender3D && (this.onRender3D = function (e) {m.onRender3D(e)});
     m.onPacket && (this.onPacket = function (e) {m.onPacket(e)});
     m.onMotion && (this.onMotion = function (e) {m.onMotion(e)});
-    m.onWindowClick && (this.onWindowClick = function (e) {m.onAttack(e)});
-    m.onBlockPush && (this.onBlockPush = function (e) {m.onJump(e)});
-    m.onVelocity && (this.onVelocity = function (e) {m.onKey(e)});
+    m.onWindowClick && (this.onWindowClick = function (e) {m.onWindowClick(e)});
+    m.onPushBlock && (this.onPushBlock = function (e) {m.onPushBlock(e)});
+    m.onKeyPress && (this.onKeyPress = function (e) {m.onKeyPress(e)});
+    m.onVelocity && (this.onVelocity = function (e) {m.onVelocity(e)});
+    m.onAttack && (this.onAttack = function (e) {m.onAttack(e)});
+    m.onMove && (this.onMove = function (e) {m.onMove(e)});
+    m.onStep && (this.onStep = function (e) {m.onStep(e)});
+    m.onStepConfirmed && (this.onStepConfirmed = function () {m.onStepConfirmed()});
+    m.onModuleToggled && (this.onModuleToggled = function (e) {m.onModuleToggled(e)});
+    m.onClickBlock && (this.onClickBlock = function (e) {m.onClickBlock(e)});
 }
 
 function onEnable() {
