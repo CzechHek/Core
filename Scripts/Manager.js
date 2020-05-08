@@ -24,15 +24,16 @@ Long = Java.type("java.lang.Long");
 File = Java.type("java.io.File");
 URL = Java.type("java.net.URL");
 Font = Java.type("java.awt.Font");
+Fonts = Java.type("net.ccbluex.liquidbounce.ui.font.Fonts");
 
 baseUrl = "https://natte.dev/manager/"
-devMode = false;
+devMode = true;
 
 command = {
     commands: ["Manager", "m"],
     subcommands: ["script", "config", "theme"],
     author: "natte, CzechHek",
-    version: 1.3,
+    version: 1.5,
     onExecute: function (args) {
     	if (!new File("LiquidBounce-1.8/themes/").exists()) {
     		new File("LiquidBounce-1.8/themes/").mkdir();
@@ -100,7 +101,7 @@ command = {
 							
 							downloadLibs();
     
-                            if (downloadFile(baseUrl + "scripts/" + args[3] + ".js", file = new File("LiquidBounce-1.8/scripts/" + args[3] + ".js"), args[3] + ".js")) {
+                            if (downloadFile(baseUrl + "scripts/" + args[3] + ".js", file = new File("LiquidBounce-1.8/scripts/" + args[3] + ".js"))) {
                                 chat.print("§8▏ §aDownloaded '§2§l" + args[3] + ".js§a'");
     
                                 LiquidBounce.INSTANCE.getScriptManager().loadScript(file);
@@ -214,7 +215,7 @@ command = {
                                 return;
                             }
     
-                            if (downloadFile(baseUrl + "configs/" + args[3], new File("LiquidBounce-1.8/settings/" + args[3]), args[3])) {
+                            if (downloadFile(baseUrl + "configs/" + args[3], new File("LiquidBounce-1.8/settings/" + args[3]))) {
                                 chat.print("§8▏ §aDownloaded '§2§l" + args[3] + "§a'");
                             }
                             break;
@@ -346,7 +347,7 @@ command = {
                                 return;
                             }
     
-                            if (downloadFile(baseUrl + "themes/" + args[3] + ".json", new File("LiquidBounce-1.8/themes/" + args[3] + ".json"), args[3] + ".json", true)) {
+                            if (downloadFile(baseUrl + "themes/" + args[3] + ".json", new File("LiquidBounce-1.8/themes/" + args[3] + ".json"), true)) {
                                 chat.print("§8▏ §aDownloaded '§2§l" + args[3] + ".json§a'");
                             }
                             break;
@@ -367,8 +368,8 @@ command = {
     
                             response = uploadFile(baseUrl + "upload?type=theme", file);
 				
-                            custom = getFonts(file);
-                            for (i in custom) uploadFile(baseUrl + "upload?type=font", custom[i][0]);
+                            themeFonts = checkFonts(file, true);
+                            for (i in themeFonts) uploadFile(baseUrl + "upload?type=font&name=" + themeFonts[i][0], themeFonts[i][1]);
 				
                             json = toJsonObject(response);
                             code = json.get("code").getAsInt();
@@ -408,10 +409,11 @@ command = {
                                 printError("Couldn't find '§4§l" + args[3] + ".json§c'");
                                 return;
                             }
-            
+                            
+                            Fonts.loadFonts();
                             config = new HudConfig(file);
                             LiquidBounce.INSTANCE.getFileManager().loadConfig(config);
-                            chat.print("§8▏ §aLoaded '§4§l" + file.getName() + "§c'");
+                            chat.print("§8▏ §aLoaded '§2§l" + file.getName() + "§a'");
                             LiquidBounce.INSTANCE.getFileManager().hudConfig = config;
                             LiquidBounce.INSTANCE.getFileManager().saveConfig(LiquidBounce.INSTANCE.getFileManager().hudConfig);
                             break;
@@ -485,7 +487,7 @@ function uploadFile(url, file) {
     return body;
 }
 
-function downloadFile(url, file, name, theme) {
+function downloadFile(url, file, theme) {
     try {
         con = new URL(url).openConnection();
    
@@ -494,15 +496,13 @@ function downloadFile(url, file, name, theme) {
         output = new FileOutputStream(file);
         
         output.getChannel().transferFrom(channel, 0, Long.MAX_VALUE);
+        output.close();
 
-        if (theme && devMode) {
-            content = JSON.parse(FileUtils.readFileToString(file));
-            for (i in content) if (content[i].Font) hasFont(content[i].Font.fontName, content[i].Font.fontSize);
-        }
+        if (theme) checkFonts(file);
 
         return true;
     } catch(e) {
-        printError("Couldn't find '§4§l" + name + "§c'");
+        printError("Couldn't find '§4§l" + file.getName() + "§c'");
         if (devMode) {
         	printError(e);
         }
@@ -519,6 +519,7 @@ function get(theUrl) {
     encoding = con.getContentEncoding();
     encoding = encoding == null ? "UTF-8" : encoding;
     body = IOUtils.toString(input, encoding);
+    input.close();
 
     return body;
 }
@@ -535,20 +536,35 @@ function printError(error) {
 }
 
 function checkFonts(themeFile, upload) {
-    fileContent = JSON.parse(FileUtils.readFileToString(themeFile)); customFonts = [];
-    for (i in fileContent) {
-        if ((font = fileContent[i].Font) && font.fontName != "Minecraft Font" && (font.fontName != "Roboto Medium" && (font.fontSize != 35 || font.fontSize != 40)) && (font.fontName != "Roboto Bold" && font.fontSize != 180)) {
-            if (upload) customFonts.push(font);
-            else {
-                fonts = JSON.parse(FileUtils.readFileToString(new File("LiquidBounce-1.8/fonts/fonts.json")));
-                for (i in fonts) {
-                    if (Font.createFont(0, new File("LiquidBounce-1.8/fonts/" + fonts[i].fontFile)).getName() == font.fontName) fonts[i].fontSize != font.fontSize && fonts.push({fontFile:fonts[i].fontFile, fontSize:font.fontSize});
-                    else customFonts.push(font);
+    themeContent = JSON.parse(FileUtils.readFileToString(themeFile)); customFonts = []; fontNames = []; installedFonts = null;
+    installedFonts = JSON.parse(FileUtils.readFileToString(new File("LiquidBounce-1.8/fonts/fonts.json")));
+    for (i in themeContent) {
+        if ((font = themeContent[i].Font) && font.fontName != "Minecraft Font" && (font.fontName != "Roboto Medium" && (font.fontSize != 35 || font.fontSize != 40)) && (font.fontName != "Roboto Bold" && font.fontSize != 180)) {
+            if (installedFonts.length) {
+                checkedName = checkedSize = null;
+                for (i in installedFonts) {
+                    if (upload) {
+                        if (Font.createFont(0, fontFile = new File("LiquidBounce-1.8/fonts/" + installedFonts[i].fontFile)).getName() == font.fontName) customFonts.push([font.fontName.replaceAll(" ", "_"), fontFile]); break;
+                    } else {
+                        checkedName = checkedName || (Font.createFont(0, new File("LiquidBounce-1.8/fonts/" + installedFonts[i].fontFile)).getName() == font.fontName ? installedFonts[i].fontFile : checkedName);
+                        checkedSize = checkedSize || installedFonts[i].fontSize == font.fontSize;
+                    }
                 }
-            }
+                if (checkedName) {
+                    if (!checkedSize) installedFonts.push({fontFile:checkedName, fontSize:font.fontSize});
+                } else customFonts.push([font.fontName.replaceAll(" ","_"), font.fontSize]), (!~fontNames.indexOf(font.fontName) && fontNames.push(font.fontName));
+            } else customFonts.push([font.fontName.replaceAll(" ","_"), font.fontSize]), (!~fontNames.indexOf(font.fontName) && fontNames.push(font.fontName));
         }
     }
-    !upload && FileUtils.writeStringToFile(new File("LiquidBounce-1.8/fonts/fonts2.json"), JSON.stringify(fonts));
+    if (!upload) {
+        for (i in customFonts) {
+            if (downloadFile(baseUrl + "fonts/" + customFonts[i][0], new File("LiquidBounce-1.8/fonts/" + customFonts[i][0]))) {
+                installedFonts.push({fontFile:customFonts[i][0], fontSize:customFonts[i][1]});
+                (i >= customFonts.length - 1) && chat.print("§8▏ §aDownloaded §2§l" + fontNames.length + " §afonts");
+            }
+        }
+        FileUtils.writeStringToFile(new File("LiquidBounce-1.8/fonts/fonts.json"), JSON.stringify(installedFonts));
+    }
     return customFonts;
 }
 
@@ -571,7 +587,7 @@ function downloadLibs() {
         libFile = new File("LiquidBounce-1.8/scripts/lib/" + name);
 
         if (!libFile.exists()) {
-            if (downloadFile(baseUrl + "libs/" + name, libFile, libFile.getName(), false)) {
+            if (downloadFile(baseUrl + "libs/" + name, libFile)) {
                 if (devMode) {
                     chat.print("§8▏ §aDownloaded '§2§l" + name + "§a'");
                 }
