@@ -31,7 +31,7 @@ devMode = false;
 command = {
     commands: ["Manager", "m"],
     subcommands: ["script", "config", "theme"],
-    author: "natte, CzechHek",
+    author: "natte, CzechHek, EmirProHDXDDDDDDDDDDDDDDDDD100PERCENTREALBROXDDDDD",
     version: 1.3,
     onExecute: function (args) {
     	if (!new File("LiquidBounce-1.8/themes/").exists()) {
