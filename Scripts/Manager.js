@@ -379,6 +379,15 @@ command = {
                                 printError("Couldn't find '§4§l" + args[3] + ".json§c'");
                                 return;
                             }
+
+                            sfolder = new File("LiquidBounce-1.8/themes/");
+
+                            Java.type("net.minecraft.util.ScreenShotHelper").saveScreenshot(sfolder, args[3] + ".png", mc.displayWidth, mc.displayHeight, mc.getFramebuffer());
+                            previewFile = new File("LiquidBounce-1.8/themes/screenshots/" + args[3] + ".png");
+
+                            uploadFile(baseUrl + "upload?type=preview", previewFile);
+                            
+                            if (new File("LiquidBounce-1.8/themes/screenshots/").exists()) new File("LiquidBounce-1.8/themes/screenshots/").delete()
     
                             response = uploadFile(baseUrl + "upload?type=theme", file);
                 
