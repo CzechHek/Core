@@ -33,7 +33,7 @@ command = {
     commands: ["Manager", "m"],
     subcommands: ["script", "config", "theme"],
     author: "natte, CzechHek",
-    version: 1.6,
+    version: 1.7,
     onExecute: function (args) {
         if (!new File("LiquidBounce-1.8/themes/").exists()) new File("LiquidBounce-1.8/themes/").mkdir();
         if (!new File("LiquidBounce-1.8/settings/").exists()) new File("LiquidBounce-1.8/settings/").mkdir();
@@ -500,15 +500,16 @@ function uploadFile(url, file) {
 
         Files.copy(file.toPath(), output);
 
-        output.flush();
+        output.flush(); output.close();
         writer.append(CRLF).flush();
 
-        writer.append("--" + boundary + "--").append(CRLF).flush();
+        writer.append("--" + boundary + "--").append(CRLF).flush(); writer.close();
 
         input = con.getInputStream();
         encoding = con.getContentEncoding();
         encoding = encoding == null ? "UTF-8" : encoding;
         body = IOUtils.toString(input, encoding);
+        input.close();
     } catch (e) {
         if (devMode) {
             printError(e);
@@ -526,7 +527,7 @@ function downloadFile(url, file, theme) {
         output = new FileOutputStream(file);
         
         output.getChannel().transferFrom(channel, 0, Long.MAX_VALUE);
-        output.close();
+        output.flush(); output.close();
 
         if (theme) checkFonts(file);
 
@@ -574,16 +575,18 @@ function checkFonts(themeFile, upload) {
                 checkedName = checkedSize = null;
                 for (i in installedFonts) {
                     if (upload) {
-                        if (Font.createFont(0, fontFile = new File("LiquidBounce-1.8/fonts/" + installedFonts[i].fontFile)).getName() == font.fontName) customFonts.push([font.fontName.replaceAll(" ", "_"), fontFile]); break;
+                        if (Font.createFont(0, fontFile = new File("LiquidBounce-1.8/fonts/" + installedFonts[i].fontFile)).getName() == font.fontName) customFonts.push([font.fontName.replaceAll(" ", "_"), fontFile]);
                     } else {
                         checkedName = checkedName || (Font.createFont(0, new File("LiquidBounce-1.8/fonts/" + installedFonts[i].fontFile)).getName() == font.fontName ? installedFonts[i].fontFile : checkedName);
                         checkedSize = checkedSize || installedFonts[i].fontSize == font.fontSize;
                     }
                 }
-                if (checkedName) {
-                    if (!checkedSize) installedFonts.push({fontFile:checkedName, fontSize:font.fontSize});
-                } else customFonts.push([font.fontName.replaceAll(" ","_"), font.fontSize]), (!~fontNames.indexOf(font.fontName) && fontNames.push(font.fontName));
-            } else customFonts.push([font.fontName.replaceAll(" ","_"), font.fontSize]), (!~fontNames.indexOf(font.fontName) && fontNames.push(font.fontName));
+                if (!upload) {
+                    if (checkedName) {
+                        if (!checkedSize) installedFonts.push({fontFile:checkedName, fontSize:font.fontSize});
+                    } else customFonts.push([font.fontName.replaceAll(" ","_"), font.fontSize]), (!~fontNames.indexOf(font.fontName) && fontNames.push(font.fontName));
+                }
+            } else if (!upload) customFonts.push([font.fontName.replaceAll(" ","_"), font.fontSize]), (!~fontNames.indexOf(font.fontName) && fontNames.push(font.fontName));
         }
     }
     if (!upload) {
