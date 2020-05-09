@@ -3,6 +3,7 @@ FileConfig = Java.type("net.ccbluex.liquidbounce.file.FileConfig");
 LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce");
 Script = Java.type("net.ccbluex.liquidbounce.script.Script");
 OutputStreamWriter = Java.type("java.io.OutputStreamWriter");
+Fonts = Java.type("net.ccbluex.liquidbounce.ui.font.Fonts");
 FileOutputStream = Java.type("java.io.FileOutputStream");
 FileUtils = Java.type("org.apache.commons.io.FileUtils");
 JsonElement = Java.type("com.google.gson.JsonElement");
@@ -21,30 +22,28 @@ System = Java.type("java.lang.System");
 Arrays = Java.type("java.util.Arrays");
 Thread = Java.type("java.lang.Thread");
 Long = Java.type("java.lang.Long");
+Font = Java.type("java.awt.Font");
 File = Java.type("java.io.File");
 URL = Java.type("java.net.URL");
-Font = Java.type("java.awt.Font");
-Fonts = Java.type("net.ccbluex.liquidbounce.ui.font.Fonts");
 
 baseUrl = "https://natte.dev/manager/"
-devMode = true;
+devMode = false;
 
 command = {
     commands: ["Manager", "m"],
     subcommands: ["script", "config", "theme"],
     author: "natte, CzechHek",
-    version: 1.5,
+    version: 1.6,
     onExecute: function (args) {
-    	if (!new File("LiquidBounce-1.8/themes/").exists()) {
-    		new File("LiquidBounce-1.8/themes/").mkdir();
-    	}
+        if (!new File("LiquidBounce-1.8/themes/").exists()) new File("LiquidBounce-1.8/themes/").mkdir();
+        if (!new File("LiquidBounce-1.8/settings/").exists()) new File("LiquidBounce-1.8/settings/").mkdir();
 
         try {
             switch (args[1]) {
                 case "script": {
                     if (args.length <= 2) {
                         chat.print("§8▏ §7Available subcommands§8: (§7§l4§8)");
-                        chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fdelete§8]");
+                        chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fdelete§7, §ffolder§8]");
                         return;
                     }
     
@@ -98,8 +97,8 @@ command = {
                                 chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
                                 return;
                             }
-							
-							downloadLibs();
+                            
+                            downloadLibs();
     
                             if (downloadFile(baseUrl + "scripts/" + args[3] + ".js", file = new File("LiquidBounce-1.8/scripts/" + args[3] + ".js"))) {
                                 chat.print("§8▏ §aDownloaded '§2§l" + args[3] + ".js§a'");
@@ -153,6 +152,14 @@ command = {
                             LiquidBounce.INSTANCE.getScriptManager().deleteScript(new Script(file));
     
                             chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
+                            break;
+                        }
+
+                        case "folder": {
+                            folder = new File("LiquidBounce-1.8/scripts/");
+                            Java.type("java.awt.Desktop").getDesktop().open(folder);
+                            chat.print("§8▏ §aFolder opened");
+                            break;
                         }
                     }
                     break;
@@ -161,7 +168,7 @@ command = {
                 case "config": {
                     if (args.length <= 2) {
                         chat.print("§8▏ §7Available subcommands§8: (§7§l6§8)");
-                        chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fsave§7, §fload§7, §fdelete§8]");
+                        chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fsave§7, §fload§7, §fdelete§7, §ffolder§8]");
                         return;
                     }
     
@@ -285,6 +292,13 @@ command = {
                             chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
                             break;
                         }
+
+                        case "folder": {
+                            folder = new File("LiquidBounce-1.8/settings/");
+                            Java.type("java.awt.Desktop").getDesktop().open(folder);
+                            chat.print("§8▏ §aFolder opened");
+                            break;
+                        }
                     }
     
                     break;
@@ -293,7 +307,7 @@ command = {
                 case "theme": {
                     if (args.length <= 2) {
                         chat.print("§8▏ §7Available subcommands§8: (§7§l6§8)");
-                        chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fsave§7, §fload§7, §fdelete§8]");
+                        chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fsave§7, §fload§7, §fdelete§7, §ffolder§8]");
                         return;
                     }
     
@@ -367,10 +381,10 @@ command = {
                             }
     
                             response = uploadFile(baseUrl + "upload?type=theme", file);
-				
+                
                             themeFonts = checkFonts(file, true);
                             for (i in themeFonts) uploadFile(baseUrl + "upload?type=font&name=" + themeFonts[i][0], themeFonts[i][1]);
-				
+                
                             json = toJsonObject(response);
                             code = json.get("code").getAsInt();
                             message = json.get("message").getAsString();
@@ -436,54 +450,61 @@ command = {
                             chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
                             break;
                         }
+
+                        case "folder": {
+                            folder = new File("LiquidBounce-1.8/themes/");
+                            Java.type("java.awt.Desktop").getDesktop().open(folder);
+                            chat.print("§8▏ §aFolder opened");
+                            break;
+                        }
                     }
                     break;
                 }
             }
         } catch (e) {
-        	printError("Error occured while executing command.");
+            printError("Error occured while executing command.");
             if (devMode) {
-        		printError(e);
-        	}
+                printError(e);
+            }
         }
     }
 }
 
 function uploadFile(url, file) {
-	try {
-	    boundary = Long.toHexString(System.currentTimeMillis());
-	    CRLF = "\r\n";
+    try {
+        boundary = Long.toHexString(System.currentTimeMillis());
+        CRLF = "\r\n";
 
-	    con = new URL(url).openConnection();
-	    con.setDoOutput(true);
-	    con.setRequestProperty("User-Agent", "Mozilla/5.0");
-	    con.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+        con = new URL(url).openConnection();
+        con.setDoOutput(true);
+        con.setRequestProperty("User-Agent", "Mozilla/5.0");
+        con.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
 
-	    output = con.getOutputStream();
-	    writer = new PrintWriter(new OutputStreamWriter(output, "UTF-8"), true);
+        output = con.getOutputStream();
+        writer = new PrintWriter(new OutputStreamWriter(output, "UTF-8"), true);
 
-	    writer.append("--" + boundary).append(CRLF);
-	    writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"" + file.getName() + "\"").append(CRLF);
-	    writer.append("Content-Type: " + URLConnection.guessContentTypeFromName(file.getName())).append(CRLF);
-	    writer.append("Content-Transfer-Encoding: binary").append(CRLF);
-	    writer.append(CRLF).flush();
+        writer.append("--" + boundary).append(CRLF);
+        writer.append("Content-Disposition: form-data; name=\"file\"; filename=\"" + file.getName() + "\"").append(CRLF);
+        writer.append("Content-Type: " + URLConnection.guessContentTypeFromName(file.getName())).append(CRLF);
+        writer.append("Content-Transfer-Encoding: binary").append(CRLF);
+        writer.append(CRLF).flush();
 
-	    Files.copy(file.toPath(), output);
+        Files.copy(file.toPath(), output);
 
-	    output.flush();
-	    writer.append(CRLF).flush();
+        output.flush();
+        writer.append(CRLF).flush();
 
-	    writer.append("--" + boundary + "--").append(CRLF).flush();
+        writer.append("--" + boundary + "--").append(CRLF).flush();
 
-	    input = con.getInputStream();
-	    encoding = con.getContentEncoding();
-	    encoding = encoding == null ? "UTF-8" : encoding;
-	    body = IOUtils.toString(input, encoding);
-	} catch (e) {
+        input = con.getInputStream();
+        encoding = con.getContentEncoding();
+        encoding = encoding == null ? "UTF-8" : encoding;
+        body = IOUtils.toString(input, encoding);
+    } catch (e) {
         if (devMode) {
-        	printError(e);
+            printError(e);
         }
-	}
+    }
     return body;
 }
 
@@ -504,7 +525,7 @@ function downloadFile(url, file, theme) {
     } catch(e) {
         printError("Couldn't find '§4§l" + file.getName() + "§c'");
         if (devMode) {
-        	printError(e);
+            printError(e);
         }
         return false;
     }
@@ -560,7 +581,7 @@ function checkFonts(themeFile, upload) {
         for (i in customFonts) {
             if (downloadFile(baseUrl + "fonts/" + customFonts[i][0], new File("LiquidBounce-1.8/fonts/" + customFonts[i][0]))) {
                 installedFonts.push({fontFile:customFonts[i][0], fontSize:customFonts[i][1]});
-                (i >= customFonts.length - 1) && chat.print("§8▏ §aDownloaded §2§l" + fontNames.length + " §afont" + (fontNames.length > 1 ? "s" : ""));
+                (i >= customFonts.length - 1) && chat.print("§8▏ §aDownloaded §2§l" + fontNames.length + " §afonts");
             }
         }
         FileUtils.writeStringToFile(new File("LiquidBounce-1.8/fonts/fonts.json"), JSON.stringify(installedFonts));
