@@ -33,7 +33,7 @@ command = {
     commands: ["Manager", "m"],
     subcommands: ["script", "config", "theme"],
     author: "natte, CzechHek",
-    version: 1.7,
+    version: 1.71,
     onExecute: function (args) {
         if (!new File("LiquidBounce-1.8/themes/").exists()) new File("LiquidBounce-1.8/themes/").mkdir();
         if (!new File("LiquidBounce-1.8/settings/").exists()) new File("LiquidBounce-1.8/settings/").mkdir();
@@ -500,16 +500,16 @@ function uploadFile(url, file) {
 
         Files.copy(file.toPath(), output);
 
-        output.flush(); output.close();
+        output.flush();
         writer.append(CRLF).flush();
 
-        writer.append("--" + boundary + "--").append(CRLF).flush(); writer.close();
+        writer.append("--" + boundary + "--").append(CRLF).flush();
 
         input = con.getInputStream();
         encoding = con.getContentEncoding();
         encoding = encoding == null ? "UTF-8" : encoding;
         body = IOUtils.toString(input, encoding);
-        input.close();
+        input.close(); output.close(); writer.close();
     } catch (e) {
         if (devMode) {
             printError(e);
