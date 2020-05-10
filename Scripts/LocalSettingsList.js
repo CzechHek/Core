@@ -24,7 +24,7 @@ module = {
     author: "Nvaros",
 	category: "Misc",
     description: "Panel that shows your local settings",
-    version: 1.0,
+    version: 1.1,
     values: list,
     onEnable: function() {
 		hasLoadedPanel = false;
@@ -74,7 +74,13 @@ module = {
 			isPanelEnabled = false;
 			LiquidBounce.clickGui.panels.remove(localSettingsPanel);
 		} 
-    }   
+    },
+
+    onLoad: function () {
+        delay(2500, function() {
+            moduleManager.getModule(this.name).state = true;
+        });
+    }
 }
 
 function createLocalSettingsButton(name) {
@@ -127,11 +133,5 @@ function createLocalSettingsButton(name) {
 	}
 	return localSettingsButtons[length];
 }
-
-function onEnable() {
-	delay(2500, function() {
-		commandManager.executeCommand(".t localsettingslist");
-	});
-};
 
 script.import("Core.lib");
