@@ -27,447 +27,557 @@ File = Java.type("java.io.File");
 URL = Java.type("java.net.URL");
 
 baseUrl = "https://natte.dev/manager/"
-devMode = false;
+devMode = true; musicPlayerInstalled = false;
 
 command = {
     commands: ["Manager", "m"],
-    subcommands: ["script", "config", "theme"],
+    subcommands: ["script", "config", "theme", "music"],
     author: "natte, CzechHek",
     version: 1.71,
     onExecute: function (args) {
         if (!new File("LiquidBounce-1.8/themes/").exists()) new File("LiquidBounce-1.8/themes/").mkdir();
         if (!new File("LiquidBounce-1.8/settings/").exists()) new File("LiquidBounce-1.8/settings/").mkdir();
+        
+        if (findScript("MusicPlayer", "natte") != null) { 
+            musicPlayerInstalled = true;
+        } else {
+            musicPlayerInstalled = false;
+        }
 
         try {
-            switch (args[1]) {
-                case "script": {
-                    if (args.length <= 2) {
-                        chat.print("§8▏ §7Available subcommands§8: (§7§l4§8)");
-                        chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fdelete§7, §ffolder§8]");
-                        return;
-                    }
-    
-                    switch (args[2]) {
-                        case "list": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Available subcommands§8: (§7§l2§8)");
-                                chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§fonline§7, §flocal§8]");
-                                return;
-                            }
-                            
-                            switch (args[3]) {
-                                case "online": {
-                                    response = get(baseUrl + "list?type=scripts");
-    
-                                    json = toJsonObject(response);
-                                    array = json.get("message").getAsJsonArray();
-                                    
-                                    chat.print("§8▏ §7Online scripts§8: (§7" + array.size() + "§8)");
-                                    for (i = 0; i < array.size(); i++) {
-                                        name = array.get(i).getAsString();
-                                        index = i + 1;
-                                        chat.print("§8▏ §8[§7" + index + "§8]§7 " + name);
-                                    }
-                                    break;
-                                }
-    
-                                case "local": {
-                                    folder = new File("LiquidBounce-1.8/scripts");
-    
-                                    if (!folder.exists()) return;
-    
-                                    array = [];
-                                
-                                    for (i = 0; i < folder.listFiles().length; i++) {
-                                        if (folder.listFiles()[i].getName().endsWith(".js")) {
-                                            array.push(folder.listFiles()[i].getName().replace(".js", ""))
-                                        }
-                                    }
-                                
-                                    chat.print("§8▏ §7Local scripts: §8(§7" + array.length + "§8)");
-                                    for (i in array) chat.print("§8▏ §8[§7" + (parseInt(i) + 1) + "§8]§7 " + array[i]);
-                                }
-                            }
-    
-                            break;
+            if (musicPlayerInstalled && args[1] == "music") {
+                if (args.length <= 2) {
+                    chat.print("§8▏ §7Available subcommands§8: (§7§l5§8)");
+                    chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fdelete§7, §ffolder§8]");
+                    return;
+                }
+
+                switch (args[2]) {
+                    case "list": {
+                        if (args.length <= 3) {
+                            chat.print("§8▏ §7Available subcommands§8: (§7§l2§8)");
+                            chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§fonline§7, §flocal§8]");
+                            return;
                         }
-    
-                        case "download": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
+                        
+                        switch (args[3]) {
+                            case "online": {
+                                response = get(baseUrl + "list?type=music");
+
+                                json = toJsonObject(response);
+                                array = json.get("message").getAsJsonArray();
+                                
+                                chat.print("§8▏ §7Online songs§8: (§7" + array.size() + "§8)");
+                                for (i = 0; i < array.size(); i++) {
+                                    name = array.get(i).getAsString();
+                                    index = i + 1;
+                                    chat.print("§8▏ §8[§7" + index + "§8]§7 " + name);
+                                }
+                                break;
                             }
+
+                            case "local": {
+                                LiquidBounce.commandManager.executeCommands(".mp list");
+                                break;
+                            }
+                        }
+                        break;
+                    }
+
+                    case "download": {
+                        if (args.length <= 3) {
+                            chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                            return;
+                        }
+
+                        if (downloadFile(baseUrl + "songs/" + args[3] + ".mp3", file = new File("LiquidBounce-1.8/music/" + args[3] + ".mp3"))) {
+                            chat.print("§8▏ §aDownloaded '§2§l" + args[3] + ".mp3§a'");
+                        }
+                        break;
+                    }
+
+                    case "upload": {
+                        if (args.length <= 3) {
+                            chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                            return;
+                        }
+
+                        file = new File("LiquidBounce-1.8/music/" + args[3] + ".mp3");
+
+                        if (!file.exists()) {
+                            printError("Couldn't find '§4§l" + args[3] + ".mp3§c'");
+                            return;
+                        }
+
+                        response = uploadFile(baseUrl + "upload?type=song", file);
+                                            
+                        json = toJsonObject(response);
+                        code = json.get("code").getAsInt();
+                        message = json.get("message").getAsString();
+                        
+                        if (code == 0) {
+                            printError(message);
+                        } else {
+                            chat.print("§8▏ §aUploaded '§2§l" + file.getName() + "§a'");
+                        }
+                        break;
+                    }
+
+                    case "delete": {
+                        if (args.length <= 3) {
+                            chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                            return;
+                        }
+
+                        file = new File("LiquidBounce-1.8/music/" + args[3] + ".mp3");
+
+                        if (!file.exists()) {
+                            printError("Couldn't find '§4§l" + args[3] + ".mp3§c'");
+                            return;
+                        }
+
+                        chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
+                        break;
+                    }
+
+                    case "folder": {
+                        LiquidBounce.commandManager.executeCommands(".mp folder");
+                        break;
+                    }
+                }
+            } else if (!musicPlayerInstalled && args[1] == "music") {
+                printError("MusicPlayer Script is not installed!");
+            } else {
+                switch (args[1]) {
+                    case "script": {
+                        if (args.length <= 2) {
+                            chat.print("§8▏ §7Available subcommands§8: (§7§l5§8)");
+                            chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fdelete§7, §ffolder§8]");
+                            return;
+                        }
+        
+                        switch (args[2]) {
+                            case "list": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Available subcommands§8: (§7§l2§8)");
+                                    chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§fonline§7, §flocal§8]");
+                                    return;
+                                }
+                                
+                                switch (args[3]) {
+                                    case "online": {
+                                        response = get(baseUrl + "list?type=scripts");
+        
+                                        json = toJsonObject(response);
+                                        array = json.get("message").getAsJsonArray();
+                                        
+                                        chat.print("§8▏ §7Online scripts§8: (§7" + array.size() + "§8)");
+                                        for (i = 0; i < array.size(); i++) {
+                                            name = array.get(i).getAsString();
+                                            index = i + 1;
+                                            chat.print("§8▏ §8[§7" + index + "§8]§7 " + name);
+                                        }
+                                        break;
+                                    }
+        
+                                    case "local": {
+                                        folder = new File("LiquidBounce-1.8/scripts");
+        
+                                        if (!folder.exists()) return;
+        
+                                        array = [];
+                                    
+                                        for (i = 0; i < folder.listFiles().length; i++) {
+                                            if (folder.listFiles()[i].getName().endsWith(".js")) {
+                                                array.push(folder.listFiles()[i].getName().replace(".js", ""))
+                                            }
+                                        }
+                                    
+                                        chat.print("§8▏ §7Local scripts: §8(§7" + array.length + "§8)");
+                                        for (i in array) chat.print("§8▏ §8[§7" + (parseInt(i) + 1) + "§8]§7 " + array[i]);
+                                    }
+                                }
+        
+                                break;
+                            }
+        
+                            case "download": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
+                                }
+                                
+                                downloadLibs();
+        
+                                if (downloadFile(baseUrl + "scripts/" + args[3] + ".js", file = new File("LiquidBounce-1.8/scripts/" + args[3] + ".js"))) {
+                                    chat.print("§8▏ §aDownloaded '§2§l" + args[3] + ".js§a'");
+        
+                                    LiquidBounce.INSTANCE.getScriptManager().loadScript(file);
+        
+                                    chat.print("§8▏ §aLoaded '§2§l" + file.getName() + "§a'");
+                                }
+                                break;
+                            }
+        
+                            case "upload": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
+                                }
+        
+                                file = new File("LiquidBounce-1.8/scripts/" + args[3] + ".js");
+        
+                                if (!file.exists()) {
+                                    printError("Couldn't find '§4§l" + args[3] + ".js§c'");
+                                    return;
+                                }
+        
+                                response = uploadFile(baseUrl + "upload?type=script", file);
                             
-                            downloadLibs();
-    
-                            if (downloadFile(baseUrl + "scripts/" + args[3] + ".js", file = new File("LiquidBounce-1.8/scripts/" + args[3] + ".js"))) {
-                                chat.print("§8▏ §aDownloaded '§2§l" + args[3] + ".js§a'");
-    
-                                LiquidBounce.INSTANCE.getScriptManager().loadScript(file);
-    
+                                json = toJsonObject(response);
+                                code = json.get("code").getAsInt();
+                                message = json.get("message").getAsString();
+                                
+                                if (code == 0) {
+                                    printError(message);
+                                } else {
+                                    chat.print("§8▏ §aUploaded '§2§l" + file.getName() + "§a'");
+                                }
+                                break;
+                            }
+        
+                            case "delete": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
+                                }
+        
+                                file = new File("LiquidBounce-1.8/scripts/" + args[3] + ".js");
+        
+                                if (!file.exists()) {
+                                    printError("Couldn't find '§4§l" + args[3] + ".js§c'");
+                                    return;
+                                }
+                                LiquidBounce.INSTANCE.getScriptManager().deleteScript(new Script(file));
+        
+                                chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
+                                break;
+                            }
+
+                            case "folder": {
+                                folder = new File("LiquidBounce-1.8/scripts/");
+                                Java.type("java.awt.Desktop").getDesktop().open(folder);
+                                chat.print("§8▏ §aFolder opened");
+                                break;
+                            }
+                        }
+                        break;
+                    }
+        
+                    case "config": {
+                        if (args.length <= 2) {
+                            chat.print("§8▏ §7Available subcommands§8: (§7§l7§8)");
+                            chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fsave§7, §fload§7, §fdelete§7, §ffolder§8]");
+                            return;
+                        }
+        
+                        switch (args[2]) {
+                            case "list": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Available subcommands§8: (§7§l2§8)");
+                                    chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§fonline§7, §flocal§8]");
+                                    return;
+                                }
+                                
+                                switch (args[3]) {
+                                    case "online": {
+                                        response = get(baseUrl + "list?type=configs");
+        
+                                        json = toJsonObject(response);
+                                        array = json.get("message").getAsJsonArray();
+                                        
+                                        chat.print("§8▏ §7Online configs: §8(§7" + array.size() + "§8)");
+                                        for (i = 0; i < array.size(); i++) {
+                                            name = array.get(i).getAsString();
+                                            index = i + 1;
+                                            chat.print("§8▏ §8[§7" + index + "§8]§7 " + name);
+                                        }
+                                        break;
+                                    }
+        
+                                    case "local": {
+                                        folder = new File("LiquidBounce-1.8/settings");
+        
+                                        if (!folder.exists()) return;
+        
+                                        array = [];
+                                    
+                                        for (i = 0; i < folder.listFiles().length; i++) {
+                                            if (folder.listFiles()[i].getName().endsWith("")) {
+                                                array.push(folder.listFiles()[i].getName())
+                                            }
+                                        }
+                                    
+                                        chat.print("§8▏ §7Local configs: §8(§7" + array.length + "§8)");
+                                        for (i in array) chat.print("§8▏ §8[§7" + (parseInt(i) + 1) + "§8]§7 " + array[i]);
+                                    }
+                                }
+                                break;
+                            }
+        
+                            case "download": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
+                                }
+        
+                                if (downloadFile(baseUrl + "configs/" + args[3], new File("LiquidBounce-1.8/settings/" + args[3]))) {
+                                    chat.print("§8▏ §aDownloaded '§2§l" + args[3] + "§a'");
+                                }
+                                break;
+                            }
+        
+                            case "upload": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
+                                }
+        
+                                file = new File("LiquidBounce-1.8/settings/" + args[3]);
+        
+                                if (!file.exists()) {
+                                    printError("Couldn't find '§4§l" + args[3] + "§c'");
+                                    return;
+                                }
+        
+                                response = uploadFile(baseUrl + "upload?type=config", file);
+                            
+                                json = toJsonObject(response);
+                                code = json.get("code").getAsInt();
+                                message = json.get("message").getAsString();
+                                
+                                if (code == 0) {
+                                    printError(message);
+                                } else {
+                                    chat.print("§8▏ §aUploaded '§2§l" + file.getName() + "§a'");
+                                }
+                                break;
+                            }
+        
+                            case "save": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
+                                }
+                                
+                                LiquidBounce.commandManager.executeCommands(".localconfig save " + args[3]);
+                                break;
+                            }
+        
+                            case "load": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
+                                }
+        
+                                LiquidBounce.commandManager.executeCommands(".localconfig load " + args[3]);
+                                break;
+                            }
+        
+                            case "delete": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
+                                }
+                
+                                file = new File("LiquidBounce-1.8/settings/" + args[3]);
+                
+                                if (!file.exists()) {
+                                    printError("Couldn't find '§4§l" + args[3] + "§c'");
+                                    return;
+                                }
+        
+                                file.delete();
+                                chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
+                                break;
+                            }
+
+                            case "folder": {
+                                folder = new File("LiquidBounce-1.8/settings/");
+                                Java.type("java.awt.Desktop").getDesktop().open(folder);
+                                chat.print("§8▏ §aFolder opened");
+                                break;
+                            }
+                        }
+        
+                        break;
+                    }
+        
+                    case "theme": {
+                        if (args.length <= 2) {
+                            chat.print("§8▏ §7Available subcommands§8: (§7§l7§8)");
+                            chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fsave§7, §fload§7, §fdelete§7, §ffolder§8]");
+                            return;
+                        }
+        
+                        switch (args[2]) {
+                            case "list": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Available subcommands§8: (§7§l2§8)");
+                                    chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§fonline§7, §flocal§8]");
+                                    return;
+                                }
+                                
+                                switch (args[3]) {
+                                    case "online": {
+                                        response = get(baseUrl + "list?type=themes");
+        
+                                        json = toJsonObject(response);
+                                        array = json.get("message").getAsJsonArray();
+                                        
+                                        chat.print("§8▏ §7Online themes: §8(§7" + array.size() + "§8)");
+                                        for (i = 0; i < array.size(); i++) {
+                                            name = array.get(i).getAsString();
+                                            index = i + 1;
+                                            chat.print("§8▏ §8[§7" + index + "§8]§7 " + name);
+                                        }
+                                        break;
+                                    }
+        
+                                    case "local": {
+                                        folder = new File("LiquidBounce-1.8/themes");
+        
+                                        if (!folder.exists()) return;
+        
+                                        array = [];
+                                    
+                                        for (i = 0; i < folder.listFiles().length; i++) {
+                                            if (folder.listFiles()[i].getName().endsWith(".json")) {
+                                                array.push(folder.listFiles()[i].getName().replace(".json", ""))
+                                            }
+                                        }
+                                    
+                                        chat.print("§8▏ §7Local themes: §8(§7" + array.length + "§8)");
+                                        for (i in array) chat.print("§8▏ §8[§7" + (parseInt(i) + 1) + "§8]§7 " + array[i]);
+                                    }
+                                }
+                                break;
+                            }
+        
+                            case "download": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
+                                }
+        
+                                if (downloadFile(baseUrl + "themes/" + args[3] + ".json", new File("LiquidBounce-1.8/themes/" + args[3] + ".json"), true)) {
+                                    chat.print("§8▏ §aDownloaded '§2§l" + args[3] + ".json§a'");
+                                }
+                                break;
+                            }
+        
+                            case "upload": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
+                                }
+        
+                                file = new File("LiquidBounce-1.8/themes/" + args[3] + ".json");
+        
+                                if (!file.exists()) {
+                                    printError("Couldn't find '§4§l" + args[3] + ".json§c'");
+                                    return;
+                                }
+
+                                sfolder = new File("LiquidBounce-1.8/themes/");
+
+                                Java.type("net.minecraft.util.ScreenShotHelper").saveScreenshot(sfolder, args[3] + ".png", mc.displayWidth, mc.displayHeight, mc.getFramebuffer());
+                                previewFile = new File("LiquidBounce-1.8/themes/screenshots/" + args[3] + ".png");
+
+                                uploadFile(baseUrl + "upload?type=preview", previewFile);
+                                
+                                if (new File("LiquidBounce-1.8/themes/screenshots/").exists()) new File("LiquidBounce-1.8/themes/screenshots/").delete()
+        
+                                response = uploadFile(baseUrl + "upload?type=theme", file);
+                    
+                                themeFonts = checkFonts(file, true);
+                                for (i in themeFonts) uploadFile(baseUrl + "upload?type=font&name=" + themeFonts[i][0], themeFonts[i][1]);
+                    
+                                json = toJsonObject(response);
+                                code = json.get("code").getAsInt();
+                                message = json.get("message").getAsString();
+                                
+                                if (code == 0) {
+                                    printError(message);
+                                } else {
+                                    chat.print("§8▏ §aUploaded '§2§l" + file.getName() + "§a'");
+                                }
+                                break;
+                            }
+        
+                            case "save": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
+                                }
+        
+                                file = new File("LiquidBounce-1.8/themes/" + args[3] + ".json");
+                                hudFile = new File("LiquidBounce-1.8/hud.json");
+                
+                                FileUtils.copyFile(hudFile, file);
+                                chat.print("§8▏ §aSaved '§2§l" + file.getName() + "§a'");
+                                break;
+                            }
+        
+                            case "load": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
+                                }
+                
+                                file = new File("LiquidBounce-1.8/themes/" + args[3] + ".json");
+                
+                                if (!file.exists()) {
+                                    printError("Couldn't find '§4§l" + args[3] + ".json§c'");
+                                    return;
+                                }
+                                
+                                Fonts.loadFonts();
+                                config = new HudConfig(file);
+                                LiquidBounce.INSTANCE.getFileManager().loadConfig(config);
                                 chat.print("§8▏ §aLoaded '§2§l" + file.getName() + "§a'");
+                                LiquidBounce.INSTANCE.getFileManager().hudConfig = config;
+                                LiquidBounce.INSTANCE.getFileManager().saveConfig(LiquidBounce.INSTANCE.getFileManager().hudConfig);
+                                break;
                             }
-                            break;
-                        }
-    
-                        case "upload": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-    
-                            file = new File("LiquidBounce-1.8/scripts/" + args[3] + ".js");
-    
-                            if (!file.exists()) {
-                                printError("Couldn't find '§4§l" + args[3] + ".js§c'");
-                                return;
-                            }
-    
-                            response = uploadFile(baseUrl + "upload?type=script", file);
-                        
-                            json = toJsonObject(response);
-                            code = json.get("code").getAsInt();
-                            message = json.get("message").getAsString();
-                            
-                            if (code == 0) {
-                                printError(message);
-                            } else {
-                                chat.print("§8▏ §aUploaded '§2§l" + file.getName() + "§a'");
-                            }
-                            break;
-                        }
-    
-                        case "delete": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-    
-                            file = new File("LiquidBounce-1.8/scripts/" + args[3] + ".js");
-    
-                            if (!file.exists()) {
-                                printError("Couldn't find '§4§l" + args[3] + ".js§c'");
-                                return;
-                            }
-                            LiquidBounce.INSTANCE.getScriptManager().deleteScript(new Script(file));
-    
-                            chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
-                            break;
-                        }
-
-                        case "folder": {
-                            folder = new File("LiquidBounce-1.8/scripts/");
-                            Java.type("java.awt.Desktop").getDesktop().open(folder);
-                            chat.print("§8▏ §aFolder opened");
-                            break;
-                        }
-                    }
-                    break;
-                }
-    
-                case "config": {
-                    if (args.length <= 2) {
-                        chat.print("§8▏ §7Available subcommands§8: (§7§l6§8)");
-                        chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fsave§7, §fload§7, §fdelete§7, §ffolder§8]");
-                        return;
-                    }
-    
-                    switch (args[2]) {
-                        case "list": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Available subcommands§8: (§7§l2§8)");
-                                chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§fonline§7, §flocal§8]");
-                                return;
-                            }
-                            
-                            switch (args[3]) {
-                                case "online": {
-                                    response = get(baseUrl + "list?type=configs");
-    
-                                    json = toJsonObject(response);
-                                    array = json.get("message").getAsJsonArray();
-                                    
-                                    chat.print("§8▏ §7Online configs: §8(§7" + array.size() + "§8)");
-                                    for (i = 0; i < array.size(); i++) {
-                                        name = array.get(i).getAsString();
-                                        index = i + 1;
-                                        chat.print("§8▏ §8[§7" + index + "§8]§7 " + name);
-                                    }
-                                    break;
+        
+                            case "delete": {
+                                if (args.length <= 3) {
+                                    chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
+                                    return;
                                 }
-    
-                                case "local": {
-                                    folder = new File("LiquidBounce-1.8/settings");
-    
-                                    if (!folder.exists()) return;
-    
-                                    array = [];
-                                
-                                    for (i = 0; i < folder.listFiles().length; i++) {
-                                        if (folder.listFiles()[i].getName().endsWith("")) {
-                                            array.push(folder.listFiles()[i].getName())
-                                        }
-                                    }
-                                
-                                    chat.print("§8▏ §7Local configs: §8(§7" + array.length + "§8)");
-                                    for (i in array) chat.print("§8▏ §8[§7" + (parseInt(i) + 1) + "§8]§7 " + array[i]);
-                                }
-                            }
-                            break;
-                        }
-    
-                        case "download": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-    
-                            if (downloadFile(baseUrl + "configs/" + args[3], new File("LiquidBounce-1.8/settings/" + args[3]))) {
-                                chat.print("§8▏ §aDownloaded '§2§l" + args[3] + "§a'");
-                            }
-                            break;
-                        }
-    
-                        case "upload": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-    
-                            file = new File("LiquidBounce-1.8/settings/" + args[3]);
-    
-                            if (!file.exists()) {
-                                printError("Couldn't find '§4§l" + args[3] + "§c'");
-                                return;
-                            }
-    
-                            response = uploadFile(baseUrl + "upload?type=config", file);
-                        
-                            json = toJsonObject(response);
-                            code = json.get("code").getAsInt();
-                            message = json.get("message").getAsString();
-                            
-                            if (code == 0) {
-                                printError(message);
-                            } else {
-                                chat.print("§8▏ §aUploaded '§2§l" + file.getName() + "§a'");
-                            }
-                            break;
-                        }
-    
-                        case "save": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-                            
-                            LiquidBounce.commandManager.executeCommands(".localconfig save " + args[3]);
-                            break;
-                        }
-    
-                        case "load": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-    
-                            LiquidBounce.commandManager.executeCommands(".localconfig load " + args[3]);
-                            break;
-                        }
-    
-                        case "delete": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-            
-                            file = new File("LiquidBounce-1.8/settings/" + args[3]);
-            
-                            if (!file.exists()) {
-                                printError("Couldn't find '§4§l" + args[3] + "§c'");
-                                return;
-                            }
-    
-                            file.delete();
-                            chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
-                            break;
-                        }
-
-                        case "folder": {
-                            folder = new File("LiquidBounce-1.8/settings/");
-                            Java.type("java.awt.Desktop").getDesktop().open(folder);
-                            chat.print("§8▏ §aFolder opened");
-                            break;
-                        }
-                    }
-    
-                    break;
-                }
-    
-                case "theme": {
-                    if (args.length <= 2) {
-                        chat.print("§8▏ §7Available subcommands§8: (§7§l6§8)");
-                        chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§flist§7, §fdownload§7, §fupload§7, §fsave§7, §fload§7, §fdelete§7, §ffolder§8]");
-                        return;
-                    }
-    
-                    switch (args[2]) {
-                        case "list": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Available subcommands§8: (§7§l2§8)");
-                                chat.print("§8▏ §f" + prefix + Java.from(args).join(" ") + " §8[§fonline§7, §flocal§8]");
-                                return;
-                            }
-                            
-                            switch (args[3]) {
-                                case "online": {
-                                    response = get(baseUrl + "list?type=themes");
-    
-                                    json = toJsonObject(response);
-                                    array = json.get("message").getAsJsonArray();
-                                    
-                                    chat.print("§8▏ §7Online themes: §8(§7" + array.size() + "§8)");
-                                    for (i = 0; i < array.size(); i++) {
-                                        name = array.get(i).getAsString();
-                                        index = i + 1;
-                                        chat.print("§8▏ §8[§7" + index + "§8]§7 " + name);
-                                    }
-                                    break;
-                                }
-    
-                                case "local": {
-                                    folder = new File("LiquidBounce-1.8/themes");
-    
-                                    if (!folder.exists()) return;
-    
-                                    array = [];
-                                
-                                    for (i = 0; i < folder.listFiles().length; i++) {
-                                        if (folder.listFiles()[i].getName().endsWith(".json")) {
-                                            array.push(folder.listFiles()[i].getName().replace(".json", ""))
-                                        }
-                                    }
-                                
-                                    chat.print("§8▏ §7Local themes: §8(§7" + array.length + "§8)");
-                                    for (i in array) chat.print("§8▏ §8[§7" + (parseInt(i) + 1) + "§8]§7 " + array[i]);
-                                }
-                            }
-                            break;
-                        }
-    
-                        case "download": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-    
-                            if (downloadFile(baseUrl + "themes/" + args[3] + ".json", new File("LiquidBounce-1.8/themes/" + args[3] + ".json"), true)) {
-                                chat.print("§8▏ §aDownloaded '§2§l" + args[3] + ".json§a'");
-                            }
-                            break;
-                        }
-    
-                        case "upload": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-    
-                            file = new File("LiquidBounce-1.8/themes/" + args[3] + ".json");
-    
-                            if (!file.exists()) {
-                                printError("Couldn't find '§4§l" + args[3] + ".json§c'");
-                                return;
-                            }
-
-                            sfolder = new File("LiquidBounce-1.8/themes/");
-
-                            Java.type("net.minecraft.util.ScreenShotHelper").saveScreenshot(sfolder, args[3] + ".png", mc.displayWidth, mc.displayHeight, mc.getFramebuffer());
-                            previewFile = new File("LiquidBounce-1.8/themes/screenshots/" + args[3] + ".png");
-
-                            uploadFile(baseUrl + "upload?type=preview", previewFile);
-                            
-                            if (new File("LiquidBounce-1.8/themes/screenshots/").exists()) new File("LiquidBounce-1.8/themes/screenshots/").delete()
-    
-                            response = uploadFile(baseUrl + "upload?type=theme", file);
                 
-                            themeFonts = checkFonts(file, true);
-                            for (i in themeFonts) uploadFile(baseUrl + "upload?type=font&name=" + themeFonts[i][0], themeFonts[i][1]);
+                                file = new File("LiquidBounce-1.8/themes/" + args[3] + ".json");
                 
-                            json = toJsonObject(response);
-                            code = json.get("code").getAsInt();
-                            message = json.get("message").getAsString();
-                            
-                            if (code == 0) {
-                                printError(message);
-                            } else {
-                                chat.print("§8▏ §aUploaded '§2§l" + file.getName() + "§a'");
+                                if (!file.exists()) {
+                                    printError("Couldn't find '§4§l" + file.getName() + "§c'");
+                                    return;
+                                }
+                
+                                file.delete();
+                                chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
+                                break;
                             }
-                            break;
-                        }
-    
-                        case "save": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-    
-                            file = new File("LiquidBounce-1.8/themes/" + args[3] + ".json");
-                            hudFile = new File("LiquidBounce-1.8/hud.json");
-            
-                            FileUtils.copyFile(hudFile, file);
-                            chat.print("§8▏ §aSaved '§2§l" + file.getName() + "§a'");
-                            break;
-                        }
-    
-                        case "load": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-            
-                            file = new File("LiquidBounce-1.8/themes/" + args[3] + ".json");
-            
-                            if (!file.exists()) {
-                                printError("Couldn't find '§4§l" + args[3] + ".json§c'");
-                                return;
-                            }
-                            
-                            Fonts.loadFonts();
-                            config = new HudConfig(file);
-                            LiquidBounce.INSTANCE.getFileManager().loadConfig(config);
-                            chat.print("§8▏ §aLoaded '§2§l" + file.getName() + "§a'");
-                            LiquidBounce.INSTANCE.getFileManager().hudConfig = config;
-                            LiquidBounce.INSTANCE.getFileManager().saveConfig(LiquidBounce.INSTANCE.getFileManager().hudConfig);
-                            break;
-                        }
-    
-                        case "delete": {
-                            if (args.length <= 3) {
-                                chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8]");
-                                return;
-                            }
-            
-                            file = new File("LiquidBounce-1.8/themes/" + args[3] + ".json");
-            
-                            if (!file.exists()) {
-                                printError("Couldn't find '§4§l" + file.getName() + "§c'");
-                                return;
-                            }
-            
-                            file.delete();
-                            chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
-                            break;
-                        }
 
-                        case "folder": {
-                            folder = new File("LiquidBounce-1.8/themes/");
-                            Java.type("java.awt.Desktop").getDesktop().open(folder);
-                            chat.print("§8▏ §aFolder opened");
-                            break;
+                            case "folder": {
+                                folder = new File("LiquidBounce-1.8/themes/");
+                                Java.type("java.awt.Desktop").getDesktop().open(folder);
+                                chat.print("§8▏ §aFolder opened");
+                                break;
+                            }
                         }
+                        break;
                     }
-                    break;
                 }
             }
         } catch (e) {
@@ -477,6 +587,11 @@ command = {
             }
         }
     }
+}
+
+function findScript(name, author) {
+    scripts = Java.from(scriptManager.getScripts()); 
+    for (i in scripts) if (scripts[i].scriptName == name && scripts[i].scriptAuthor == author) return scripts[i]; return null;
 }
 
 function uploadFile(url, file) {
