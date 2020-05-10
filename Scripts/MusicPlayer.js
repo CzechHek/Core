@@ -15,7 +15,7 @@ command = {
     commands: ["MusicPlayer", "mp"],
     subcommands: ["play", "stop", "list", "folder"],
     author: "natte",
-    version: 1.0,
+    version: 1.1,
     onExecute: function (args) {
         try {
             setup();
@@ -102,6 +102,12 @@ command = {
     },
     onLoad: function () {
         setup();
+    },
+    onUnload: function () {
+        if (thread != null) {
+            thread.stop();
+            thread = null;
+        }
     }
 }
 
