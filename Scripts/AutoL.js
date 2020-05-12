@@ -1,7 +1,7 @@
 var target = null; //EntityLivingBase?
 list = [
-    onlyPlayer = value.createBoolean("OnlyPlayer", true);
-    delay = value.createInteger("Delay", 1000, 0, 5000),
+    onlyPlayer = value.createBoolean("OnlyPlayer", true),
+    delay = value.createInteger("Delay", 1000, 0, 5000)
 ]
 
 module = {
