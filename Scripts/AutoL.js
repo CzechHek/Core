@@ -17,14 +17,12 @@ module = {
             target = entity;
     },
     onUpdate: function () {// I don't know if xor operator works to boolean in JavaScript, I know it's avilable in Java.
-        if (target && target.isEntityAlive() ^ mc.thePlayer.isEntityAlive() && (target instanceof EntityPlayer || !onlyPlayer.get()))
-            if (msTimer.hasTimePassed(delay.get())) {//I'll add a new mode after a while
-                mc.thePlayer.sendChatMessage("@L " + target.getName());
-                msTimer.reset();
-                target = null;
-            }
+        if (target && !target.isEntityAlive() && mc.thePlayer.isEntityAlive() && msTimer.hasTimePassed(delay.get()) {
+            mc.thePlayer.sendChatMessage("@L " + target.getName());
+            msTimer.reset();
+            target = null;
         }
-    }
+    },
     onLoad: function () {
         msTimer = new MSTimer();
     }
