@@ -1,5 +1,3 @@
-showCountValue = value.createBoolean("ShowCount", true),
-
 count = 0;
 
 /**
@@ -38,8 +36,8 @@ module = {
     author: "Tsikyng Kirisame",
     version: 0.1,
     category: "Misc",
-    values: list,
-    tag: showCountValue.get() ? String(count) : "",
+    values: [showCountValue = value.createBoolean("ShowCount", true)],
+    tag: showCountValue.get() ? count.toString() : "",
     onPacket: function (event) {
         if (!(event.getPacket() instanceof S02PacketChat)) return;
         
