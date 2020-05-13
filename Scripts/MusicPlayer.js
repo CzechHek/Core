@@ -123,7 +123,7 @@ command = {
                     for (i = 0; i < files.length; i++) {
                         file = files[i]; name = file.getName();
 
-                        if (name.endsWith(".mp3") || name.endsWith(".MP3")) array.push(name);
+                        if (name.toLowerCase().endsWith(".mp3")) array.push(name);
                     }
 
                     chat.print("§8▏ §7Local songs: §8(§7" + array.length + "§8)");
