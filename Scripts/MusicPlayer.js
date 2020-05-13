@@ -119,13 +119,11 @@ command = {
                 case "list": {
                     files = folder.listFiles();
                     array = [];
-
-                    for (i = 0; i < files.length; i++) {
-                        file = files[i]; name = file.getName();
-
+                    
+                    for (i in files) {
+                        name = files[i].getName();
                         if (name.toLowerCase().endsWith(".mp3")) array.push(name);
                     }
-
                     chat.print("§8▏ §7Local songs: §8(§7" + array.length + "§8)");
                     for (i in array) chat.print("§8▏ §8[§7" + (parseInt(i) + 1) + "§8]§7 " + array[i]);
                     break;
