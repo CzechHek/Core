@@ -1,4 +1,4 @@
-//Core 3.4 - Simple, yet powerful ScriptAPI base
+//Core 3.5 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -12,7 +12,7 @@ function Module(m) {
     this.getDescription = function () {return m.description || ""};
     this.getCategory = function () {return m.category || "Fun"};
     m.tag && (this.getTag = function () {return m.tag});
-    m.values && (this.addValues = function (e) {for (i in m.values) e.add(m.values[i])});
+    m.values && (this.addValues = function (e) {for (i in (Array.isArray(m.values) ? m.values : m.values = [m.values])) e.add(m.values[i])});
     m.onEnable && (this.onEnable = function () {m.onEnable()});
     m.onDisable && (this.onDisable = function () {m.onDisable()});
     m.onUpdate && (this.onUpdate = function () {m.onUpdate()});
@@ -131,14 +131,12 @@ for (i in coreContainers) eval(coreContainers[i] + "=Java.type(\"net.minecraft.c
 //Other
 BlockPos = Java.type("net.minecraft.util.BlockPos"); EnumFacing = Java.type("net.minecraft.util.EnumFacing"); Vec3 = Java.type("net.minecraft.util.Vec3"); Vec3i = Java.type("net.minecraft.util.Vec3i"); Vec4b = Java.type("net.minecraft.util.Vec4b"); Vector3d = Java.type("net.minecraft.util.Vector3d"); AxisAlignedBB = Java.type("net.minecraft.util.AxisAlignedBB"); LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); AdaptedModule = Java.type("net.ccbluex.liquidbounce.script.api.module.AdaptedModule");
 
-function onLoad() {
+function onEnable() {
     for (i in module) Object.keys(module[i]).length && (modulelist[i] = moduleManager.registerModule(new Module(module[i])), module[i] && module[i].onLoad && module[i].onLoad());
     for (i in command) Object.keys(command[i]).length && (commandlist[i] = commandManager.registerCommand(new Command(command[i])), command[i] && command[i].onLoad && command[i].onLoad());
-}
 
-function onEnable() {
     //Modules
-    for (i in modules = LiquidBounce.moduleManager.getModules().toArray()) eval(modules[i].getName() + "Class=modules[i]");
+    for (i in modules = LiquidBounce.moduleManager.modules.toArray()) eval(modules[i].getName() + "Class=modules[i]");
     for (i in modules = moduleManager.getModules().toArray()) eval(modules[i].getName() + "Module=modules[i]"); modules = undefined;
 }
 
