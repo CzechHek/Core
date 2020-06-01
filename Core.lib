@@ -145,17 +145,18 @@ function getNearestTarget() {
 //Others
 LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); AdaptedValue = Java.type("net.ccbluex.liquidbounce.script.api.module.AdaptedValue")
 
-function onEnable() {
+function onLoad() {
     module.forEach(function (m) {Object.keys(m).length && moduleManager.registerModule(new Module(m))});
     command.forEach(function (c) {Object.keys(c).length && commandManager.registerCommand(new Command(c))});
+}
 
+function onEnable() {
     //Modules
     LiquidBounce.moduleManager.modules.forEach(function (v) {eval(v.name + "Class=v")});
     moduleManager.getModules().forEach(function (v) {eval(v.name + "Module=v")});
 
     module.forEach(function (m) {Object.keys(m).length && m.onLoad && m.onLoad()});
     command.forEach(function (c) {Object.keys(c).length && c.onLoad && c.onLoad()});
-
 }
 
 function onDisable() {
