@@ -34,7 +34,7 @@ function Module(m) {
 }
 
 function Command(c) {
-    this.getName = function () {return c.commands ? c.commands[0] : "Command"};
+    this.getName = function () {return c.commands.length ? c.commands[0] : "Command"};
     this.getAliases = function () {return c.commands || []};
     this.execute = function (a) {
         prefix = LiquidBounce.commandManager.prefix;
