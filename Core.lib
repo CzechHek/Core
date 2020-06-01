@@ -1,4 +1,4 @@
-//Core 4.7 - Simple, yet powerful ScriptAPI base
+//Core 4.8 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -118,6 +118,10 @@ function getNearestTarget() {
     return targetList[0];
 }
 
+function rand(max, min) {
+    return Math.random() * (max - min) + min;
+}
+
 //Items
 ["Item","ItemArmor","ItemArmorStand","ItemBed","ItemBlock","ItemBoat","ItemBook","ItemBow","ItemBucket","ItemBucketMilk","ItemCarrotOnAStick","ItemCoal","ItemDoor","ItemDye","ItemEditableBook","ItemEgg","ItemEnchantedBook","ItemEnderEye","ItemEnderPearl","ItemExpBottle","ItemFireball","ItemFirework","ItemFireworkCharge","ItemFishingRod","ItemFlintAndSteel","ItemFood","ItemGlassBottle","ItemHangingEntity","ItemHoe","ItemLead","ItemMapBase","ItemMinecart","ItemMonsterPlacer","ItemNameTag","ItemPotion","ItemRecord","ItemRedstone","ItemReed","ItemSaddle","ItemSeeds","ItemShears","ItemSign","ItemSimpleFoiled","ItemSkull","ItemSnowball","ItemSword","ItemTool","ItemWritableBook","ItemAxe","ItemPickaxe","ItemSpade","ItemBanner","ItemCloth","ItemColored","ItemLeaves","ItemMultiTexture","ItemPiston","ItemSlab","ItemSnow"].forEach(function (v) {eval(v + "=Java.type(\"net.minecraft.item." + v + "\")")}); Items = Java.type("net.minecraft.init.Items");
 
@@ -158,11 +162,11 @@ function onEnable() {
     LiquidBounce.moduleManager.modules.forEach(function (v) {eval(v.name + "Class=v")});
     moduleManager.getModules().forEach(function (v) {eval(v.name + "Module=v")});
 
-    module.forEach(function (m) {Object.keys(m).length && m.onLoad && m.onLoad()});
-    command.forEach(function (c) {Object.keys(c).length && c.onLoad && c.onLoad()});
+    module.forEach(function (m) {m.onLoad && m.onLoad()});
+    command.forEach(function (c) {c.onLoad && c.onLoad()});
 }
 
 function onDisable() {
-    module.forEach(function (m) {Object.keys(m).length && (m.onUnload && m.onUnload()), moduleManager.unregisterModule(new Module(m))});
-    command.forEach(function (c) {Object.keys(c).length && (c.onUnload && c.onUnload()), commandManager.unregisterCommand(new Command(c))});
+    module.forEach(function (m) {Object.keys(m).length && (m.onUnload && m.onUnload(), moduleManager.unregisterModule(new Module(m)))});
+    command.forEach(function (c) {Object.keys(c).length && (c.onUnload && c.onUnload(), commandManager.unregisterCommand(new Command(c)))});
 }
