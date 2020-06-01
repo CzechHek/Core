@@ -33,16 +33,11 @@ command = {
     commands: ["Manager", "m"],
     subcommands: ["script", "config", "theme", "music"],
     author: "natte, CzechHek",
-    version: 1.71,
+    version: 1.72,
     onExecute: function (args) {
         if (!new File("LiquidBounce-1.8/themes/").exists()) new File("LiquidBounce-1.8/themes/").mkdir();
         if (!new File("LiquidBounce-1.8/settings/").exists()) new File("LiquidBounce-1.8/settings/").mkdir();
-        
-        if (findScript("MusicPlayer", "natte") != null) { 
-            musicPlayerInstalled = true;
-        } else {
-            musicPlayerInstalled = false;
-        }
+        musicPlayerInstalled = !!findScript("MusicPlayer", "natte");
 
         try {
             if (musicPlayerInstalled && args[1] == "music") {
