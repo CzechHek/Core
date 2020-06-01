@@ -1,9 +1,0 @@
-Timer = Java.type("java.util.Timer");
-
-function interval(ms, func) {
-	return timer = new Timer("setInterval", true), timer.schedule(func, 0, ms), timer;
-}
-
-function delay(ms, func) {
-	return timer = new Timer("setTimeout", true), timer.schedule(func, ms), timer;
-}
