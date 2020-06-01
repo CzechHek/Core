@@ -1,4 +1,4 @@
-//Core 4.6 - Simple, yet powerful ScriptAPI base
+//Core 4.7 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -28,6 +28,9 @@ function Module(m) {
     m.onStepConfirm && (this.onStepConfirm = function () {m.onStepConfirm()});
     m.onWorld && (this.onWorld = function (e) {m.onWorld(e)});
     m.onSession && (this.onSession = function () {m.onSession()});
+    m.onClickBlock && (this.onClickBlock = function (e) {m.onClickBlock(e)});
+    m.onStrafe && (this.onStrafe = function (e) {m.onStrafe(e)});
+    m.onSlowDown && (this.onSlowDown = function (e) {m.onSlowDown(e)});
 }
 
 function Command(c) {
