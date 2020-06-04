@@ -2,9 +2,9 @@ StaticClass = Java.type("jdk.internal.dynalink.beans.StaticClass"); FileOutputSt
 
 command = {
     commands: ["MusicPlayer", "mp"],
-    subcommands: ["play", "stop", "youtube", "list", "folder"],
+    subcommands: {play:{name:"name",url:"link"},stop:"",youtube:"query",list:"",folder:""},
     author: "natte",
-    version: 1.2,
+    version: 1.3,
     onExecute: function (args) {
         try {
             setup();
@@ -12,11 +12,6 @@ command = {
 
             switch(args[1]) {
                 case "play": {
-                    if (args.length <= 2) {
-                        chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fname§8/§furl§8]");
-                        return;
-                    }
-
                     if (thread != null) {
                         chat.print("§8▏ §cPlayer is already playing");
                         return;
@@ -62,11 +57,6 @@ command = {
                 }
 
                 case "youtube": {
-                    if (args.length <= 2) {
-                        chat.print("§8▏ §7Usage§8: §f" + prefix + Java.from(args).join(" ") + " §8[§fquery§8]");
-                        return;
-                    }
-
                     new Thread(new Runnable({
                         run: function () {
                             query = java.lang.String.join(" ", Arrays.copyOfRange(args, 2, args.length));
