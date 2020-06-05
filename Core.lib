@@ -1,4 +1,4 @@
-//Core 4.8 - Simple, yet powerful ScriptAPI base
+//Core 4.9 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -34,14 +34,14 @@ function Module(m) {
 }
 
 function Command(c) {
-    this.getName = function () {return c.commands.length ? c.commands[0] : "Command"};
+    this.getName = function () {return c.commands && c.commands.length ? c.commands[0] : "Command"};
     this.getAliases = function () {return c.commands || []};
     this.execute = function (a) {
         prefix = LiquidBounce.commandManager.prefix;
         args = []; for (i in a) args.push(a[i].toLowerCase());
         args[0] = args[0].replace(prefix, "");
         subcommands = []; error = ""; propertyindex = 100;
-        commands = []; c.commands.forEach(function (c) {commands.push(c.toLowerCase())});
+        commands = []; this.getAliases().forEach(function (c) {commands.push(c.toLowerCase())});
 
         if (c.subcommands) {
             object = c.subcommands;
@@ -101,9 +101,10 @@ function timeout(ms, func) {
 }
 
 function setValues(module, values) {
-    for (i in (values = Array.isArray(values) ? values : [values])) values[i] instanceof AdaptedValue && (values[i] = values[i].value);
+    modulevalues = [];
+    (Array.isArray(values) ? values : [values]).forEach(function (v) {modulevalues.push(v instanceof AdaptedValue ? v.value : v)});
     (valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
-    valuesField.set(module, Java.to(values, List));
+    valuesField.set(module, Java.to(modulevalues, List)); modulevalues = undefined;
 }
 
 function getValues(module) {
