@@ -1,43 +1,131 @@
-api_version=2
+//Core 4.11 - Simple, yet powerful ScriptAPI base
 
-var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [], module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
+var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
+module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
 
-script = registerScript({name: scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Module", version: (scriptVersion || module[0].version || command[0].version || 1).toString(), authors: (scriptAuthor || module[0].author || command[0].author || "Author").split(",")});
+script.setScriptName((scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Module").toString());
+script.setScriptAuthors([(scriptAuthor || module[0].author || command[0].author || "Author").toString()]);
+script.setScriptVersion((scriptVersion || module[0].version || command[0].version || 1).toString());
 
-module.forEach(function (m) {
-    settingsObject = {};
-    for (i in m.values) eval("settingsObject.value" + i + "=m.values[" + i + "]");
-    script.registerModule({
-        name: m.name || "Module",
-        category: m.category || "Fun",
-        description: m.description || "",
-        settings: settingsObject
-    }, function (module) {
-        module.on("load", function () {
-            LiquidBounce.moduleManager.modules.forEach(function (v) {eval(v.name + "Class=v")});
-            moduleManager.getModules().forEach(function (v) {eval(v.name + "Module=v")});
-            m.onLoad();
-        });
-        m.onEnable && module.on("enable", function () {m.onEnable()});
-        m.onDisable && module.on("disable", function () {m.onDisable()});
-        m.onUpdate && module.on("update", function () {m.onUpdate()});
-        m.onMotion && module.on("motion", function (e) {m.onMotion(e)});
-        m.onRender2D && module.on("render2D", function (e) {m.onRender2D(e)});
-        m.onRender3D && module.on("render3D", function (e) {m.onRender3D(e)});
-        m.onAttack && module.on("attack", function (e) {m.onAttack(e)});
-        m.onJump && module.on("jump", function (e) {m.onJump(e)});
-        m.onPacket && module.on("packet", function (e) {m.onPacket(e)});
-        m.onKey && module.on("key", function (e) {m.onKey(e)});
-        m.onMove && module.on("move", function (e) {m.onMove(e)});
-        m.onStep && module.on("step", function (e) {m.onStep(e)});
-        m.onStepConfirm && module.on("stepConfirm", function () {m.onStepConfirm()});
-        m.onWorld && module.on("world", function (e) {m.onWorld(e)});
-        m.onSession && module.on("session", function () {m.onSession()});
-        m.onClickBlock && module.on("clickBlock", function (e) {m.onClickBlock(e)});
-        m.onStrafe && module.on("strafe", function (e) {m.onStrafe(e)});
-        m.onSlowDown && module.on("slowDown", function (e) {m.onSlowDown(e)});
-    })
-});
+function Module(m) {
+    this.getName = function () {return m.name || "Module"};
+    this.getDescription = function () {return m.description || ""};
+    this.getCategory = function () {return m.category || "Fun"};
+    m.tag && (this.getTag = function () {return m.tag});
+    m.values && (this.addValues = function (e) {for (i in (Array.isArray(m.values) ? m.values : [m.values])) e.add(m.values[i])});
+    m.onEnable && (this.onEnable = function () {m.onEnable()});
+    m.onDisable && (this.onDisable = function () {m.onDisable()});
+    m.onUpdate && (this.onUpdate = function () {m.onUpdate()});
+    m.onMotion && (this.onMotion = function (e) {m.onMotion(e)});
+    m.onRender2D && (this.onRender2D = function (e) {m.onRender2D(e)});
+    m.onRender3D && (this.onRender3D = function (e) {m.onRender3D(e)});
+    m.onAttack && (this.onAttack = function (e) {m.onAttack(e)});
+    m.onJump && (this.onJump = function (e) {m.onJump(e)});
+    m.onPacket && (this.onPacket = function (e) {m.onPacket(e)});
+    m.onKey && (this.onKey = function (e) {m.onKey(e)});
+    m.onMove && (this.onMove = function (e) {m.onMove(e)});
+    m.onStep && (this.onStep = function (e) {m.onStep(e)});
+    m.onStepConfirm && (this.onStepConfirm = function () {m.onStepConfirm()});
+    m.onWorld && (this.onWorld = function (e) {m.onWorld(e)});
+    m.onSession && (this.onSession = function () {m.onSession()});
+    m.onClickBlock && (this.onClickBlock = function (e) {m.onClickBlock(e)});
+    m.onStrafe && (this.onStrafe = function (e) {m.onStrafe(e)});
+    m.onSlowDown && (this.onSlowDown = function (e) {m.onSlowDown(e)});
+}
+
+function Command(c) {
+    this.getName = function () {return c.commands && c.commands.length ? c.commands[0] : "Command"};
+    this.getAliases = function () {return c.commands || []};
+    this.execute = function (a) {
+        prefix = LiquidBounce.commandManager.prefix;
+        args = []; for (i in a) args.push(a[i].toLowerCase());
+        args[0] = args[0].replace(prefix, "");
+        subcommands = []; error = ""; propertyindex = 100;
+        commands = []; this.getAliases().forEach(function (c) {commands.push(c.toLowerCase())});
+
+        if (c.subcommands) {
+            object = c.subcommands;
+            for (i in arg = args.slice(1)) {
+                if (~Object.keys(object).indexOf(arg[i])) {
+                    if ((property = eval("object." + arg[i])) instanceof Object) object = property;
+                    else {subcommands = [property]; propertyindex = parseInt(i) + (property ? 3 : 2); break};
+                } else {error = arg[i]; args.length = parseInt(i) + 1; break};
+            } !subcommands.length && (subcommands = Object.keys(object));
+        }
+
+        if (subcommands.length && args.length < propertyindex) {
+            chat.print("");
+            args.length == 1 && chat.print("§8▏ §7§l" + this.getName() + " §8v§l" + (c.version || scriptVersion).toFixed(1) + " §7by §8§l" + (c.author || scriptAuthor));
+            args.length != propertyindex - 1 ? (chat.print("§8▏ §7Valid subcommands§8: (§7§l" + subcommands.length + "§8)"), chat.print("§8▏ §f" + prefix + args.join(" ") + " §8[§f" + subcommands.join("§7, §f") + "§8]")) : chat.print("§8▏ §7Usage§8: §f" + prefix + args.join(" ") + " §8„§7" + subcommands[0] + "§8“");
+            commands.length > 1 && args.length == 1 && (chat.print("§8▏ §7Available aliases§8: (§7§l" + commands.length + "§8)"), chat.print("§8▏ §f" + prefix + commands.join("§7, §f" + prefix)));
+            error && chat.print("§4▏ §cInvalid argument: " + prefix + args.join(" ") + " „§4§l" + error + "§c“");
+        } else if (c.onExecute) c.onExecute(args);
+    }
+}
+
+function isMovingHorizontally(entity) {
+    return entity && entity != mc.thePlayer ? entity.lastTickPosX != entity.posX || entity.lastTickPosZ != entity.posZ : !!(mc.thePlayer.movementInput.moveForward || mc.thePlayer.movementInput.moveStrafe);
+}
+
+function isMovingVertically(entity) {
+    return entity && entity != mc.thePlayer ? entity.lastTickPosY != entity.posY : mc.thePlayer.movementInput.jump;
+}
+
+function isMoving(entity) {
+    return isMovingHorizontally(entity) || isMovingVertically(entity);
+}
+
+function isInputHorizontally() {
+    return Keyboard.isKeyDown(mc.gameSettings.keyBindForward.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindLeft.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindBack.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindRight.getKeyCode());
+}
+
+function isInputVertically() {
+    return Keyboard.isKeyDown(mc.gameSettings.keyBindJump.getKeyCode());
+}
+
+function move(horizontal, vertical, timer, event, ignoreInput) {
+    horizontal = ignoreInput ? horizontal : isInputHorizontally() ? horizontal : 0;
+    vertical = ignoreInput ? vertical : isInputHorizontally() ? vertical : null;
+    yaw = MovementUtils.getDirection();
+    timer != null && timer > 0 && (mc.timer.timerSpeed = timer);
+    horizontal != null && (mc.thePlayer.motionX = -Math.sin(Math.PI / 180 * yaw) * speed, mc.thePlayer.motionZ = Math.cos(Math.PI / 180 * yaw) * speed) && event && (event.setX(mc.thePlayer.motionX), event.setZ(mc.thePlayer.motionZ));
+    vertical != null && (mc.thePlayer.motionY = vertical) && event && event.setY(vertical);
+}
+
+function interval(ms, func) {
+	return timer = new Timer("setInterval", true), timer.schedule(func, 0, ms), timer;
+}
+
+function timeout(ms, func) {
+	return timer = new Timer("setTimeout", true), timer.schedule(func, ms), timer;
+}
+
+function setValues(module, values) {
+    if (!(module instanceof ScriptModule)) return
+    valuesmap = new HashMap();
+    (Array.isArray(values) ? values : [values]).forEach(function (v, i) {valuesmap.put(i, v instanceof Value ? v : v.getValue())});
+    valuesmap = new LinkedHashMap(valuesmap);
+    (valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
+    valuesField.set(module, valuesmap); valuesmap = undefined;
+}
+
+function getValues(module) {
+    if (module instanceof ScriptModule) {
+        (valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
+        return Java.from(valuesField.get(module).values());
+    } else return module.values;
+}
+
+function getNearestTarget() {
+    targetList = [];
+    mc.theWorld.loadedEntityList.forEach(function (e) {EntityUtils.isSelected(e, true) && targetList.push(e)});
+    targetList.sort(function (a,b) {return mc.thePlayer.getDistanceToEntity(a) - mc.thePlayer.getDistanceToEntity(b)});
+    return targetList[0];
+}
+
+function rand(max, min) {
+    return Math.random() * (max - min) + min;
+}
 
 //Items
 ["Item","ItemArmor","ItemArmorStand","ItemBed","ItemBlock","ItemBoat","ItemBook","ItemBow","ItemBucket","ItemBucketMilk","ItemCarrotOnAStick","ItemCoal","ItemDoor","ItemDye","ItemEditableBook","ItemEgg","ItemEnchantedBook","ItemEnderEye","ItemEnderPearl","ItemExpBottle","ItemFireball","ItemFirework","ItemFireworkCharge","ItemFishingRod","ItemFlintAndSteel","ItemFood","ItemGlassBottle","ItemHangingEntity","ItemHoe","ItemLead","ItemMapBase","ItemMinecart","ItemMonsterPlacer","ItemNameTag","ItemPotion","ItemRecord","ItemRedstone","ItemReed","ItemSaddle","ItemSeeds","ItemShears","ItemSign","ItemSimpleFoiled","ItemSkull","ItemSnowball","ItemSword","ItemTool","ItemWritableBook","ItemAxe","ItemPickaxe","ItemSpade","ItemBanner","ItemCloth","ItemColored","ItemLeaves","ItemMultiTexture","ItemPiston","ItemSlab","ItemSnow"].forEach(function (v) {eval(v + "=Java.type(\"net.minecraft.item." + v + "\")")}); Items = Java.type("net.minecraft.init.Items");
@@ -67,4 +155,22 @@ module.forEach(function (m) {
 ["ActiveRenderInfo","BlockFluidRenderer","BlockModelRenderer","BlockModelShapes","BlockRendererDispatcher","ChestRenderer","ChunkRenderContainer","DestroyBlockProgress","EntityRenderer","EnumFaceDirection","GLAllocation","GlStateManager","IImageBuffer","ImageBufferDownload","InventoryEffectRenderer","ItemMeshDefinition","ItemModelMesher","ItemRenderer","OpenGlHelper","RegionRenderCache","RegionRenderCacheBuilder","RenderGlobal","RenderHelper","RenderList","StitcherException","Tessellator","ThreadDownloadImageData","VboRenderList","VertexBufferUploader","ViewFrustum","WorldRenderer","WorldVertexBufferUploader","block.model.BakedQuad","block.model.BlockFaceUV","block.model.BlockPart","block.model.BlockPartFace","block.model.BlockPartRotation","block.model.BreakingFour","block.model.FaceBakery","block.model.ItemCameraTransforms","block.model.ItemModelGenerator","block.model.ItemTransformVec3f","block.model.ModelBlock","block.model.ModelBlockDefinition","block.statemap.BlockStateMapper","block.statemap.DefaultStateMapper","block.statemap.IStateMapper","block.statemap.StateMap","block.statemap.StateMapperBase","chunk.ChunkCompileTaskGenerator","chunk.ChunkRenderDispatcher","chunk.ChunkRenderWorker","chunk.CompiledChunk","chunk.IRenderChunkFactory","chunk.ListChunkFactory","chunk.ListedRenderChunk","chunk.RenderChunk","chunk.SetVisibility","chunk.VboChunkFactory","chunk.VisGraph","culling.ClippingHelper","culling.ClippingHelperImpl","culling.Frustum","culling.ICamera","entity.ArmorStandRenderer","entity.Render","entity.RenderArrow","entity.RenderBat","entity.RenderBiped","entity.RenderBlaze","entity.RenderBoat","entity.RenderCaveSpider","entity.RenderChicken","entity.RenderCow","entity.RenderCreeper","entity.RenderDragon","entity.RenderEnderman","entity.RenderEndermite","entity.RenderEntity","entity.RenderEntityItem","entity.RendererLivingEntity","entity.RenderFallingBlock","entity.RenderFireball","entity.RenderFish","entity.RenderGhast","entity.RenderGiantZombie","entity.RenderGuardian","entity.RenderHorse","entity.RenderIronGolem","entity.RenderItem","entity.RenderLeashKnot","entity.RenderLightningBolt","entity.RenderLiving","entity.RenderMagmaCube","entity.RenderManager","entity.RenderMinecart","entity.RenderMinecartMobSpawner","entity.RenderMooshroom","entity.RenderOcelot","entity.RenderPainting","entity.RenderPig","entity.RenderPigZombie","entity.RenderPlayer","entity.RenderPotion","entity.RenderRabbit","entity.RenderSheep","entity.RenderSilverfish","entity.RenderSkeleton","entity.RenderSlime","entity.RenderSnowball","entity.RenderSnowMan","entity.RenderSpider","entity.RenderSquid","entity.RenderTntMinecart","entity.RenderTNTPrimed","entity.RenderVillager","entity.RenderWitch","entity.RenderWither","entity.RenderWolf","entity.RenderXPOrb","entity.RenderZombie","entity.layers.LayerArmorBase","entity.layers.LayerArrow","entity.layers.LayerBipedArmor","entity.layers.LayerCape","entity.layers.LayerCreeperCharge","entity.layers.LayerCustomHead","entity.layers.LayerDeadmau5Head","entity.layers.LayerEnderDragonDeath","entity.layers.LayerEnderDragonEyes","entity.layers.LayerEndermanEyes","entity.layers.LayerHeldBlock","entity.layers.LayerHeldItem","entity.layers.LayerHeldItemWitch","entity.layers.LayerIronGolemFlower","entity.layers.LayerMooshroomMushroom","entity.layers.LayerRenderer","entity.layers.LayerSaddle","entity.layers.LayerSheepWool","entity.layers.LayerSlimeGel","entity.layers.LayerSnowmanHead","entity.layers.LayerSpiderEyes","entity.layers.LayerVillagerArmor","entity.layers.LayerWitherAura","entity.layers.LayerWolfCollar","texture.AbstractTexture","texture.DynamicTexture","texture.IIconCreator","texture.ITextureObject","texture.ITickable","texture.ITickableTextureObject","texture.LayeredColorMaskTexture","texture.LayeredTexture","texture.SimpleTexture","texture.Stitcher","texture.TextureAtlasSprite","texture.TextureClock","texture.TextureCompass","texture.TextureManager","texture.TextureMap","texture.TextureUtil","tileentity.RenderEnderCrystal","tileentity.RenderItemFrame","tileentity.RenderWitherSkull","tileentity.TileEntityBannerRenderer","tileentity.TileEntityBeaconRenderer","tileentity.TileEntityChestRenderer","tileentity.TileEntityEnchantmentTableRenderer","tileentity.TileEntityEnderChestRenderer","tileentity.TileEntityEndPortalRenderer","tileentity.TileEntityItemStackRenderer","tileentity.TileEntityMobSpawnerRenderer","tileentity.TileEntityPistonRenderer","tileentity.TileEntityRendererDispatcher","tileentity.TileEntitySignRenderer","tileentity.TileEntitySkullRenderer","tileentity.TileEntitySpecialRenderer","vertex.DefaultVertexFormats","vertex.VertexBuffer","vertex.VertexFormat","vertex.VertexFormatElement"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.client.renderer." + v + "\")")}); 
 
 //Others
-LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); Value = Java.type("net.ccbluex.liquidbounce.value.Value")
+LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); HashMap = Java.type("java.util.HashMap"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Value = Java.type("net.ccbluex.liquidbounce.value.Value");
+
+function onLoad() {
+    module.forEach(function (m) {Object.keys(m).length && moduleManager.registerModule(new Module(m))});
+    command.forEach(function (c) {Object.keys(c).length && commandManager.registerCommand(new Command(c))});
+}
+
+function onEnable() {
+    //Modules
+    LiquidBounce.moduleManager.modules.forEach(function (v) {eval(v.name + "Module=" + v.name + "Class=v")});
+
+    module.forEach(function (m) {m.onLoad && m.onLoad()});
+    command.forEach(function (c) {c.onLoad && c.onLoad()});
+}
+
+function onDisable() {
+    module.forEach(function (m) {Object.keys(m).length && (m.onUnload && m.onUnload(), moduleManager.unregisterModule(new Module(m)))});
+    command.forEach(function (c) {Object.keys(c).length && (c.onUnload && c.onUnload(), commandManager.unregisterCommand(new Command(c)))});
+}
