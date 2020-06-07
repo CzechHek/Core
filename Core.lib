@@ -1,11 +1,11 @@
-//Core 4.9 - Simple, yet powerful ScriptAPI base
+//Core 4.11 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
 
-scriptName = scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Module";
-scriptAuthor = scriptAuthor || module[0].author || command[0].author || "Author";
-scriptVersion = parseFloat(scriptVersion || module[0].version || command[0].version || 1);
+script.setScriptName((scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Module").toString());
+script.setScriptAuthors([(scriptAuthor || module[0].author || command[0].author || "Author").toString()]);
+script.setScriptVersion((scriptVersion || module[0].version || command[0].version || 1).toString());
 
 function Module(m) {
     this.getName = function () {return m.name || "Module"};
@@ -101,15 +101,19 @@ function timeout(ms, func) {
 }
 
 function setValues(module, values) {
-    modulevalues = [];
-    (Array.isArray(values) ? values : [values]).forEach(function (v) {modulevalues.push(v instanceof AdaptedValue ? v.value : v)});
+    if (!(module instanceof ScriptModule)) return
+    valuesmap = new HashMap();
+    (Array.isArray(values) ? values : [values]).forEach(function (v, i) {valuesmap.put(i, v instanceof Value ? v : v.getValue())});
+    valuesmap = new LinkedHashMap(valuesmap);
     (valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
-    valuesField.set(module, Java.to(modulevalues, List)); modulevalues = undefined;
+    valuesField.set(module, valuesmap); valuesmap = undefined;
 }
 
 function getValues(module) {
-    (valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
-    return Java.from(valuesField.get(module));
+    if (module instanceof ScriptModule) {
+        (valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
+        return Java.from(valuesField.get(module).values());
+    } else return module.values;
 }
 
 function getNearestTarget() {
@@ -151,7 +155,7 @@ function rand(max, min) {
 ["ActiveRenderInfo","BlockFluidRenderer","BlockModelRenderer","BlockModelShapes","BlockRendererDispatcher","ChestRenderer","ChunkRenderContainer","DestroyBlockProgress","EntityRenderer","EnumFaceDirection","GLAllocation","GlStateManager","IImageBuffer","ImageBufferDownload","InventoryEffectRenderer","ItemMeshDefinition","ItemModelMesher","ItemRenderer","OpenGlHelper","RegionRenderCache","RegionRenderCacheBuilder","RenderGlobal","RenderHelper","RenderList","StitcherException","Tessellator","ThreadDownloadImageData","VboRenderList","VertexBufferUploader","ViewFrustum","WorldRenderer","WorldVertexBufferUploader","block.model.BakedQuad","block.model.BlockFaceUV","block.model.BlockPart","block.model.BlockPartFace","block.model.BlockPartRotation","block.model.BreakingFour","block.model.FaceBakery","block.model.ItemCameraTransforms","block.model.ItemModelGenerator","block.model.ItemTransformVec3f","block.model.ModelBlock","block.model.ModelBlockDefinition","block.statemap.BlockStateMapper","block.statemap.DefaultStateMapper","block.statemap.IStateMapper","block.statemap.StateMap","block.statemap.StateMapperBase","chunk.ChunkCompileTaskGenerator","chunk.ChunkRenderDispatcher","chunk.ChunkRenderWorker","chunk.CompiledChunk","chunk.IRenderChunkFactory","chunk.ListChunkFactory","chunk.ListedRenderChunk","chunk.RenderChunk","chunk.SetVisibility","chunk.VboChunkFactory","chunk.VisGraph","culling.ClippingHelper","culling.ClippingHelperImpl","culling.Frustum","culling.ICamera","entity.ArmorStandRenderer","entity.Render","entity.RenderArrow","entity.RenderBat","entity.RenderBiped","entity.RenderBlaze","entity.RenderBoat","entity.RenderCaveSpider","entity.RenderChicken","entity.RenderCow","entity.RenderCreeper","entity.RenderDragon","entity.RenderEnderman","entity.RenderEndermite","entity.RenderEntity","entity.RenderEntityItem","entity.RendererLivingEntity","entity.RenderFallingBlock","entity.RenderFireball","entity.RenderFish","entity.RenderGhast","entity.RenderGiantZombie","entity.RenderGuardian","entity.RenderHorse","entity.RenderIronGolem","entity.RenderItem","entity.RenderLeashKnot","entity.RenderLightningBolt","entity.RenderLiving","entity.RenderMagmaCube","entity.RenderManager","entity.RenderMinecart","entity.RenderMinecartMobSpawner","entity.RenderMooshroom","entity.RenderOcelot","entity.RenderPainting","entity.RenderPig","entity.RenderPigZombie","entity.RenderPlayer","entity.RenderPotion","entity.RenderRabbit","entity.RenderSheep","entity.RenderSilverfish","entity.RenderSkeleton","entity.RenderSlime","entity.RenderSnowball","entity.RenderSnowMan","entity.RenderSpider","entity.RenderSquid","entity.RenderTntMinecart","entity.RenderTNTPrimed","entity.RenderVillager","entity.RenderWitch","entity.RenderWither","entity.RenderWolf","entity.RenderXPOrb","entity.RenderZombie","entity.layers.LayerArmorBase","entity.layers.LayerArrow","entity.layers.LayerBipedArmor","entity.layers.LayerCape","entity.layers.LayerCreeperCharge","entity.layers.LayerCustomHead","entity.layers.LayerDeadmau5Head","entity.layers.LayerEnderDragonDeath","entity.layers.LayerEnderDragonEyes","entity.layers.LayerEndermanEyes","entity.layers.LayerHeldBlock","entity.layers.LayerHeldItem","entity.layers.LayerHeldItemWitch","entity.layers.LayerIronGolemFlower","entity.layers.LayerMooshroomMushroom","entity.layers.LayerRenderer","entity.layers.LayerSaddle","entity.layers.LayerSheepWool","entity.layers.LayerSlimeGel","entity.layers.LayerSnowmanHead","entity.layers.LayerSpiderEyes","entity.layers.LayerVillagerArmor","entity.layers.LayerWitherAura","entity.layers.LayerWolfCollar","texture.AbstractTexture","texture.DynamicTexture","texture.IIconCreator","texture.ITextureObject","texture.ITickable","texture.ITickableTextureObject","texture.LayeredColorMaskTexture","texture.LayeredTexture","texture.SimpleTexture","texture.Stitcher","texture.TextureAtlasSprite","texture.TextureClock","texture.TextureCompass","texture.TextureManager","texture.TextureMap","texture.TextureUtil","tileentity.RenderEnderCrystal","tileentity.RenderItemFrame","tileentity.RenderWitherSkull","tileentity.TileEntityBannerRenderer","tileentity.TileEntityBeaconRenderer","tileentity.TileEntityChestRenderer","tileentity.TileEntityEnchantmentTableRenderer","tileentity.TileEntityEnderChestRenderer","tileentity.TileEntityEndPortalRenderer","tileentity.TileEntityItemStackRenderer","tileentity.TileEntityMobSpawnerRenderer","tileentity.TileEntityPistonRenderer","tileentity.TileEntityRendererDispatcher","tileentity.TileEntitySignRenderer","tileentity.TileEntitySkullRenderer","tileentity.TileEntitySpecialRenderer","vertex.DefaultVertexFormats","vertex.VertexBuffer","vertex.VertexFormat","vertex.VertexFormatElement"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.client.renderer." + v + "\")")}); 
 
 //Others
-LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); AdaptedValue = Java.type("net.ccbluex.liquidbounce.script.api.module.AdaptedValue")
+LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); HashMap = Java.type("java.util.HashMap"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Value = Java.type("net.ccbluex.liquidbounce.value.Value");
 
 function onLoad() {
     module.forEach(function (m) {Object.keys(m).length && moduleManager.registerModule(new Module(m))});
@@ -160,8 +164,7 @@ function onLoad() {
 
 function onEnable() {
     //Modules
-    LiquidBounce.moduleManager.modules.forEach(function (v) {eval(v.name + "Class=v")});
-    moduleManager.getModules().forEach(function (v) {eval(v.name + "Module=v")});
+    LiquidBounce.moduleManager.modules.forEach(function (v) {eval(v.name + "Module=" + v.name + "Class=v")});
 
     module.forEach(function (m) {m.onLoad && m.onLoad()});
     command.forEach(function (c) {c.onLoad && c.onLoad()});
