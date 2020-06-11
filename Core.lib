@@ -1,4 +1,4 @@
-//Core 4.11 - Simple, yet powerful ScriptAPI base
+//Core 4.12 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -88,8 +88,8 @@ function move(horizontal, vertical, timer, event, ignoreInput) {
     vertical = ignoreInput ? vertical : isInputHorizontally() ? vertical : null;
     yaw = MovementUtils.getDirection();
     timer != null && timer > 0 && (mc.timer.timerSpeed = timer);
-    horizontal != null && (mc.thePlayer.motionX = -Math.sin(Math.PI / 180 * yaw) * speed, mc.thePlayer.motionZ = Math.cos(Math.PI / 180 * yaw) * speed) && event && (event.setX(mc.thePlayer.motionX), event.setZ(mc.thePlayer.motionZ));
-    vertical != null && (mc.thePlayer.motionY = vertical) && event && event.setY(vertical);
+    horizontal != null && ((mc.thePlayer.motionX = -Math.sin(yaw) * horizontal, mc.thePlayer.motionZ = Math.cos(yaw) * horizontal), (event && (event.setX(mc.thePlayer.motionX), event.setZ(mc.thePlayer.motionZ))));
+    vertical != null && ((mc.thePlayer.motionY = vertical), (event && event.setY(vertical)));
 }
 
 function interval(ms, func) {
@@ -123,7 +123,7 @@ function getNearestTarget() {
     return targetList[0];
 }
 
-function rand(max, min) {
+function rand(min, max) {
     return Math.random() * (max - min) + min;
 }
 
