@@ -25,7 +25,7 @@ Font = Java.type("java.awt.Font");
 File = Java.type("java.io.File");
 URL = Java.type("java.net.URL");
 
-baseUrl = "https://natte.dev/manager/"
+baseUrl = "https://cloud.natte.dev/manager/"
 devMode = false;
 
 command = {
