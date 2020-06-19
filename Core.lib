@@ -1,4 +1,4 @@
-//Core 4.12 - Simple, yet powerful ScriptAPI base
+//Core 4.13 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -68,7 +68,7 @@ function isMovingHorizontally(entity) {
 }
 
 function isMovingVertically(entity) {
-    return entity && entity != mc.thePlayer ? entity.lastTickPosY != entity.posY : mc.thePlayer.movementInput.jump;
+    return entity && entity != mc.thePlayer ? entity.lastTickPosY != entity.posY : mc.thePlayer.movementInput.jump || mc.thePlayer.movementInput.sneak;
 }
 
 function isMoving(entity) {
@@ -80,7 +80,7 @@ function isInputHorizontally() {
 }
 
 function isInputVertically() {
-    return Keyboard.isKeyDown(mc.gameSettings.keyBindJump.getKeyCode());
+    return Keyboard.isKeyDown(mc.gameSettings.keyBindJump.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindSneak.getKeyCode());
 }
 
 function move(horizontal, vertical, timer, event, ignoreInput) {
@@ -127,6 +127,24 @@ function rand(min, max) {
     return Math.random() * (max - min) + min;
 }
 
+function getDurability(itemStack) {
+    if (itemStack) return itemStack.getMaxDamage() - itemStack.getItemDamage();
+}
+
+Object.defineProperty(Array.prototype, "shuffle", {
+    value: function (bool) {
+        if (!this) throw new TypeError();
+        var arr = this.slice(), temp, j, i = arr.length;
+        if (bool === false || !i) return arr;
+		while (--i) {
+			j = ~~(Math.random() * (i + 1));
+			temp = arr[i];
+			arr[i] = arr[j];
+			arr[j] = temp;
+        } return arr;
+    }
+});
+
 //Items
 ["Item","ItemArmor","ItemArmorStand","ItemBed","ItemBlock","ItemBoat","ItemBook","ItemBow","ItemBucket","ItemBucketMilk","ItemCarrotOnAStick","ItemCoal","ItemDoor","ItemDye","ItemEditableBook","ItemEgg","ItemEnchantedBook","ItemEnderEye","ItemEnderPearl","ItemExpBottle","ItemFireball","ItemFirework","ItemFireworkCharge","ItemFishingRod","ItemFlintAndSteel","ItemFood","ItemGlassBottle","ItemHangingEntity","ItemHoe","ItemLead","ItemMapBase","ItemMinecart","ItemMonsterPlacer","ItemNameTag","ItemPotion","ItemRecord","ItemRedstone","ItemReed","ItemSaddle","ItemSeeds","ItemShears","ItemSign","ItemSimpleFoiled","ItemSkull","ItemSnowball","ItemSword","ItemTool","ItemWritableBook","ItemAxe","ItemPickaxe","ItemSpade","ItemBanner","ItemCloth","ItemColored","ItemLeaves","ItemMultiTexture","ItemPiston","ItemSlab","ItemSnow"].forEach(function (v) {eval(v + "=Java.type(\"net.minecraft.item." + v + "\")")}); Items = Java.type("net.minecraft.init.Items");
 
@@ -134,7 +152,7 @@ function rand(min, max) {
 ["Block","BlockAir","BlockAnvil","BlockBanner","BlockBarrier","BlockBasePressurePlate","BlockBeacon","BlockBed","BlockBookshelf","BlockBreakable","BlockBrewingStand","BlockBush","BlockButton","BlockButtonStone","BlockButtonWood","BlockCactus","BlockCake","BlockCarpet","BlockCarrot","BlockCauldron","BlockChest","BlockClay","BlockCocoa","BlockColored","BlockCommandBlock","BlockCompressedPowered","BlockContainer","BlockCrops","BlockDaylightDetector","BlockDeadBush","BlockDirectional","BlockDirt","BlockDispenser","BlockDoor","BlockDoublePlant","BlockDoubleStoneSlab","BlockDoubleStoneSlabNew","BlockDoubleWoodSlab","BlockDragonEgg","BlockDropper","BlockDynamicLiquid","BlockEnchantmentTable","BlockEnderChest","BlockEndPortal","BlockEndPortalFrame","BlockEventData","BlockFalling","BlockFarmland","BlockFence","BlockFenceGate","BlockFire","BlockFlower","BlockFlowerPot","BlockFurnace","BlockGlass","BlockGlowstone","BlockGrass","BlockGravel","BlockHalfStoneSlab","BlockHalfStoneSlabNew","BlockHalfWoodSlab","BlockHardenedClay","BlockHay","BlockHopper","BlockHugeMushroom","BlockIce","BlockJukebox","BlockLadder","BlockLeaves","BlockLeavesBase","BlockLever","BlockLilyPad","BlockLiquid","BlockLog","BlockMelon","BlockMobSpawner","BlockMushroom","BlockMycelium","BlockNetherBrick","BlockNetherrack","BlockNetherWart","BlockNewLeaf","BlockNewLog","BlockNote","BlockObsidian","BlockOldLeaf","BlockOldLog","BlockOre","BlockPackedIce","BlockPane","BlockPistonBase","BlockPistonExtension","BlockPistonMoving","BlockPlanks","BlockPortal","BlockPotato","BlockPressurePlate","BlockPressurePlateWeighted","BlockPrismarine","BlockPumpkin","BlockQuartz","BlockRail","BlockRailBase","BlockRailDetector","BlockRailPowered","BlockRedFlower","BlockRedSandstone","BlockRedstoneComparator","BlockRedstoneDiode","BlockRedstoneLight","BlockRedstoneOre","BlockRedstoneRepeater","BlockRedstoneTorch","BlockRedstoneWire","BlockReed","BlockRotatedPillar","BlockSand","BlockSandStone","BlockSapling","BlockSeaLantern","BlockSign","BlockSilverfish","BlockSkull","BlockSlab","BlockSlime","BlockSnow","BlockSnowBlock","BlockSoulSand","BlockSourceImpl","BlockSponge","BlockStainedGlass","BlockStainedGlassPane","BlockStairs","BlockStandingSign","BlockStaticLiquid","BlockStem","BlockStone","BlockStoneBrick","BlockStoneSlab","BlockStoneSlabNew","BlockTallGrass","BlockTNT","BlockTorch","BlockTrapDoor","BlockTripWire","BlockTripWireHook","BlockVine","BlockWall","BlockWallSign","BlockWeb","BlockWoodSlab","BlockWorkbench","BlockYellowFlower"].forEach(function (v) {eval(v + "=Java.type(\"net.minecraft.block." + v + "\")")}); Blocks = Java.type("net.minecraft.init.Blocks");
 
 //GUIs
-["ChatLine","FontRenderer","Gui","GuiButton","GuiButtonLanguage","GuiButtonRealmsProxy","GuiChat","GuiClickableScrolledSelectionListProxy","GuiCommandBlock","GuiConfirmOpenLink","GuiControls","GuiCreateFlatWorld","GuiCreateWorld","GuiCustomizeSkin","GuiCustomizeWorldScreen","GuiDisconnected","GuiDownloadTerrain","GuiEnchantment","GuiErrorScreen","GuiFlatPresets","GuiGameOver","GuiHopper","GuiIngame","GuiIngameMenu","GuiKeyBindingList","GuiLabel","GuiLanguage","GuiListButton","GuiListExtended","GuiLockIconButton","GuiMainMenu","GuiMemoryErrorScreen","GuiMerchant","GuiMultiplayer","GuiNewChat","GuiOptionButton","GuiOptions","GuiOptionSlider","GuiOptionsRowList","GuiOverlayDebug","GuiPageButtonList","GuiPlayerTabOverlay","GuiRenameWorld","GuiRepair","GuiResourcePackAvailable","GuiResourcePackList","GuiResourcePackSelected","GuiScreen","GuiScreenAddServer","GuiScreenBook","GuiScreenCustomizePresets","GuiScreenDemo","GuiScreenOptionsSounds","GuiScreenRealmsProxy","GuiScreenResourcePacks","GuiScreenServerList","GuiScreenWorking","GuiSelectWorld","GuiShareToLan","GuiSimpleScrolledSelectionListProxy","GuiSleepMP","GuiSlider","GuiSlot","GuiSlotRealmsProxy","GuiSnooper","GuiSpectator","GuiStreamIndicator","GuiTextField","GuiUtilRenderComponents","GuiVideoSettings","GuiWinGame","GuiYesNo","MapItemRenderer","ScaledResolution","ScreenChatOptions","ServerListEntryLanDetected","ServerListEntryLanScan","ServerListEntryNormal","ServerSelectionList"].forEach(function (v) {eval(v + "=Java.type(\"net.minecraft.client.gui." + v + "\")")});
+["achievement.GuiAchievement","achievement.GuiAchievements","achievement.GuiStats","inventory.CreativeCrafting","inventory.GuiBeacon","inventory.GuiBrewingStand","inventory.GuiChest","inventory.GuiContainer","inventory.GuiContainerCreative","inventory.GuiCrafting","inventory.GuiDispenser","inventory.GuiEditSign","inventory.GuiFurnace","inventory.GuiInventory","inventory.GuiScreenHorseInventory","spectator.BaseSpectatorGroup","spectator.ISpectatorMenuObject","spectator.ISpectatorMenuRecipient","spectator.ISpectatorMenuView","spectator.PlayerMenuObject","spectator.SpectatorMenu","spectator.categories.SpectatorDetails","spectator.categories.TeleportToPlayer","spectator.categories.TeleportToTeam","stream.GuiIngestServers","stream.GuiStreamOptions","stream.GuiStreamUnavailable","stream.GuiTwitchUserMode","ChatLine","FontRenderer","Gui","GuiButton","GuiButtonLanguage","GuiButtonRealmsProxy","GuiChat","GuiClickableScrolledSelectionListProxy","GuiCommandBlock","GuiConfirmOpenLink","GuiControls","GuiCreateFlatWorld","GuiCreateWorld","GuiCustomizeSkin","GuiCustomizeWorldScreen","GuiDisconnected","GuiDownloadTerrain","GuiEnchantment","GuiErrorScreen","GuiFlatPresets","GuiGameOver","GuiHopper","GuiIngame","GuiIngameMenu","GuiKeyBindingList","GuiLabel","GuiLanguage","GuiListButton","GuiListExtended","GuiLockIconButton","GuiMainMenu","GuiMemoryErrorScreen","GuiMerchant","GuiMultiplayer","GuiNewChat","GuiOptionButton","GuiOptions","GuiOptionSlider","GuiOptionsRowList","GuiOverlayDebug","GuiPageButtonList","GuiPlayerTabOverlay","GuiRenameWorld","GuiRepair","GuiResourcePackAvailable","GuiResourcePackList","GuiResourcePackSelected","GuiScreen","GuiScreenAddServer","GuiScreenBook","GuiScreenCustomizePresets","GuiScreenDemo","GuiScreenOptionsSounds","GuiScreenRealmsProxy","GuiScreenResourcePacks","GuiScreenServerList","GuiScreenWorking","GuiSelectWorld","GuiShareToLan","GuiSimpleScrolledSelectionListProxy","GuiSleepMP","GuiSlider","GuiSlot","GuiSlotRealmsProxy","GuiSnooper","GuiSpectator","GuiStreamIndicator","GuiTextField","GuiUtilRenderComponents","GuiVideoSettings","GuiWinGame","GuiYesNo","MapItemRenderer","ScaledResolution","ScreenChatOptions","ServerListEntryLanDetected","ServerListEntryLanScan","ServerListEntryNormal","ServerSelectionList"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.client.gui." + v + "\")")});
 
 //Containers
 ["GuiBeacon","GuiBrewingStand","GuiChest","GuiCrafting","GuiDispenser","GuiFurnace","GuiScreenHorseInventory"].forEach(function (v) {eval(v + "=Java.type(\"net.minecraft.client.gui.inventory." + v + "\")")});
