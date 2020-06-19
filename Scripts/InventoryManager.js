@@ -18,7 +18,7 @@ list = [
 module = {
     name: "InventoryManager",
     author: "CzechHek",
-    version: 2.3,
+    version: 2.4,
     values: list,
     onLoad: function () {
         timer = new MSTimer(); openInventory = false;
@@ -26,10 +26,7 @@ module = {
     onUpdate: function () {
         if (!mc.thePlayer || (invopen.get() && !(mc.currentScreen instanceof GuiInventory))) return
         (mc.thePlayer.inventory.inventoryChanged || !onchange.get()) && ((!(toDrop = getGarbage()).length && !(toWear = getArmor()).length && (toSort = getSort())), mc.thePlayer.inventory.inventoryChanged = false);
-        if (timer.hasTimePassed(rand(mindelay.get(), maxdelay.get()))) {
-            toDrop.length ? open() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toDrop.pop(), 1, 4, mc.thePlayer) : toWear.length ? open() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toWear.pop(), 0, 1, mc.thePlayer) : toSort.hasNext() ? (values = toSort.next(), open(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], 2, mc.thePlayer)) : (openInventory && mc.getNetHandler().addToSendQueue(new C0DPacketCloseWindow(mc.thePlayer.inventoryContainer.windowId)));
-            timer.reset();
-        }
+        timer.hasTimePassed(rand(mindelay.get(), maxdelay.get())) && toDrop.length ? open() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toDrop.pop(), 1, 4, mc.thePlayer) : toWear.length ? open() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toWear.pop(), 0, 1, mc.thePlayer) : toSort.hasNext() ? (values = toSort.next(), open(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], 2, mc.thePlayer)) : openInventory && mc.getNetHandler().addToSendQueue(new C0DPacketCloseWindow(mc.thePlayer.inventoryContainer.windowId));
     },
     onPacket: function (e) {
         e.getPacket() instanceof C16PacketClientStatus && e.getPacket().getStatus() == C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT && (openInventory ? e.cancelEvent() : openInventory = true);
@@ -96,7 +93,7 @@ function isSet(slot) {
 }
 
 function open() {
-    !openInventory && mc.getNetHandler().addToSendQueue(new C16PacketClientStatus(C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT));
+    !openInventory && mc.getNetHandler().addToSendQueue(new C16PacketClientStatus(C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT)); timer.reset();
     return true
 }
 
@@ -104,4 +101,4 @@ script.import("Core.lib");
 ARMOR_COMPARATOR = new ArmorComparator();
 Enchantment = Java.type("net.minecraft.enchantment.Enchantment");
 blockBlacklist = [Blocks.enchanting_table, Blocks.chest, Blocks.ender_chest, Blocks.trapped_chest, Blocks.anvil, Blocks.sand, Blocks.web, Blocks.torch, Blocks.crafting_table, Blocks.furnace, Blocks.waterlily, Blocks.dispenser, Blocks.stone_pressure_plate, Blocks.wooden_pressure_plate, Blocks.noteblock, Blocks.dropper, Blocks.tnt, Blocks.standing_banner, Blocks.wall_banner, Blocks.redstone_torch];
-itemWhitelist = ["item.arrow", "item.diamond", "item.ingotIron", "item.stick"]
+itemWhitelist = ["item.arrow", "item.diamond", "item.ingotIron", "item.stick"];
