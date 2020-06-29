@@ -10,7 +10,7 @@ var list = [
 module = {
     name: "HackerSpoofer",
     author: "CzechHek",
-    version: 1.2,
+    version: 1.3,
     values: list,
     onLoad: function () {
         LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.valuesConfig);
@@ -23,6 +23,7 @@ module = {
             look.get() && (target.rotationYaw = target.rotationYawHead = ((Math.atan2(diffZ, diffX) * 180 / Math.PI) + 90), target.rotationPitch = Math.atan2(diffY, Math.sqrt(diffX * diffX + diffZ * diffZ)) * 180 / Math.PI);
             swing.get() && target.swingItem();
         }
+        if (specificplayer.get() && mc.pointedEntity instanceof EntityPlayer && Mouse.isButtonDown(1)) nick.set(mc.pointedEntity.getName());
     }
 }
 
@@ -35,5 +36,7 @@ function updateValues() {
 		prevSettings = null;
     }
 }
+
+Mouse = Java.type("org.lwjgl.input.Mouse");
 
 script.import("Core.lib");
