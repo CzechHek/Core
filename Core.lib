@@ -1,11 +1,7 @@
-//Core 4.14 - Simple, yet powerful ScriptAPI base
+//Core 1.4.15 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
-
-script.setScriptName((scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Module").toString());
-script.setScriptAuthors([(scriptAuthor || module[0].author || command[0].author || "Author").toString()]);
-script.setScriptVersion((scriptVersion || module[0].version || command[0].version || 1).toString());
 
 function Module(m) {
     this.getName = function () {return m.name || "Module"};
@@ -36,31 +32,31 @@ function Module(m) {
 function Command(c) {
     this.getName = function () {return c.commands && c.commands.length ? c.commands[0] : "Command"};
     this.getAliases = function () {return c.commands || []};
-    this.execute = function (a) {
-        prefix = LiquidBounce.commandManager.prefix;
-        args = []; for (i in a) args.push(a[i].toLowerCase());
-        args[0] = args[0].replace(prefix, "");
-        subcommands = []; error = ""; propertyindex = 100;
-        commands = []; this.getAliases().forEach(function (c) {commands.push(c.toLowerCase())});
+    c.onExecute && (this.execute = function (a) {
+        _prefix = LiquidBounce.commandManager.prefix;
+        _args = []; for (i in a) _args.push(a[i].toLowerCase());
+        _args[0] = _args[0].replace(_prefix, "");
+        _subcommands = []; _error = ""; _propertyindex = 100;
+        _commands = []; this.getAliases().forEach(function (c) {_commands.push(c.toLowerCase())});
 
         if (c.subcommands) {
-            object = c.subcommands;
-            for (i in arg = args.slice(1)) {
-                if (~Object.keys(object).indexOf(arg[i])) {
-                    if ((property = eval("object." + arg[i])) instanceof Object) object = property;
-                    else {subcommands = [property]; propertyindex = parseInt(i) + (property ? 3 : 2); break};
-                } else {error = arg[i]; args.length = parseInt(i) + 1; break};
-            } !subcommands.length && (subcommands = Object.keys(object));
+            _object = c.subcommands;
+            for (i in _arg = _args.slice(1)) {
+                if (~Object.keys(_object).indexOf(_arg[i])) {
+                    if ((_property = eval("_object." + _arg[i])) instanceof Object) _object = _property;
+                    else {_subcommands = [_property]; _propertyindex = parseInt(i) + (_property ? 3 : 2); break};
+                } else {_error = _arg[i]; _args.length = parseInt(i) + 1; break};
+            } !_subcommands.length && (_subcommands = Object.keys(_object));
         }
 
-        if (subcommands.length && args.length < propertyindex) {
+        if (_subcommands.length && _args.length < _propertyindex) {
             chat.print("");
-            args.length == 1 && chat.print("§8▏ §7§l" + this.getName() + " §8v§l" + (c.version || scriptVersion).toFixed(1) + " §7by §8§l" + (c.author || scriptAuthor));
-            args.length != propertyindex - 1 ? (chat.print("§8▏ §7Valid subcommands§8: (§7§l" + subcommands.length + "§8)"), chat.print("§8▏ §f" + prefix + args.join(" ") + " §8[§f" + subcommands.join("§7, §f") + "§8]")) : chat.print("§8▏ §7Usage§8: §f" + prefix + args.join(" ") + " §8„§7" + subcommands[0] + "§8“");
-            commands.length > 1 && args.length == 1 && (chat.print("§8▏ §7Available aliases§8: (§7§l" + commands.length + "§8)"), chat.print("§8▏ §f" + prefix + commands.join("§7, §f" + prefix)));
-            error && chat.print("§4▏ §cInvalid argument: " + prefix + args.join(" ") + " „§4§l" + error + "§c“");
-        } else if (c.onExecute) c.onExecute(args);
-    }
+            _args.length == 1 && chat.print("§8▏ §7§l" + this.getName() + " §8v§l" + (c.version || scriptVersion).toFixed(1) + " §7by §8§l" + (c.author || scriptAuthor));
+            _args.length != _propertyindex - 1 ? (chat.print("§8▏ §7Valid subcommands§8: (§7§l" + _subcommands.length + "§8)"), chat.print("§8▏ §f" + _prefix + _args.join(" ") + " §8[§f" + _subcommands.join("§7, §f") + "§8]")) : chat.print("§8▏ §7Usage§8: §f" + _prefix + _args.join(" ") + " §f„§7" + _subcommands[0] + "§f“");
+            _commands.length > 1 && _args.length == 1 && (chat.print("§8▏ §7Available aliases§8: (§7§l" + _commands.length + "§8)"), chat.print("§8▏ §f" + _prefix + _commands.join("§7, §f" + _prefix)));
+            _error && chat.print("§4▏ §cInvalid argument: " + _prefix + _args.join(" ") + " „§4§l" + _error + "§c“");
+        } else c.onExecute(_args);
+    });
 }
 
 function isMovingHorizontally(entity) {
@@ -93,40 +89,40 @@ function move(horizontal, vertical, timer, event, ignoreInput) {
 }
 
 function interval(ms, func) {
-	return timer = new Timer("setInterval", true), timer.schedule(func, 0, ms), timer;
+	return _timer = new Timer("setInterval", true), _timer.schedule(func, 0, ms), _timer;
 }
 
 function timeout(ms, func) {
-	return timer = new Timer("setTimeout", true), timer.schedule(func, ms), timer;
+	return _timer = new Timer("setTimeout", true), _timer.schedule(func, ms), _timer;
 }
 
 function setValues(module, values) {
     if (!(module instanceof ScriptModule)) return
-    valuesmap = new HashMap();
-    (Array.isArray(values) ? values : [values]).forEach(function (v, i) {valuesmap.put(i, v instanceof Value ? v : v.getValue())});
-    valuesmap = new LinkedHashMap(valuesmap);
-    (valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
-    valuesField.set(module, valuesmap); valuesmap = undefined;
+    _valuesmap = new HashMap();
+    (Array.isArray(values) ? values : [values]).forEach(function (v, i) {_valuesmap.put(i, v instanceof Value ? v : v.getValue())});
+    _valuesmap = new LinkedHashMap(_valuesmap);
+    (_valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
+    _valuesField.set(module, _valuesmap); _valuesmap = undefined;
 }
 
 function getValues(module) {
     if (module instanceof ScriptModule) {
-        (valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
-        return Java.from(valuesField.get(module).values());
+        (_valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
+        return Java.from(_valuesField.get(module).values());
     } else return module.values;
 }
 
 function getNearestTarget() {
-    targetList = [];
-    mc.theWorld.loadedEntityList.forEach(function (e) {EntityUtils.isSelected(e, true) && targetList.push(e)});
-    targetList.sort(function (a,b) {return mc.thePlayer.getDistanceToEntity(a) - mc.thePlayer.getDistanceToEntity(b)});
-    return targetList[0];
+    _targetList = [];
+    mc.theWorld.loadedEntityList.forEach(function (e) {EntityUtils.isSelected(e, true) && _targetList.push(e)});
+    _targetList.sort(function (a,b) {return mc.thePlayer.getDistanceToEntity(a) - mc.thePlayer.getDistanceToEntity(b)});
+    return _targetList[0];
 }
 
 function getPlayer(nick) {
-    playerEntity = null;
-    Java.from(mc.theWorld.playerEntities).some(function (e) {if (StringUtils.stripControlCodes(e.getName()).equals(nick)) return playerEntity = e});
-    return playerEntity;
+    _playerEntity = null;
+    Java.from(mc.theWorld.playerEntities).some(function (e) {if (StringUtils.stripControlCodes(e.getName()).equals(nick)) return _playerEntity = e});
+    return _playerEntity;
 }
 
 function rand(min, max) {
@@ -178,10 +174,17 @@ Object.defineProperty(Array.prototype, "shuffle", {
 //Renderers
 ["ActiveRenderInfo","BlockFluidRenderer","BlockModelRenderer","BlockModelShapes","BlockRendererDispatcher","ChestRenderer","ChunkRenderContainer","DestroyBlockProgress","EntityRenderer","EnumFaceDirection","GLAllocation","GlStateManager","IImageBuffer","ImageBufferDownload","InventoryEffectRenderer","ItemMeshDefinition","ItemModelMesher","ItemRenderer","OpenGlHelper","RegionRenderCache","RegionRenderCacheBuilder","RenderGlobal","RenderHelper","RenderList","StitcherException","Tessellator","ThreadDownloadImageData","VboRenderList","VertexBufferUploader","ViewFrustum","WorldRenderer","WorldVertexBufferUploader","block.model.BakedQuad","block.model.BlockFaceUV","block.model.BlockPart","block.model.BlockPartFace","block.model.BlockPartRotation","block.model.BreakingFour","block.model.FaceBakery","block.model.ItemCameraTransforms","block.model.ItemModelGenerator","block.model.ItemTransformVec3f","block.model.ModelBlock","block.model.ModelBlockDefinition","block.statemap.BlockStateMapper","block.statemap.DefaultStateMapper","block.statemap.IStateMapper","block.statemap.StateMap","block.statemap.StateMapperBase","chunk.ChunkCompileTaskGenerator","chunk.ChunkRenderDispatcher","chunk.ChunkRenderWorker","chunk.CompiledChunk","chunk.IRenderChunkFactory","chunk.ListChunkFactory","chunk.ListedRenderChunk","chunk.RenderChunk","chunk.SetVisibility","chunk.VboChunkFactory","chunk.VisGraph","culling.ClippingHelper","culling.ClippingHelperImpl","culling.Frustum","culling.ICamera","entity.ArmorStandRenderer","entity.Render","entity.RenderArrow","entity.RenderBat","entity.RenderBiped","entity.RenderBlaze","entity.RenderBoat","entity.RenderCaveSpider","entity.RenderChicken","entity.RenderCow","entity.RenderCreeper","entity.RenderDragon","entity.RenderEnderman","entity.RenderEndermite","entity.RenderEntity","entity.RenderEntityItem","entity.RendererLivingEntity","entity.RenderFallingBlock","entity.RenderFireball","entity.RenderFish","entity.RenderGhast","entity.RenderGiantZombie","entity.RenderGuardian","entity.RenderHorse","entity.RenderIronGolem","entity.RenderItem","entity.RenderLeashKnot","entity.RenderLightningBolt","entity.RenderLiving","entity.RenderMagmaCube","entity.RenderManager","entity.RenderMinecart","entity.RenderMinecartMobSpawner","entity.RenderMooshroom","entity.RenderOcelot","entity.RenderPainting","entity.RenderPig","entity.RenderPigZombie","entity.RenderPlayer","entity.RenderPotion","entity.RenderRabbit","entity.RenderSheep","entity.RenderSilverfish","entity.RenderSkeleton","entity.RenderSlime","entity.RenderSnowball","entity.RenderSnowMan","entity.RenderSpider","entity.RenderSquid","entity.RenderTntMinecart","entity.RenderTNTPrimed","entity.RenderVillager","entity.RenderWitch","entity.RenderWither","entity.RenderWolf","entity.RenderXPOrb","entity.RenderZombie","entity.layers.LayerArmorBase","entity.layers.LayerArrow","entity.layers.LayerBipedArmor","entity.layers.LayerCape","entity.layers.LayerCreeperCharge","entity.layers.LayerCustomHead","entity.layers.LayerDeadmau5Head","entity.layers.LayerEnderDragonDeath","entity.layers.LayerEnderDragonEyes","entity.layers.LayerEndermanEyes","entity.layers.LayerHeldBlock","entity.layers.LayerHeldItem","entity.layers.LayerHeldItemWitch","entity.layers.LayerIronGolemFlower","entity.layers.LayerMooshroomMushroom","entity.layers.LayerRenderer","entity.layers.LayerSaddle","entity.layers.LayerSheepWool","entity.layers.LayerSlimeGel","entity.layers.LayerSnowmanHead","entity.layers.LayerSpiderEyes","entity.layers.LayerVillagerArmor","entity.layers.LayerWitherAura","entity.layers.LayerWolfCollar","texture.AbstractTexture","texture.DynamicTexture","texture.IIconCreator","texture.ITextureObject","texture.ITickable","texture.ITickableTextureObject","texture.LayeredColorMaskTexture","texture.LayeredTexture","texture.SimpleTexture","texture.Stitcher","texture.TextureAtlasSprite","texture.TextureClock","texture.TextureCompass","texture.TextureManager","texture.TextureMap","texture.TextureUtil","tileentity.RenderEnderCrystal","tileentity.RenderItemFrame","tileentity.RenderWitherSkull","tileentity.TileEntityBannerRenderer","tileentity.TileEntityBeaconRenderer","tileentity.TileEntityChestRenderer","tileentity.TileEntityEnchantmentTableRenderer","tileentity.TileEntityEnderChestRenderer","tileentity.TileEntityEndPortalRenderer","tileentity.TileEntityItemStackRenderer","tileentity.TileEntityMobSpawnerRenderer","tileentity.TileEntityPistonRenderer","tileentity.TileEntityRendererDispatcher","tileentity.TileEntitySignRenderer","tileentity.TileEntitySkullRenderer","tileentity.TileEntitySpecialRenderer","vertex.DefaultVertexFormats","vertex.VertexBuffer","vertex.VertexFormat","vertex.VertexFormatElement"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.client.renderer." + v + "\")")}); 
 
+//Values
+["BlockValue", "BoolValue", "FloatValue", "FontValue", "IntegerValue", "ListValue", "TextValue", "Value"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.value." + v + "\")")});
+
 //Others
 LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); HashMap = Java.type("java.util.HashMap"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Value = Java.type("net.ccbluex.liquidbounce.value.Value");
 
 function onLoad() {
+    script.scriptName = (scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Script").toString();
+    script.scriptAuthors = [(scriptAuthor || module[0].author || command[0].author || "Author").toString()];
+    script.scriptVersion = (scriptVersion || module[0].version || command[0].version || 1).toString();
+    
     module.forEach(function (m) {Object.keys(m).length && moduleManager.registerModule(new Module(m))});
     command.forEach(function (c) {Object.keys(c).length && commandManager.registerCommand(new Command(c))});
 }
