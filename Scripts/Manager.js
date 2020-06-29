@@ -574,7 +574,7 @@ function checkFonts(themeFile, upload) {
         for (i in customFonts) {
             if (downloadFile(baseUrl + "fonts/" + customFonts[i][0], new File("LiquidBounce-1.8/fonts/" + customFonts[i][0]))) {
                 installedFonts.push({fontFile:customFonts[i][0], fontSize:customFonts[i][1]});
-                (i >= customFonts.length - 1) && chat.print("§8▏ §aDownloaded §2§l" + fontNames.length + " §afonts");
+                (i >= customFonts.length - 1) && chat.print("§8▏ §aDownloaded §2§l" + fontNames.length + " §a" + (fontNames.length > 1 ? "fonts" : "font"));
             }
         }
         FileUtils.writeStringToFile(new File("LiquidBounce-1.8/fonts/fonts.json"), JSON.stringify(installedFonts));
