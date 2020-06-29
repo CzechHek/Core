@@ -2,9 +2,9 @@ StaticClass = Java.type("jdk.internal.dynalink.beans.StaticClass"); FileOutputSt
 
 command = {
     commands: ["MusicPlayer", "mp"],
-    subcommands: {play:{name:"name",url:"link"},stop:"",youtube:"query",list:"",folder:""},
+    subcommands: {play:"name / url",stop:"",youtube:"query",list:"",folder:""},
     author: "natte",
-    version: 1.3,
+    version: 1.4,
     onExecute: function (args) {
         try {
             setup();
@@ -143,13 +143,11 @@ function setup() {
     if (!new File("LiquidBounce-1.8/music/").exists()) new File("LiquidBounce-1.8/music/").mkdir();
 
     if (!new File("LiquidBounce-1.8/music-api.jar").exists()) {
-        chat.print("§8▏ §aDownloading api...");
         
-        connection = new URL("https://natte.dev/mp/music-api.jar").openConnection(); connection.setRequestProperty("User-Agent", "Mozilla/5.0");
+        connection = new URL("https://cloud.natte.dev/music-api.jar").openConnection(); connection.setRequestProperty("User-Agent", "Mozilla/5.0");
         channel = Channels.newChannel(connection.getInputStream()); output = new FileOutputStream(new File("LiquidBounce-1.8/music-api.jar"));
         
         output.getChannel().transferFrom(channel, 0, Long.MAX_VALUE); output.close();
-        chat.print("§8▏ §aapi downloaded");
 
         Player = classLoader.type("javazoom.jl.player.Player");
     }
