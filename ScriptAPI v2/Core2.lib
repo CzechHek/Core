@@ -1,4 +1,4 @@
-//Core 2.1.3 - Simple, yet powerful ScriptAPI base
+//Core 2.1.4 - Simple, yet powerful ScriptAPI base
 
 _moduleList = [], _commandList = [];
 
@@ -132,10 +132,10 @@ function getValues(module) {
     } else return module.values;
 }
 
-function getNearestTarget() {
-    _targetList = [];
-    mc.theWorld.loadedEntityList.forEach(function (e) {EntityUtils.isSelected(e, true) && _targetList.push(e)});
-    _targetList.sort(function (a,b) {return mc.thePlayer.getDistanceToEntity(a) - mc.thePlayer.getDistanceToEntity(b)});
+function getNearestTarget(entityType, entity) {
+    _targetList = []; entity = entity || mc.thePlayer;
+    mc.theWorld.loadedEntityList.forEach(function (e) {e != entity && (entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)) && _targetList.push(e)});
+    _targetList.sort(function (a,b) {return entity.getDistanceToEntity(a) - entity.getDistanceToEntity(b)});
     return _targetList[0];
 }
 

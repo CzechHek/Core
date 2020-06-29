@@ -1,4 +1,4 @@
-//Core 1.4.15 - Simple, yet powerful ScriptAPI base
+//Core 1.4.16 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -112,10 +112,10 @@ function getValues(module) {
     } else return module.values;
 }
 
-function getNearestTarget() {
-    _targetList = [];
-    mc.theWorld.loadedEntityList.forEach(function (e) {EntityUtils.isSelected(e, true) && _targetList.push(e)});
-    _targetList.sort(function (a,b) {return mc.thePlayer.getDistanceToEntity(a) - mc.thePlayer.getDistanceToEntity(b)});
+function getNearestTarget(entityType, entity) {
+    _targetList = []; entity = entity || mc.thePlayer;
+    mc.theWorld.loadedEntityList.forEach(function (e) {e != entity && (entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)) && _targetList.push(e)});
+    _targetList.sort(function (a,b) {return entity.getDistanceToEntity(a) - entity.getDistanceToEntity(b)});
     return _targetList[0];
 }
 
@@ -184,7 +184,7 @@ function onLoad() {
     script.scriptName = (scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Script").toString();
     script.scriptAuthors = [(scriptAuthor || module[0].author || command[0].author || "Author").toString()];
     script.scriptVersion = (scriptVersion || module[0].version || command[0].version || 1).toString();
-    
+
     module.forEach(function (m) {Object.keys(m).length && moduleManager.registerModule(new Module(m))});
     command.forEach(function (c) {Object.keys(c).length && commandManager.registerCommand(new Command(c))});
 }
