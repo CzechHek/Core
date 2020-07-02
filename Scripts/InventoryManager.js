@@ -1,9 +1,15 @@
 list = [
-    mindelay = value.createInteger("MinDelay", 50, 0, 1000),
-    maxdelay = value.createInteger("MaxDelay", 50, 0, 1000),
-    startdelay = value.createInteger("StartDelay", 100, 0, 1000),
+    mindelay = value.createInteger("MinDelay", 50, 20, 1000),
+    maxdelay = value.createInteger("MaxDelay", 50, 20, 1000),
+    startdelay = value.createInteger("StartDelay", 100, 20, 1000),
+    opendelay = value.createInteger("OpenDelay", 100, 20, 1000),
+    openrange = value.createFloat("OpenRange", 5, 3, 8),
+    openwallsrange = value.createFloat("OpenWallsRange", 3, 1, 8),
     randomize = value.createBoolean("Randomize", false),
     invopen = value.createBoolean("InvOpen", false),
+    clean = value.createBoolean("Clean", true),
+    steal = value.createBoolean("Steal", true),
+    open = value.createBoolean("Open", true),
     slot1 = value.createText("Slot1", "Sword"),
     slot2 = value.createText("Slot2", "Pickaxe"),
     slot3 = value.createText("Slot3", "Shovel"),
@@ -18,28 +24,42 @@ list = [
 module = {
     name: "InventoryManager",
     author: "CzechHek",
-    version: 3.4,
+    version: 4.2,
     values: list,
-    onLoad: function () {
-        timer = new MSTimer();
-    },
     onUpdate: function () {
-        if (mc.currentScreen instanceof GuiInventory || !invopen.get() && !mc.currentScreen || mc.currentScreen instanceof ClickGui) (toDrop = getGarbage()).length ? open() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toDrop.pop(), 1, 4, mc.thePlayer) : (toWear = getArmor()).length ? open() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toWear.pop(), 0, 1, mc.thePlayer) : (toSort = getSort()).hasNext() ? (values = toSort.next(), open(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], 2, mc.thePlayer)) : openInventory && !mc.currentScreen && mc.getNetHandler().addToSendQueue(new C0DPacketCloseWindow(mc.thePlayer.inventoryContainer.windowId)), timer.reset();
-        else if (mc.currentScreen instanceof GuiChest && received) (toGrab = getUseful()).hasNext() ? (values = toGrab.next(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], values[2] || 2, mc.thePlayer)) : mc.thePlayer.closeScreen(), timer.reset();
+        if (!mc.thePlayer.capabilities.allowEdit || !canAttack() || !timer.hasTimePassed(rand(mindelay.get(), maxdelay.get()))) return
+        
+        open.get() && !mc.currentScreen && openTimer.hasTimePassed(opendelay.get()) && (toOpen = getToOpen()) && (mc.playerController.onPlayerRightClick(mc.thePlayer, mc.theWorld, null, toOpen.getPos(), EnumFacing.DOWN, mc.thePlayer.getLookVec()), openTimer.reset());
+        (clean.get() && ((invopen.get() ? mc.currentScreen instanceof GuiInventory : false) || !mc.currentScreen || mc.currentScreen instanceof ClickGui)) ? ((toDrop = getToDrop()).length ? checkOpened() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toDrop.pop(), 1, 4, mc.thePlayer) : (toTake = getToTake()).length ? checkOpened() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toTake.pop(), 0, 1, mc.thePlayer) : (toSort = getToSort()).hasNext() ? (values = toSort.next(), checkOpened(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], 2, mc.thePlayer)) : openInventory && !mc.currentScreen && mc.getNetHandler().addToSendQueue(new C0DPacketCloseWindow(mc.thePlayer.inventoryContainer.windowId)), timer.reset())
+        : steal.get() && mc.currentScreen instanceof GuiChest && received && ((toSteal = getToSteal()).hasNext() ? (values = toSteal.next(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], values[2] || 2, mc.thePlayer)) : mc.thePlayer.closeScreen(), timer.reset());
     },
     onPacket: function (e) {
         e.getPacket() instanceof C16PacketClientStatus && e.getPacket().getStatus() == C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT && (openInventory ? e.cancelEvent() : openInventory = true);
         e.getPacket() instanceof C0DPacketCloseWindow && (openInventory = received = false);
         e.getPacket() instanceof S30PacketWindowItems && timeout(startdelay.get(), function () {received = true});
+        openedChest && e.getPacket() instanceof S2DPacketOpenWindow && e.getPacket().getGuiId() == "minecraft:chest" && (openedChests.push(openedChest), openedChest = null);
     }
+}
+
+function getToOpen() {
+    Java.from(mc.theWorld.loadedTileEntityList).some(function (chest) {
+        if (chest instanceof TileEntityChest && !~openedChests.indexOf(chest)) {
+            eyes = mc.thePlayer.getPositionEyes(.0);
+            bb = (state = mc.theWorld.getBlockState(chest.getPos())).getBlock().getCollisionBoundingBox(mc.theWorld, chest.getPos(), state);
+            distances = []; visible = false;
+            [new Vec3(bb.minX, bb.minY, bb.minZ), new Vec3(bb.minX, bb.minY, bb.maxZ), new Vec3(bb.minX, bb.maxY, bb.minZ), new Vec3(bb.minX, bb.maxY, bb.maxZ), new Vec3(bb.maxX, bb.minY, bb.minZ), new Vec3(bb.maxX, bb.minY, bb.maxZ), new Vec3(bb.maxX, bb.maxY, bb.minZ), new Vec3(bb.maxX, bb.maxY, bb.maxZ)].forEach(function (v) {visible = visible || !(result = mc.theWorld.rayTraceBlocks(eyes, v)) || result.getBlockPos().equals(chest.getPos()); distances.push(Math.sqrt(Math.pow(eyes.xCoord - v.xCoord, 2) + Math.pow(eyes.yCoord - v.yCoord, 2) + Math.pow(eyes.zCoord - v.zCoord, 2)))});
+            if (Math.min.apply(null, distances) < (visible ? openrange.get() : openwallsrange.get())) return openedChest = chest;
+        }
+    });
+    return openedChest;
 }
 
 function canAttack() {
     for (i in mc.theWorld.playerEntities) if (mc.thePlayer.canAttackPlayer(entity = mc.theWorld.playerEntities[i]) && entity != mc.thePlayer && !AntiBotClass.isBot(entity)) return true;
-    return mc.theWorld.playerEntities.length > 1
+    return mc.theWorld.playerEntities.length == 1
 }
 
-function getGarbage() {
+function getToDrop() {
     mc.thePlayer.inventoryContainer.detectAndSendChanges(); stacks = Java.from(mc.thePlayer.inventoryContainer.inventoryItemStacks);
     garbage = []; helmets = []; chestplates = []; leggings = []; boots = []; swords = []; pickaxes = []; axes = []; spades = []; bows = [];
     stacks.forEach(function (itemStack, i) {
@@ -68,7 +88,7 @@ function getGarbage() {
     return garbage.shuffle(randomize.get());
 }
 
-function getUseful() {
+function getToSteal() {
     mc.thePlayer.inventoryContainer.detectAndSendChanges(); mc.currentScreen.inventorySlots.detectAndSendChanges(); stacks = Java.from(mc.currentScreen.inventorySlots.inventoryItemStacks);
     useful = []; filteredUseful = []; helmets = []; chestplates = []; leggings = []; boots = []; swords = []; pickaxes = []; axes = []; spades = []; bows = [];
     stacks.forEach(function (itemStack, i) {
@@ -90,7 +110,7 @@ function getUseful() {
 
         };
     });
-    [helmets, chestplates, leggings, boots].forEach(function (c, i) {c.sort(function (b, a) {return getDurability(stacks[a]) - getDurability(stacks[b])}).sort(function (b, a) {return ARMOR_COMPARATOR.compare(new ArmorPiece(stacks[a], 0), new ArmorPiece(stacks[b], 0))}); if (c.length && c[0] < mc.currentScreen.lowerChestInventory.getSizeInventory() && !~ARMOR_COMPARATOR.compare(new ArmorPiece(stacks[c[0]], 0), new ArmorPiece(mc.thePlayer.inventory.armorInventory[3 - i], 0))) [helmets, chestplates, leggings, boots][i][0] = 54});
+    [helmets, chestplates, leggings, boots].forEach(function (c, i) {c.sort(function (b, a) {return getDurability(stacks[a]) - getDurability(stacks[b])}).sort(function (b, a) {return ARMOR_COMPARATOR.compare(new ArmorPiece(stacks[a], 0), new ArmorPiece(stacks[b], 0))}); if (c.length && c[0] < mc.currentScreen.lowerChestInventory.getSizeInventory() && mc.thePlayer.inventory.armorInventory[3 - i] && !~ARMOR_COMPARATOR.compare(new ArmorPiece(stacks[c[0]], 0), new ArmorPiece(mc.thePlayer.inventory.armorInventory[3 - i], 0))) [helmets, chestplates, leggings, boots][i][0] = 54});
     [Blocks.log, Blocks.stone, Blocks.dirt].forEach(function (t, i2) {[axes, pickaxes, spades][i2].sort(function (a, b) {return b - a}).sort(function (b, a) {return getDurability(stacks[a]) - getDurability(stacks[b])}).sort(function (a, b) {return stacks[a].getItem().getStrVsBlock(stacks[a], t) / (stacks[a].getMaxDamage() - stacks[a].getItemDamage()) - stacks[b].getItem().getStrVsBlock(stacks[b], t) / (stacks[b].getMaxDamage() - stacks[b].getItemDamage())})});
     swords.sort(function (a, b) {return b - a}).sort(function (b, a) {return getDurability(stacks[a]) - getDurability(stacks[b])}).sort(function (b, a) {return (stacks[a].getItem().getDamageVsEntity() + 4 + 1.25 * ItemUtils.getEnchantment(stacks[a], Enchantment.sharpness)) - (stacks[b].getItem().getDamageVsEntity() + 4 + 1.25 * ItemUtils.getEnchantment(stacks[b], Enchantment.sharpness))});
     bows.sort(function (a, b) {return b - a}).sort(function (b, a) {return getDurability(stacks[a]) - getDurability(stacks[b])}).sort(function (a, b) {return ItemUtils.getEnchantment(stacks[a], Enchantment.power) - ItemUtils.getEnchantment(stacks[b], Enchantment.power)});
@@ -111,13 +131,13 @@ function getUseful() {
     return Java.to(sort.shuffle(randomize.get()), List).iterator();
 }
 
-function getArmor() {
+function getToTake() {
     armor = [];
     [helmets, chestplates, leggings, boots].forEach(function (a) {a.length && a[0] > 8 && armor.push(a[0])}); 
     return armor.shuffle(randomize.get());
 }
 
-function getSort() {
+function getToSort() {
     sort = []; values = [slot1.get(), slot2.get(), slot3.get(), slot4.get(), slot5.get(), slot6.get(), slot7.get(), slot8.get(), slot9.get()].map(function (v) {return v.toLowerCase()});
     values.forEach(function (v, i) {
         switch (v) {
@@ -141,16 +161,18 @@ function isSet(slot) {
     }
 }
 
-function open() {
+function checkOpened() {
     !openInventory && mc.getNetHandler().addToSendQueue(new C16PacketClientStatus(C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT)); timer.reset();
     return true
 }
 
 script.import("Core.lib");
 
-received = openInventory = false;
+timer = new MSTimer(); openTimer = new MSTimer();
+var received = openInventory = false, openedChest, openedChests = [];
 ARMOR_COMPARATOR = new ArmorComparator();
 Enchantment = Java.type("net.minecraft.enchantment.Enchantment");
 ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui");
+TileEntityChest = Java.type("net.minecraft.tileentity.TileEntityChest");
 blockBlacklist = [Blocks.enchanting_table, Blocks.chest, Blocks.ender_chest, Blocks.trapped_chest, Blocks.anvil, Blocks.sand, Blocks.web, Blocks.torch, Blocks.crafting_table, Blocks.furnace, Blocks.waterlily, Blocks.dispenser, Blocks.stone_pressure_plate, Blocks.wooden_pressure_plate, Blocks.noteblock, Blocks.dropper, Blocks.tnt, Blocks.standing_banner, Blocks.wall_banner, Blocks.redstone_torch];
 itemWhitelist = ["item.arrow", "item.diamond", "item.ingotIron", "item.stick"];
