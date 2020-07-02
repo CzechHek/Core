@@ -1,4 +1,4 @@
-//Core 1.4.16 - Simple, yet powerful ScriptAPI base
+//Core 1.4.17 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -30,7 +30,7 @@ function Module(m) {
 }
 
 function Command(c) {
-    this.getName = function () {return c.commands && c.commands.length ? c.commands[0] : "Command"};
+    this.getName = function () {return c.name || (c.commands && c.commands.length ? c.commands[0] : "Command")};
     this.getAliases = function () {return c.commands || []};
     c.onExecute && (this.execute = function (a) {
         _prefix = LiquidBounce.commandManager.prefix;
@@ -51,7 +51,7 @@ function Command(c) {
 
         if (_subcommands.length && _args.length < _propertyindex) {
             chat.print("");
-            _args.length == 1 && chat.print("§8▏ §7§l" + this.getName() + " §8v§l" + (c.version || scriptVersion).toFixed(1) + " §7by §8§l" + (c.author || scriptAuthor));
+            _args.length == 1 && chat.print("§8▏ §7§l" + this.getName() + " §8v§l" + (c.version || script.scriptVersion) + " §7by §8§l" + (c.author || Java.from(script.scriptAuthors)));
             _args.length != _propertyindex - 1 ? (chat.print("§8▏ §7Valid subcommands§8: (§7§l" + _subcommands.length + "§8)"), chat.print("§8▏ §f" + _prefix + _args.join(" ") + " §8[§f" + _subcommands.join("§7, §f") + "§8]")) : chat.print("§8▏ §7Usage§8: §f" + _prefix + _args.join(" ") + " §f„§7" + _subcommands[0] + "§f“");
             _commands.length > 1 && _args.length == 1 && (chat.print("§8▏ §7Available aliases§8: (§7§l" + _commands.length + "§8)"), chat.print("§8▏ §f" + _prefix + _commands.join("§7, §f" + _prefix)));
             _error && chat.print("§4▏ §cInvalid argument: " + _prefix + _args.join(" ") + " „§4§l" + _error + "§c“");
@@ -183,7 +183,7 @@ LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Ja
 function onLoad() {
     script.scriptName = (scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Script").toString();
     script.scriptAuthors = [(scriptAuthor || module[0].author || command[0].author || "Author").toString()];
-    script.scriptVersion = (scriptVersion || module[0].version || command[0].version || 1).toString();
+    script.scriptVersion = (scriptVersion || module[0].version || command[0].version || 1.0).toString();
 
     module.forEach(function (m) {Object.keys(m).length && moduleManager.registerModule(new Module(m))});
     command.forEach(function (c) {Object.keys(c).length && commandManager.registerCommand(new Command(c))});
@@ -191,7 +191,7 @@ function onLoad() {
 
 function onEnable() {
     //Modules
-    LiquidBounce.moduleManager.modules.forEach(function (v) {eval(v.name + "Module=" + v.name + "Class=v")});
+    LiquidBounce.moduleManager.modules.forEach(function (v) {eval(v.name + "Module=v;" + v.name + "Class=Java.type(\"" + v.class.getName() + "\")")});
 
     module.forEach(function (m) {m.onLoad && m.onLoad()});
     command.forEach(function (c) {c.onLoad && c.onLoad()});
