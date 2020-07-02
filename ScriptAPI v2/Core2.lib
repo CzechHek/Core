@@ -1,4 +1,4 @@
-//Core 2.1.4 - Simple, yet powerful ScriptAPI base
+//Core 2.1.5 - Simple, yet powerful ScriptAPI base
 
 _moduleList = [], _commandList = [];
 
@@ -36,7 +36,7 @@ function registerModule(m) {
 function registerCommand(c) {
     _commandList.push(c);
     script.registerCommand(_command = {
-        name: c.commands && c.commands.length ? c.commands[0] : script.scriptName || "Command",
+        name: c.name || (c.commands && c.commands.length ? c.commands[0] : script.scriptName || "Command"),
         aliases: c.commands || []
     }, function (command) {
         c.onExecute && command.on("execute", function (a) {
@@ -68,7 +68,7 @@ function registerCommand(c) {
 }
 
 script.on("enable", function () {
-    LiquidBounce.moduleManager.modules.forEach(function (v) {eval(v.name + "Module=" + v.name + "Class=v")});
+    LiquidBounce.moduleManager.modules.forEach(function (v) {eval(v.name + "Module=v;" + v.name + "Class=Java.type(\"" + v.class.getName() + "\")")});
 
     _moduleList.forEach(function (m) {m.onLoad && m.onLoad()});
     _commandList.forEach(function (c) {c.onLoad && c.onLoad()});

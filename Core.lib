@@ -4,7 +4,7 @@ var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
 
 function Module(m) {
-    this.getName = function () {return m.name || "Module"};
+    this.getName = function () {return m.name || script.scriptName || "Module"};
     this.getDescription = function () {return m.description || ""};
     this.getCategory = function () {return m.category || "Fun"};
     m.tag && (this.getTag = function () {return m.tag});
@@ -30,7 +30,7 @@ function Module(m) {
 }
 
 function Command(c) {
-    this.getName = function () {return c.name || (c.commands && c.commands.length ? c.commands[0] : "Command")};
+    this.getName = function () {return c.name || (c.commands && c.commands.length ? c.commands[0] : script.scriptName || "Command")};
     this.getAliases = function () {return c.commands || []};
     c.onExecute && (this.execute = function (a) {
         _prefix = LiquidBounce.commandManager.prefix;
