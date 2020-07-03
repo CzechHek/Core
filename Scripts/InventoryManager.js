@@ -1,16 +1,20 @@
 list = [
     actions = value.createList("Actions", ["Open Chests", "Steal Items", "Drop Garbage", "Equip Armor", "Sort Hotbar", ""], ""),
     actionslist = value.createText("", "Open Chests, Steal Items, Drop Garbage, Equip Armor, Sort Hotbar"),
+    experimental = value.createBoolean("Experimental lobby detection", true),
+    randomize = value.createBoolean("Randomize", false),
+    invopen = value.createBoolean("InvOpen", false),
     mindelay = value.createInteger("MinDelay", 50, 20, 1000),
     maxdelay = value.createInteger("MaxDelay", 50, 20, 1000),
     startdelay = value.createInteger("StartDelay", 100, 20, 1000),
     closedelay = value.createInteger("CloseDelay", 100, 20, 1000),
     noattackdelay = value.createInteger("NoAttackDelay", 500, 20, 1000),
-    opendelay = value.createInteger("OpenDelay", 100, 20, 1000),
+    openinterval = value.createInteger("OpenInterval", 100, 20, 1000),
     openrange = value.createFloat("OpenRange", 5, 3, 8),
     openwallsrange = value.createFloat("OpenWallsRange", 3, 1, 8),
-    randomize = value.createBoolean("Randomize", false),
-    invopen = value.createBoolean("InvOpen", false),
+    openswing = value.createList("OpenSwing", ["Visual", "Packet", "None"], "Packet"),
+    openrotation = value.createList("OpenRotation", ["Visual", "Packet", "None"], "Packet"),
+    openrotationlength = value.createInteger("OpenRotationLength", 25, 1, 100),
     slot1 = value.createText("Slot1", "Sword"),
     slot2 = value.createText("Slot2", "Pickaxe"),
     slot3 = value.createText("Slot3", "Shovel"),
@@ -26,14 +30,18 @@ module = {
     name: "InventoryManager",
     category: "Player",
     author: "CzechHek",
-    version: 5.5,
+    version: 5.6,
     values: list,
+    onMotion: function (e) {
+        e.getEventState() == "PRE" && shouldOperate() && actionslist.get().contains("Open Chests") && !mc.currentScreen && openTimer.hasTimePassed(openinterval.get()) && (toOpen = getToOpen()) && (rot = RotationUtils.faceBlock(toOpen.getPos()).getRotation(), openrotation.get() == "Visual" ? (mc.thePlayer.rotationYaw = rot.getYaw(), mc.thePlayer.rotationPitch = rot.getPitch()) : openrotation.get() == "Packet" && RotationUtils.setTargetRotation(rot, openrotationlength.get()));
+    },
     onUpdate: function () {
         updateValues();
-        if (isInLobby() || !attackTimer.hasTimePassed(noattackdelay.get()) || !timer.hasTimePassed(rand(mindelay.get(), maxdelay.get()))) return
-        actionslist.get().contains("Open Chests") && !mc.currentScreen && openTimer.hasTimePassed(opendelay.get()) && (toOpen = getToOpen()) && (mc.playerController.onPlayerRightClick(mc.thePlayer, mc.theWorld, null, toOpen.getPos(), EnumFacing.DOWN, mc.thePlayer.getLookVec()), openTimer.reset());
-        mc.currentScreen instanceof GuiInventory || mc.currentScreen instanceof GuiContainerCreative || (!invopen.get() && (!mc.currentScreen || mc.currentScreen instanceof ClickGui)) ? (actionslist.get().contains("Drop Garbage") && ((toDrop = getToDrop()).length) ? checkopen() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toDrop.pop(), 1, 4, mc.thePlayer) : (actionslist.get().contains("Equip Armor") && (toTake = getToTake()).length) ? checkopen() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toTake.pop(), 0, 1, mc.thePlayer) : (actionslist.get().contains("Sort Hotbar") && (toSort = getToSort()).hasNext()) ? (values = toSort.next(), checkopen(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], 2, mc.thePlayer)) : openInventory && !mc.currentScreen && mc.getNetHandler().addToSendQueue(new C0DPacketCloseWindow(mc.thePlayer.inventoryContainer.windowId)), timer.reset())
-        : (actionslist.get().contains("Steal Items") && mc.currentScreen instanceof GuiChest && received) && ((toSteal = getToSteal()).hasNext() ? (values = toSteal.next(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0] || values, values[1] || 0, values[2] || 2, mc.thePlayer), (closeTimer = new MSTimer()).reset()) : (!closeTimer || closeTimer.hasTimePassed(closedelay.get())) && (mc.thePlayer.closeScreen(), timer.reset(), closeTimer = null));
+        mindelay.get() > maxdelay.get() && maxdelay.set(mindelay.get());
+        if (!shouldOperate()) return
+        toOpen && !mc.currentScreen && (openTimer.reset(), mc.playerController.onPlayerRightClick(mc.thePlayer, mc.theWorld, null, toOpen.getPos(), EnumFacing.DOWN, mc.thePlayer.getLookVec()), toOpen = null, openswing.get() == "Visual" ? mc.thePlayer.swingItem() : openswing.get() == "Packet" && mc.getNetHandler().addToSendQueue(new C0APacketAnimation()));
+        mc.currentScreen instanceof GuiInventory || (!invopen.get() && (!mc.currentScreen || mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof GuiIngameMenu || mc.currentScreen instanceof GuiChat)) ? ((actionslist.get().contains("Drop Garbage") && ((toDrop = getToDrop()).length)) ? checkOpen() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toDrop.pop(), 1, 4, mc.thePlayer) : (actionslist.get().contains("Equip Armor") && (toTake = getToTake()).length) ? checkOpen() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toTake.pop(), 0, 1, mc.thePlayer) : (actionslist.get().contains("Sort Hotbar") && (toSort = getToSort()).hasNext()) ? (values = toSort.next(), checkOpen(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], 2, mc.thePlayer)) : openInventory && !mc.currentScreen && mc.getNetHandler().addToSendQueue(new C0DPacketCloseWindow(mc.thePlayer.inventoryContainer.windowId)))
+        : (actionslist.get().contains("Steal Items") && mc.currentScreen instanceof GuiChest && received) && ((toSteal = getToSteal()).hasNext() ? (values = toSteal.next(), timer.reset(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0] || values, values[1] || 0, values[2] || 2, mc.thePlayer), (closeTimer = new MSTimer()).reset()) : (!closeTimer || closeTimer.hasTimePassed(closedelay.get())) && (mc.thePlayer.closeScreen(), closeTimer = null));
     },
     onPacket: function (e) {
         e.getPacket() instanceof C16PacketClientStatus && e.getPacket().getStatus() == C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT && (openInventory ? e.cancelEvent() : openInventory = true);
@@ -46,9 +54,10 @@ module = {
     }
 }
 
-function isInLobby() {
-    for (i in mc.theWorld.loadedEntityList) if ((e = mc.theWorld.loadedEntityList[i]) instanceof IBossDisplayData || (e instanceof EntityArmorStand && !e.getCustomNameTag().contains(":"))) return true;
-    return !mc.thePlayer.capabilities.allowEdit
+function shouldOperate() {
+    if (mc.thePlayer.isSpectator() || !attackTimer.hasTimePassed(noattackdelay.get()) || !timer.hasTimePassed(rand(mindelay.get(), maxdelay.get())) || !mc.thePlayer.capabilities.allowEdit || mc.thePlayer.capabilities.allowFlying || mc.thePlayer.capabilities.disableDamage) return false
+    if (experimental.get()) for (i in mc.theWorld.loadedEntityList) if ((e = mc.theWorld.loadedEntityList[i]) instanceof IBossDisplayData || (e instanceof EntityArmorStand && !(tag = e.getCustomNameTag()).contains(":") && !tag.contains("Vazio!"))) return false;
+    return true
 }
 
 function getToOpen() {
@@ -68,10 +77,10 @@ function updateValues() {
     if (mc.currentScreen instanceof ClickGui) {
         actions.get() && (~(valuesList = actionslist.get().split(", ")).indexOf(actions.get()) ? valuesList.splice(valuesList.indexOf(actions.get()), 1) : valuesList.push(actions.get()), actionslist.set(valuesList.filter(Boolean).sort(function (a, b) {return ["Open Chests", "Steal Items", "Drop Garbage", "Equip Armor", "Sort Hotbar"].indexOf(a) - ["Open Chests", "Steal Items", "Drop Garbage", "Equip Armor", "Sort Hotbar"].indexOf(b)}).join(", ")), actions.set(""), updated = false);
         if (!updated)
-            active = [actions, actionslist],
+            active = [actions, actionslist, experimental],
             actionslist.get().split(", ").forEach(function (a) {
                 switch (a) {
-                    case "Open Chests": active.push(opendelay, openrange, openwallsrange); break;
+                    case "Open Chests": active.push(openinterval, openrange, openwallsrange, openswing, openrotation, openrotationlength); break;
                     case "Steal Items": active.push(mindelay, maxdelay, startdelay, closedelay, randomize, invopen); break
                     case "Drop Garbage": case "Equip Armor": active.push(mindelay, maxdelay, noattackdelay, randomize, invopen); break
                     case "Sort Hotbar": active.push(mindelay, maxdelay, noattackdelay, randomize, invopen, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, slot9);
@@ -155,13 +164,13 @@ function getToSteal() {
 }
 
 function getToTake() {
-    armor = [];
     !actionslist.get().contains("Drop Garbage") && getToDrop();
-    [helmets, chestplates, leggings, boots].forEach(function (a, i) {a.length && a[0] > 8 && !mc.thePlayer.inventory.armorInventory[3 - i] && armor.push(a[0])}); 
+    armor = []; [helmets, chestplates, leggings, boots].forEach(function (a, i) {a.length && a[0] > 8 && !mc.thePlayer.inventory.armorInventory[3 - i] && armor.push(a[0])}); 
     return armor.shuffle(randomize.get());
 }
 
 function getToSort() {
+    !actionslist.get().contains("Drop Garbage") && getToDrop();
     sort = []; values = [slot1.get(), slot2.get(), slot3.get(), slot4.get(), slot5.get(), slot6.get(), slot7.get(), slot8.get(), slot9.get()].map(function (v) {return v});
     values.forEach(function (v, i) {
         switch (v) {
@@ -185,15 +194,16 @@ function isSet(slot) {
     }
 }
 
-function checkopen() {
-    !openInventory && mc.getNetHandler().addToSendQueue(new C16PacketClientStatus(C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT)); timer.reset();
+function checkOpen() {
+    !openInventory && mc.getNetHandler().addToSendQueue(new C16PacketClientStatus(C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT));
+    timer.reset();
     return true
 }
 
 script.import("Core.lib");
 
 timer = new MSTimer(); openTimer = new MSTimer(); attackTimer = new MSTimer();
-var received = openInventory = updated = false, openChest, openChests = [], closeTimer;
+var received = openInventory = updated = false, openChest, openChests = [], closeTimer, toOpen;
 ARMOR_COMPARATOR = new ArmorComparator();
 Enchantment = Java.type("net.minecraft.enchantment.Enchantment");
 ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui");
