@@ -4,6 +4,8 @@ list = [
     mindelay = value.createInteger("MinDelay", 50, 20, 1000),
     maxdelay = value.createInteger("MaxDelay", 50, 20, 1000),
     startdelay = value.createInteger("StartDelay", 100, 20, 1000),
+    closedelay = value.createInteger("CloseDelay", 100, 20, 1000),
+    noattackdelay = value.createInteger("NoAttackDelay", 500, 20, 1000),
     opendelay = value.createInteger("OpenDelay", 100, 20, 1000),
     openrange = value.createFloat("OpenRange", 5, 3, 8),
     openwallsrange = value.createFloat("OpenWallsRange", 3, 1, 8),
@@ -24,21 +26,29 @@ module = {
     name: "InventoryManager",
     category: "Player",
     author: "CzechHek",
-    version: 5.4,
+    version: 5.5,
     values: list,
     onUpdate: function () {
         updateValues();
-        if (!mc.thePlayer.capabilities.allowEdit || !canAttack() || !timer.hasTimePassed(rand(mindelay.get(), maxdelay.get()))) return
-        actionslist.get().match("Open Chests") && !mc.currentScreen && openTimer.hasTimePassed(opendelay.get()) && (toOpen = getToOpen()) && (mc.playerController.onPlayerRightClick(mc.thePlayer, mc.theWorld, null, toOpen.getPos(), EnumFacing.DOWN, mc.thePlayer.getLookVec()), openTimer.reset());
-        mc.currentScreen instanceof GuiInventory || mc.currentScreen instanceof GuiContainerCreative || (!invopen.get() && (!mc.currentScreen || mc.currentScreen instanceof ClickGui)) ? (actionslist.get().match("Drop Garbage") && ((toDrop = getToDrop()).length) ? checkopen() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toDrop.pop(), 1, 4, mc.thePlayer) : (actionslist.get().match("Equip Armor") && (toTake = getToTake()).length) ? checkopen() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toTake.pop(), 0, 1, mc.thePlayer) : (actionslist.get().match("Sort Hotbar") && (toSort = getToSort()).hasNext()) ? (values = toSort.next(), checkopen(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], 2, mc.thePlayer)) : openInventory && !mc.currentScreen && mc.getNetHandler().addToSendQueue(new C0DPacketCloseWindow(mc.thePlayer.inventoryContainer.windowId)), timer.reset())
-        : (actionslist.get().match("Steal Items") && mc.currentScreen instanceof GuiChest && received) && ((toSteal = getToSteal()).hasNext() ? (values = toSteal.next(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0] || values, values[1] || 0, values[2] || 2, mc.thePlayer)) : mc.thePlayer.closeScreen(), timer.reset());
+        if (isInLobby() || !attackTimer.hasTimePassed(noattackdelay.get()) || !timer.hasTimePassed(rand(mindelay.get(), maxdelay.get()))) return
+        actionslist.get().contains("Open Chests") && !mc.currentScreen && openTimer.hasTimePassed(opendelay.get()) && (toOpen = getToOpen()) && (mc.playerController.onPlayerRightClick(mc.thePlayer, mc.theWorld, null, toOpen.getPos(), EnumFacing.DOWN, mc.thePlayer.getLookVec()), openTimer.reset());
+        mc.currentScreen instanceof GuiInventory || mc.currentScreen instanceof GuiContainerCreative || (!invopen.get() && (!mc.currentScreen || mc.currentScreen instanceof ClickGui)) ? (actionslist.get().contains("Drop Garbage") && ((toDrop = getToDrop()).length) ? checkopen() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toDrop.pop(), 1, 4, mc.thePlayer) : (actionslist.get().contains("Equip Armor") && (toTake = getToTake()).length) ? checkopen() && mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, toTake.pop(), 0, 1, mc.thePlayer) : (actionslist.get().contains("Sort Hotbar") && (toSort = getToSort()).hasNext()) ? (values = toSort.next(), checkopen(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], 2, mc.thePlayer)) : openInventory && !mc.currentScreen && mc.getNetHandler().addToSendQueue(new C0DPacketCloseWindow(mc.thePlayer.inventoryContainer.windowId)), timer.reset())
+        : (actionslist.get().contains("Steal Items") && mc.currentScreen instanceof GuiChest && received) && ((toSteal = getToSteal()).hasNext() ? (values = toSteal.next(), mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0] || values, values[1] || 0, values[2] || 2, mc.thePlayer), (closeTimer = new MSTimer()).reset()) : (!closeTimer || closeTimer.hasTimePassed(closedelay.get())) && (mc.thePlayer.closeScreen(), timer.reset(), closeTimer = null));
     },
     onPacket: function (e) {
         e.getPacket() instanceof C16PacketClientStatus && e.getPacket().getStatus() == C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT && (openInventory ? e.cancelEvent() : openInventory = true);
         e.getPacket() instanceof C0DPacketCloseWindow && (openInventory = received = false);
         e.getPacket() instanceof S30PacketWindowItems && timeout(startdelay.get(), function () {received = true});
         openChest && e.getPacket() instanceof S2DPacketOpenWindow && e.getPacket().getGuiId() == "minecraft:chest" && (openChests.push(openChest), openChest = null);
+    },
+    onAttack: function () {
+        attackTimer.reset();
     }
+}
+
+function isInLobby() {
+    for (i in mc.theWorld.loadedEntityList) if ((e = mc.theWorld.loadedEntityList[i]) instanceof IBossDisplayData || (e instanceof EntityArmorStand && !e.getCustomNameTag().contains(":"))) return true;
+    return !mc.thePlayer.capabilities.allowEdit
 }
 
 function getToOpen() {
@@ -62,18 +72,13 @@ function updateValues() {
             actionslist.get().split(", ").forEach(function (a) {
                 switch (a) {
                     case "Open Chests": active.push(opendelay, openrange, openwallsrange); break;
-                    case "Steal Items": active.push(mindelay, maxdelay, startdelay, randomize, invopen); break
-                    case "Drop Garbage": case "Equip Armor": active.push(mindelay, maxdelay, randomize, invopen); break
-                    case "Sort Hotbar": active.push(mindelay, maxdelay, randomize, invopen, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, slot9);
+                    case "Steal Items": active.push(mindelay, maxdelay, startdelay, closedelay, randomize, invopen); break
+                    case "Drop Garbage": case "Equip Armor": active.push(mindelay, maxdelay, noattackdelay, randomize, invopen); break
+                    case "Sort Hotbar": active.push(mindelay, maxdelay, noattackdelay, randomize, invopen, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, slot9);
                 }
             }),
             setValues(InventoryManagerModule, active.sort(function (a, b) {return list.indexOf(a) - list.indexOf(b)}).filter(function (item, pos, ary) {return !pos || item != ary[pos - 1]})), updated = true;
     } else if (updated) setValues(InventoryManagerModule, list), LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.valuesConfig), updated = false;
-}
-
-function canAttack() {
-    for (i in mc.theWorld.playerEntities) if (mc.thePlayer.canAttackPlayer(entity = mc.theWorld.playerEntities[i]) && entity != mc.thePlayer && !AntiBotClass.isBot(entity)) return true;
-    return mc.theWorld.playerEntities.length == 1
 }
 
 function getToDrop() {
@@ -134,15 +139,15 @@ function getToSteal() {
     [helmets, chestplates, leggings, boots, swords, pickaxes, axes, spades, bows].forEach(function (c) {c.length && c[0] < mc.currentScreen.lowerChestInventory.getSizeInventory() && useful.push(c[0])});
     useful = useful.shuffle(randomize.get());
 
-    if (!actionslist.get().match("Sort Hotbar")) return Java.to(useful, List).iterator();
-    sort = []; values = [slot1.get(), slot2.get(), slot3.get(), slot4.get(), slot5.get(), slot6.get(), slot7.get(), slot8.get(), slot9.get()].map(function (v) {return v.toLowerCase()});
+    if (!actionslist.get().contains("Sort Hotbar")) return Java.to(useful, List).iterator();
+    sort = []; values = [slot1.get(), slot2.get(), slot3.get(), slot4.get(), slot5.get(), slot6.get(), slot7.get(), slot8.get(), slot9.get()].map(function (v) {return v});
     useful.forEach(function (s) {
         values.some(function (v, i) {
             switch (v) {
-                case "ignore": case "ignored": break
-                case "food": if (stacks[s].getItem() instanceof ItemFood && !~values.indexOf(stacks[s].getDisplayName().toLowerCase()) && !isSet(stacks.length - 9 + i)) {sort.push([s, i]); return true}; break
-                case "blocks": case "block": if (stacks[s].getItem() instanceof ItemBlock && !~values.indexOf(stacks[s].getDisplayName().toLowerCase()) && !isSet(stacks.length - 9 + i)) {sort.push([s, i]); return true}; break
-                default: if (stacks[s].getDisplayName().toLowerCase().match(v) && !isSet(stacks.length - 9 + i)) {sort.push([s, i]); return true};
+                case "Ignore": case "Ignored": break
+                case "Food": if (stacks[s].getItem() instanceof ItemFood && !~values.indexOf(stacks[s].getDisplayName()) && !isSet(stacks.length - 9 + i)) {sort.push([s, i]); return true}; break
+                case "Blocks": case "Block": if (stacks[s].getItem() instanceof ItemBlock && !~values.indexOf(stacks[s].getDisplayName()) && !isSet(stacks.length - 9 + i)) {sort.push([s, i]); return true}; break
+                default: if (stacks[s].getDisplayName().contains(v) && !isSet(stacks.length - 9 + i)) {sort.push([s, i]); return true};
             } i >= 8 && sort.push([s, 0, 1]);
         });
     });
@@ -151,19 +156,19 @@ function getToSteal() {
 
 function getToTake() {
     armor = [];
-    !actionslist.get().match("Drop Garbage") && getToDrop();
+    !actionslist.get().contains("Drop Garbage") && getToDrop();
     [helmets, chestplates, leggings, boots].forEach(function (a, i) {a.length && a[0] > 8 && !mc.thePlayer.inventory.armorInventory[3 - i] && armor.push(a[0])}); 
     return armor.shuffle(randomize.get());
 }
 
 function getToSort() {
-    sort = []; values = [slot1.get(), slot2.get(), slot3.get(), slot4.get(), slot5.get(), slot6.get(), slot7.get(), slot8.get(), slot9.get()].map(function (v) {return v.toLowerCase()});
+    sort = []; values = [slot1.get(), slot2.get(), slot3.get(), slot4.get(), slot5.get(), slot6.get(), slot7.get(), slot8.get(), slot9.get()].map(function (v) {return v});
     values.forEach(function (v, i) {
         switch (v) {
-            case "ignore": case "ignored": break
-            case "food": stacks.some(function (stack, i2) {if (stacks[i + 36] && stacks[i + 36].getItem() instanceof ItemFood) return true; if (stack && (stack.getItem() instanceof ItemFood) && !~values.indexOf(stack.getDisplayName().toLowerCase()) && !isSet(i2)) {sort.push([i2, i]); return true}}); break
-            case "blocks": case "block": stacks.some(function (stack, i2) {if (stacks[i + 36] && stacks[i + 36].getItem() instanceof ItemBlock) return true; if (stack && (stack.getItem() instanceof ItemBlock) && !~values.indexOf(stack.getDisplayName().toLowerCase()) && !isSet(i2)) {sort.push([i2, i]); return true}}); break
-            default: stacks.some(function (stack, i2) {if (stacks[i + 36] && stacks[i + 36].getDisplayName().toLowerCase().match(v)) return true; if (stack && stack.getDisplayName().toLowerCase().match(v) && !isSet(i2)) {sort.push([i2, i]); return true}}); break
+            case "Ignore": case "Ignored": break
+            case "Food": stacks.some(function (stack, i2) {if (stacks[i + 36] && stacks[i + 36].getItem() instanceof ItemFood) return true; if (stack && (stack.getItem() instanceof ItemFood) && !~values.indexOf(stack.getDisplayName()) && !isSet(i2)) {sort.push([i2, i]); return true}}); break
+            case "Blocks": case "Block": stacks.some(function (stack, i2) {if (stacks[i + 36] && stacks[i + 36].getItem() instanceof ItemBlock) return true; if (stack && (stack.getItem() instanceof ItemBlock) && !~values.indexOf(stack.getDisplayName()) && !isSet(i2)) {sort.push([i2, i]); return true}}); break
+            default: stacks.some(function (stack, i2) {if (stacks[i + 36] && stacks[i + 36].getDisplayName().contains(v)) return true; if (stack && stack.getDisplayName().contains(v) && !isSet(i2)) {sort.push([i2, i]); return true}}); break
         }
     });
     return Java.to(sort.shuffle(randomize.get()), List).listIterator();
@@ -172,11 +177,11 @@ function getToSort() {
 function isSet(slot) {
     position = stacks.length - 9
     if (slot < position || !stacks[slot]) return false
-    switch (values[slot - position].toLowerCase()) {
+    switch (values[slot - position]) {
         case "ignore": case "ignored": return false;
-        case "food": return stacks[slot].getItem() instanceof ItemFood && !~values.indexOf(stacks[slot].getDisplayName().toLowerCase());
-        case "blocks": case "block": return stacks[slot].getItem() instanceof ItemBlock && !~values.indexOf(stacks[slot].getDisplayName().toLowerCase());
-        default: return !!values[slot - position].toLowerCase().match(stacks[slot].getDisplayName().toLowerCase());
+        case "food": return stacks[slot].getItem() instanceof ItemFood && !~values.indexOf(stacks[slot].getDisplayName());
+        case "blocks": case "block": return stacks[slot].getItem() instanceof ItemBlock && !~values.indexOf(stacks[slot].getDisplayName());
+        default: return !!values[slot - position].contains(stacks[slot].getDisplayName());
     }
 }
 
@@ -187,8 +192,8 @@ function checkopen() {
 
 script.import("Core.lib");
 
-timer = new MSTimer(); openTimer = new MSTimer();
-var received = openInventory = updated = false, openChest, openChests = [];
+timer = new MSTimer(); openTimer = new MSTimer(); attackTimer = new MSTimer();
+var received = openInventory = updated = false, openChest, openChests = [], closeTimer;
 ARMOR_COMPARATOR = new ArmorComparator();
 Enchantment = Java.type("net.minecraft.enchantment.Enchantment");
 ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui");
