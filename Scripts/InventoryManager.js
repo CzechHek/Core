@@ -178,9 +178,9 @@ function isSet(slot) {
     position = stacks.length - 9
     if (slot < position || !stacks[slot]) return false
     switch (values[slot - position]) {
-        case "ignore": case "ignored": return false;
-        case "food": return stacks[slot].getItem() instanceof ItemFood && !~values.indexOf(stacks[slot].getDisplayName());
-        case "blocks": case "block": return stacks[slot].getItem() instanceof ItemBlock && !~values.indexOf(stacks[slot].getDisplayName());
+        case "Ignore": case "Ignored": return false;
+        case "Food": return stacks[slot].getItem() instanceof ItemFood && !~values.indexOf(stacks[slot].getDisplayName());
+        case "Blocks": case "Block": return stacks[slot].getItem() instanceof ItemBlock && !~values.indexOf(stacks[slot].getDisplayName());
         default: return !!values[slot - position].contains(stacks[slot].getDisplayName());
     }
 }
