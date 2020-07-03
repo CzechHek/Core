@@ -1,4 +1,4 @@
-//Core 1.4.17 - Simple, yet powerful ScriptAPI base
+//Core 1.4.18 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -98,9 +98,8 @@ function timeout(ms, func) {
 
 function setValues(module, values) {
     if (!(module instanceof ScriptModule)) return
-    _valuesmap = new HashMap();
+    _valuesmap = new LinkedHashMap();
     (Array.isArray(values) ? values : [values]).forEach(function (v, i) {_valuesmap.put(i, v instanceof Value ? v : v.getValue())});
-    _valuesmap = new LinkedHashMap(_valuesmap);
     (_valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
     _valuesField.set(module, _valuesmap); _valuesmap = undefined;
 }
