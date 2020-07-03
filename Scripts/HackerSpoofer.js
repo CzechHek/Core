@@ -2,9 +2,9 @@ var list = [
     range = value.createFloat("Range", 4, 1, 8),
     look = value.createBoolean("Look", true),
     swing = value.createBoolean("Swing", true),
-    lookatnearest = value.createBoolean("LookAtNearest", true),
     specificplayer = value.createBoolean("SpecificPlayer", false),
-    nick = value.createText("Nick", "")
+    nick = value.createText("Nick", ""),
+    lookatnearest = value.createBoolean("LookAtNearest", true)
 ], prevSettings, ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui");
 
 module = {
