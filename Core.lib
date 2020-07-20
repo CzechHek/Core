@@ -1,4 +1,4 @@
-//Core 1.4.19 - Simple, yet powerful ScriptAPI base
+//Core 1.5.0 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -146,6 +146,19 @@ Object.defineProperty(Array.prototype, "shuffle", {
     }
 });
 
+function addCategory(name) {
+    name && !(_values = Java.from(_enumValues.get(null))).some(function (v) {return v.getDisplayName().toLowerCase().contains(name.toLowerCase())}) && _enumValues.set(null, Java.to(_values.concat(_accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"));
+}
+
+function removeCategory(name) {
+    Java.from(_enumValues.get(null)).some(function (v, i, a) {
+        if (v.getDisplayName().contains(name)) {
+            a.splice(i, 1);
+            return !_enumValues.set(null, Java.to(a, "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"));
+        }
+    });
+}
+
 //net.minecraft.block.*
 ["Block","BlockAir","BlockAnvil","BlockBanner","BlockBarrier","BlockBasePressurePlate","BlockBeacon","BlockBed","BlockBookshelf","BlockBreakable","BlockBrewingStand","BlockBush","BlockButton","BlockButtonStone","BlockButtonWood","BlockCactus","BlockCake","BlockCarpet","BlockCarrot","BlockCauldron","BlockChest","BlockClay","BlockCocoa","BlockColored","BlockCommandBlock","BlockCompressedPowered","BlockContainer","BlockCrops","BlockDaylightDetector","BlockDeadBush","BlockDirectional","BlockDirt","BlockDispenser","BlockDoor","BlockDoublePlant","BlockDoubleStoneSlab","BlockDoubleStoneSlabNew","BlockDoubleWoodSlab","BlockDragonEgg","BlockDropper","BlockDynamicLiquid","BlockEnchantmentTable","BlockEnderChest","BlockEndPortal","BlockEndPortalFrame","BlockEventData","BlockFalling","BlockFarmland","BlockFence","BlockFenceGate","BlockFire","BlockFlower","BlockFlowerPot","BlockFurnace","BlockGlass","BlockGlowstone","BlockGrass","BlockGravel","BlockHalfStoneSlab","BlockHalfStoneSlabNew","BlockHalfWoodSlab","BlockHardenedClay","BlockHay","BlockHopper","BlockHugeMushroom","BlockIce","BlockJukebox","BlockLadder","BlockLeaves","BlockLeavesBase","BlockLever","BlockLilyPad","BlockLiquid","BlockLog","BlockMelon","BlockMobSpawner","BlockMushroom","BlockMycelium","BlockNetherBrick","BlockNetherrack","BlockNetherWart","BlockNewLeaf","BlockNewLog","BlockNote","BlockObsidian","BlockOldLeaf","BlockOldLog","BlockOre","BlockPackedIce","BlockPane","BlockPistonBase","BlockPistonExtension","BlockPistonMoving","BlockPlanks","BlockPortal","BlockPotato","BlockPressurePlate","BlockPressurePlateWeighted","BlockPrismarine","BlockPumpkin","BlockQuartz","BlockRail","BlockRailBase","BlockRailDetector","BlockRailPowered","BlockRedFlower","BlockRedSandstone","BlockRedstoneComparator","BlockRedstoneDiode","BlockRedstoneLight","BlockRedstoneOre","BlockRedstoneRepeater","BlockRedstoneTorch","BlockRedstoneWire","BlockReed","BlockRotatedPillar","BlockSand","BlockSandStone","BlockSapling","BlockSeaLantern","BlockSign","BlockSilverfish","BlockSkull","BlockSlab","BlockSlime","BlockSnow","BlockSnowBlock","BlockSoulSand","BlockSourceImpl","BlockSponge","BlockStainedGlass","BlockStainedGlassPane","BlockStairs","BlockStandingSign","BlockStaticLiquid","BlockStem","BlockStone","BlockStoneBrick","BlockStoneSlab","BlockStoneSlabNew","BlockTallGrass","BlockTNT","BlockTorch","BlockTrapDoor","BlockTripWire","BlockTripWireHook","BlockVine","BlockWall","BlockWallSign","BlockWeb","BlockWoodSlab","BlockWorkbench","BlockYellowFlower","IGrowable","ITileEntityProvider","material.MapColor","material.Material","material.MaterialLiquid","material.MaterialLogic","material.MaterialPortal","material.MaterialTransparent","properties.IProperty","properties.PropertyBool","properties.PropertyDirection","properties.PropertyEnum","properties.PropertyHelper","properties.PropertyInteger","state.BlockPistonStructureHelper","state.BlockState","state.BlockStateBase","state.BlockWorldState","state.IBlockState","state.pattern.BlockHelper","state.pattern.BlockPattern","state.pattern.BlockStateHelper","state.pattern.FactoryBlockPattern"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.block." + v + "\")")});
 
@@ -177,14 +190,23 @@ Object.defineProperty(Array.prototype, "shuffle", {
 ["BlockValue", "BoolValue", "FloatValue", "FontValue", "IntegerValue", "ListValue", "TextValue", "Value"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.value." + v + "\")")});
 
 //Others
-LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap");
+LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory");
 
 function onLoad() {
     script.scriptName = (scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Script").toString();
     script.scriptAuthors = [(scriptAuthor || module[0].author || command[0].author || "Author").toString()];
     script.scriptVersion = (scriptVersion || module[0].version || command[0].version || 1.0).toString();
 
-    module.forEach(function (m) {Object.keys(m).length && moduleManager.registerModule(new Module(m))});
+    (_enumValues = ModuleCategory.class.getDeclaredField("$VALUES")).setAccessible(true);
+
+    (_modifiers = Field.class.getDeclaredField("modifiers")).setAccessible(true);
+    _modifiers.setInt(_enumValues, _enumValues.getModifiers() & ~Modifier.FINAL);
+
+    (_constructor = ModuleCategory.class.getDeclaredConstructors()[0]).setAccessible(true);
+    (_acquireAccessor = Constructor.class.getDeclaredMethod("acquireConstructorAccessor")).setAccessible(true);
+    _accessor = _acquireAccessor.invoke(_constructor);
+
+    module.forEach(function (m) {Object.keys(m).length && (addCategory(m.category), moduleManager.registerModule(new Module(m)))});
     command.forEach(function (c) {Object.keys(c).length && commandManager.registerCommand(new Command(c))});
 }
 
