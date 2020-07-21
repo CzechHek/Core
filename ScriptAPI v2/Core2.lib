@@ -1,4 +1,4 @@
-//Core 2.2.0 - Simple, yet powerful ScriptAPI base
+//Core 2.2.1 - Simple, yet powerful ScriptAPI base
 
 _moduleList = [], _commandList = [];
 
@@ -180,7 +180,7 @@ Object.defineProperty(Array.prototype, "shuffle", {
 });
 
 function addCategory(name) {
-    name && !(_values = Java.from(_enumValues.get(null))).some(function (v) {return v.getDisplayName().toLowerCase().contains(name.toLowerCase())}) && _enumValues.set(null, Java.to(_values.concat(_accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"));
+    name && !(_values = Java.from(_enumValues.get(null))).some(function (v) {return v.getDisplayName().toLowerCase() == name.toLowerCase()}) && _enumValues.set(null, Java.to(_values.concat(_accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"));
 }
 
 function removeCategory(name) {
