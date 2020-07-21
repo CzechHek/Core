@@ -1,11 +1,9 @@
-//Core 2.2.1 - Simple, yet powerful ScriptAPI base
+//Core 2.2.2 - Simple, yet powerful ScriptAPI base
 
 _moduleList = [], _commandList = [];
 
-function registerModule(m) {
-    _moduleList.push(m);
-    _settings = {};
-    m.values && (Array.isArray(m.values) ? m.values : [m.values]).forEach(function (v, i) {_settings[i] = v});
+function registerModule(m, b) {
+    b ? (_settings = {}, m.values && (Array.isArray(m.values) ? m.values : [m.values]).forEach(function (v, i) {_settings[i] = v}),
     script.registerModule({
         name: m.name || script.scriptName || "Module",
         category: m.category || "Fun",
@@ -30,7 +28,7 @@ function registerModule(m) {
         m.onClickBlock && module.on("clickBlock", function (e) {m.onClickBlock(e)});
         m.onStrafe && module.on("strafe", function (e) {m.onStrafe(e)});
         m.onSlowDown && module.on("slowDown", function (e) {m.onSlowDown(e)});
-    });
+    })) : _moduleList.push(m);
 }
 
 function registerCommand(c) {
@@ -77,7 +75,7 @@ script.on("load", function () {
     (_acquireAccessor = Constructor.class.getDeclaredMethod("acquireConstructorAccessor")).setAccessible(true);
     _accessor = _acquireAccessor.invoke(_constructor);
 
-    _moduleList.forEach(function (m) {addCategory(m.category)});
+    _moduleList.forEach(function (m) {addCategory(m.category), registerModule(m, true)});
 });
 
 script.on("enable", function () {
