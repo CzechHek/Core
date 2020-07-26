@@ -32,14 +32,14 @@ module = {
     name: "InventoryManager",
     category: "Player",
     author: "CzechHek",
-    version: "6.3-canary",
+    version: "6.4-canary",
     values: list,
     onMotion: function (e) {
         if (e.getEventState() == "PRE") {
             updateValues();
             maxinvdelay.get() < mininvdelay.get() && mininvdelay.set(maxinvdelay.get());
             maxstealdelay.get() < minstealdelay.get() && minstealdelay.set(maxstealdelay.get());
-            !attackTimer.hasTimePassed(noattackdelay.get()) && mc.currentScreen instanceof GuiChest && chestEntity && (mc.thePlayer.closeScreen(), chestList.pop());
+            !attackTimer.hasTimePassed(noattackdelay.get()) && mc.currentScreen instanceof GuiChest && openChest && (mc.thePlayer.closeScreen(), chestList.pop());
             
             if (shouldOperate()) {
                 !openInventory && openTimer.hasTimePassed(openinterval.get()) && actionslist.get().contains("Open Chests") && (!mc.currentScreen || mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof GuiIngameMenu || mc.currentScreen instanceof GuiChat) && open();
@@ -50,10 +50,10 @@ module = {
     },
     onPacket: function (e) {
         e.getPacket() instanceof C16PacketClientStatus && e.getPacket().getStatus() == "OPEN_INVENTORY_ACHIEVEMENT" && (openInventory ? e.cancelEvent() : openInventory = true);
-        (e.getPacket() instanceof C0DPacketCloseWindow || e.getPacket() instanceof S2EPacketCloseWindow) && (openInventory = received = opened = false, chestEntity = null);
+        (e.getPacket() instanceof C0DPacketCloseWindow || e.getPacket() instanceof S2EPacketCloseWindow) && (openInventory = received = opened = false, openChest = null);
         e.getPacket() instanceof S30PacketWindowItems && timeout(startdelay.get(), function () {received = true});
         e.getPacket() instanceof C02PacketUseEntity && e.getPacket().getAction() == C02PacketUseEntity.Action.ATTACK && (attackTimer.reset(), actionslist.get().contains("Auto Weapon") && !ScaffoldModule.state && !TowerModule.state && ~(targetSlot = getWeaponSlot()) && mc.thePlayer.inventory.currentItem != targetSlot && (mc.thePlayer.inventory.currentItem = targetSlot, mc.playerController.updateController(), mc.getNetHandler().addToSendQueue(e.getPacket()), e.cancelEvent()));
-        chestEntity && e.getPacket() instanceof S2DPacketOpenWindow && e.getPacket().getGuiId() == "minecraft:chest" && chestList.push(chestEntity);
+        openChest && e.getPacket() instanceof S2DPacketOpenWindow && e.getPacket().getGuiId() == "minecraft:chest" && chestList.push(openChest);
     }
 }
 
@@ -141,7 +141,7 @@ function open() {
                 openrotation.get() == "Visual" && (mc.thePlayer.rotationYaw = rot.getYaw(), mc.thePlayer.rotationPitch = rot.getPitch());
                 mc.playerController.onPlayerRightClick(mc.thePlayer, mc.theWorld, null, chest.getPos(), EnumFacing.DOWN, mc.thePlayer.getLookVec());
                 openswing.get() == "Visual" ? mc.thePlayer.swingItem() : openswing.get() == "Packet" && mc.getNetHandler().addToSendQueue(new C0APacketAnimation());
-                openTimer.reset(); chestList.push(chest); return true;
+                openTimer.reset(); return openChest = chest;
             }
         }
     });
@@ -227,7 +227,7 @@ function checkOpen() {
 
 script.import("Core.lib");
 
-var timer = new MSTimer(), openTimer = new MSTimer(), attackTimer = new MSTimer(), closeTimer = new MSTimer(), ARMOR_COMPARATOR = new ArmorComparator(), received = openInventory = updated = rotated = false, chestEntity, chestList = [], ghostItems = [], closeTimer, toOpen, prevMode = openrotation.get();
+var timer = new MSTimer(), openTimer = new MSTimer(), attackTimer = new MSTimer(), closeTimer = new MSTimer(), ARMOR_COMPARATOR = new ArmorComparator(), received = openInventory = updated = rotated = false, openChest, chestList = [], ghostItems = [], closeTimer, toOpen, prevMode = openrotation.get();
 Enchantment = Java.type("net.minecraft.enchantment.Enchantment");
 ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui");
 TileEntityChest = Java.type("net.minecraft.tileentity.TileEntityChest");
