@@ -32,7 +32,7 @@ module = {
     name: "InventoryManager",
     category: "Player",
     author: "CzechHek",
-    version: "6.4-canary",
+    version: "6.5-canary",
     values: list,
     onMotion: function (e) {
         if (e.getEventState() == "PRE") {
@@ -112,9 +112,7 @@ function steal() {
     bows.sort(function (a, b) {return b - a}).sort(function (b, a) {return getDurability(stacks[a]) - getDurability(stacks[b])}).sort(function (a, b) {return ItemUtils.getEnchantment(stacks[a], Enchantment.power) - ItemUtils.getEnchantment(stacks[b], Enchantment.power)});
     [helmets, chestplates, leggings, boots, swords, pickaxes, axes, spades, bows].forEach(function (c) {c.length && c[0] < mc.currentScreen.lowerChestInventory.getSizeInventory() && useful.push(c[0])});
     useful.sort().shuffle(randomize.get()); instaSteal = !(minstealdelay.get() + maxstealdelay.get());
-    chat.print(useful);
     if (!actionslist.get().contains("Sort Hotbar")) return !(useful.some(function (value) {checkOpen(); mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, value, 0, 2, mc.thePlayer); timer.reset(); closeTimer.reset(); return !instaSteal}) && useful.length);
-
     toSteal = []; values = [slot1.get(), slot2.get(), slot3.get(), slot4.get(), slot5.get(), slot6.get(), slot7.get(), slot8.get(), slot9.get()].map(function (v) {return v});
     useful.forEach(function (s) {
         values.some(function (v, i) {
