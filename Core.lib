@@ -1,4 +1,4 @@
-//Core 1.5.1 - Simple, yet powerful ScriptAPI base
+//Core 1.5.2 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
@@ -6,7 +6,7 @@ module = Array.isArray(module) ? module : [module || {}], command = Array.isArra
 function Module(m) {
     this.getName = function () {return m.name || script.scriptName || "Module"};
     this.getDescription = function () {return m.description || ""};
-    this.getCategory = function () {return m.category || "Fun"};
+    this.getCategory = function () {return m.category || "Custom"};
     m.tag && (this.getTag = function () {return m.tag});
     m.values && (this.addValues = function (e) {(Array.isArray(m.values) ? m.values : [m.values]).forEach(function (v) {e.add(v)})});
     m.onEnable && (this.onEnable = function () {m.onEnable()});
@@ -43,7 +43,7 @@ function Command(c) {
             _object = c.subcommands;
             for (i in _arg = _args.slice(1)) {
                 if (~Object.keys(_object).indexOf(_arg[i])) {
-                    if ((_property = eval("_object." + _arg[i])) instanceof Object) _object = _property;
+                    if ((_property = _object[_arg[i]]) instanceof Object) _object = _property;
                     else {_subcommands = [_property]; _propertyindex = parseInt(i) + (_property ? 3 : 2); break};
                 } else {_error = _arg[i]; _args.length = parseInt(i) + 1; break};
             } !_subcommands.length && (_subcommands = Object.keys(_object));
@@ -133,16 +133,15 @@ function getDurability(itemStack) {
 }
 
 Object.defineProperty(Array.prototype, "shuffle", {
+    writable: true,
     value: function (bool) {
-        if (!this) throw new TypeError();
-        var arr = this.slice(), temp, j, i = arr.length;
-        if (bool === false || !i) return arr;
+        if (bool === false || !(i = this.length)) return this;
 		while (--i) {
 			j = ~~(Math.random() * (i + 1));
-			temp = arr[i];
-			arr[i] = arr[j];
-			arr[j] = temp;
-        } return arr;
+			temp = this[i];
+			this[i] = this[j];
+			this[j] = temp;
+        } return this;
     }
 });
 
