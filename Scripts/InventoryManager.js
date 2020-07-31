@@ -1,6 +1,6 @@
 list = [
-    actions = value.createList("Actions", ["Open Chests", "Steal Items", "Drop Garbage", "Equip Armor", "Sort Hotbar", "Auto Weapon", ""], ""),
-    actionslist = value.createText("", "Open Chests, Steal Items, Drop Garbage, Equip Armor, Sort Hotbar, Auto Weapon"),
+    actions = value.createList("Actions", ACTIONS = ["Open Chests", "Steal Items", "Drop Garbage", "Equip Armor", "Sort Hotbar", "Select Weapons", "Throw Potions", ""], ""),
+    actionslist = value.createText("", "Open Chests, Steal Items, Drop Garbage, Equip Armor, Sort Hotbar, Select Weapons, Throw Potions"),
     experimental = value.createBoolean("Experimental lobby detection", true),
     randomize = value.createBoolean("Randomize", false),
     invopen = value.createBoolean("InvOpen", false),
@@ -15,8 +15,9 @@ list = [
     openrange = value.createFloat("OpenRange", 5, 3, 8),
     openwallsrange = value.createFloat("OpenWallsRange", 3, 1, 8),
     openswing = value.createList("OpenSwing", ["Visual", "Packet", "None"], "Packet"),
-    openrotation = value.createList("OpenRotation", ["Visual", "Packet", "None"], "Packet"),
-    openrotationlength = value.createInteger("OpenRotationLength", 25, 0, 100),
+    rotations = value.createList("Rotations", ["Visual", "Packet", "None"], "Packet"),
+    rotationslength = value.createInteger("RotationsLength", 0, 0, 100),
+    healthtoheal = value.createInteger("HealthToHeal", 10, 1, 20),
     slot1 = value.createText("Slot1", "Sword"),
     slot2 = value.createText("Slot2", "Pickaxe"),
     slot3 = value.createText("Slot3", "Shovel"),
@@ -32,57 +33,66 @@ module = {
     name: "InventoryManager",
     category: "Player",
     author: "CzechHek",
-    version: "6.5-canary",
+    version: "6.10-canary",
     values: list,
     onMotion: function (e) {
         if (e.getEventState() == "PRE") {
             updateValues();
             maxinvdelay.get() < mininvdelay.get() && mininvdelay.set(maxinvdelay.get());
             maxstealdelay.get() < minstealdelay.get() && minstealdelay.set(maxstealdelay.get());
-            !attackTimer.hasTimePassed(noattackdelay.get()) && mc.currentScreen instanceof GuiChest && openChest && (mc.thePlayer.closeScreen(), chestList.pop());
+            !attackTimer.hasTimePassed(noattackdelay.get()) && mc.currentScreen instanceof GuiChest && shouldOpen && (mc.thePlayer.closeScreen(), chestList.pop());
             
             if (shouldOperate()) {
-                !openInventory && openTimer.hasTimePassed(openinterval.get()) && actionslist.get().contains("Open Chests") && (!mc.currentScreen || mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof GuiIngameMenu || mc.currentScreen instanceof GuiChat) && open();
+                !openInventory && openTimer.hasTimePassed(openinterval.get()) && actionslist.get().contains("Open Chests") && (!mc.currentScreen || mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof GuiIngameMenu || mc.currentScreen instanceof GuiChat) && rotateToOpen();
                 timer.hasTimePassed(rand(minstealdelay.get(), maxstealdelay.get())) && actionslist.get().contains("Steal Items") && mc.currentScreen instanceof GuiChest && received && steal() && closeTimer.hasTimePassed(closedelay.get()) && mc.thePlayer.closeScreen();
-                timer.hasTimePassed(rand(mininvdelay.get(), maxinvdelay.get())) && (mc.currentScreen instanceof GuiInventory || (!invopen.get() && (!mc.currentScreen || mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof GuiIngameMenu || mc.currentScreen instanceof GuiChat))) && (getItems(), sort() && drop() && equip() && openInventory && !mc.currentScreen && mc.getNetHandler().addToSendQueue(new C0DPacketCloseWindow(mc.thePlayer.inventoryContainer.windowId)));
+                timer.hasTimePassed(rand(mininvdelay.get(), maxinvdelay.get())) && (mc.currentScreen instanceof GuiInventory || (!invopen.get() && (!mc.currentScreen || mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof GuiIngameMenu || mc.currentScreen instanceof GuiChat))) && (getItems(), drop() && sort() && equip() && !mc.currentScreen && openInventory ? mc.getNetHandler().addToSendQueue(new C0DPacketCloseWindow(mc.thePlayer.inventoryContainer.windowId)) : rotateToThrow());
+            }
+        } else {
+            if (shouldOperate()) {
+                shouldOpen && openChest();
+                shouldThrow && throwPotion();
             }
         }
     },
     onPacket: function (e) {
         e.getPacket() instanceof C16PacketClientStatus && e.getPacket().getStatus() == "OPEN_INVENTORY_ACHIEVEMENT" && (openInventory ? e.cancelEvent() : openInventory = true);
-        (e.getPacket() instanceof C0DPacketCloseWindow || e.getPacket() instanceof S2EPacketCloseWindow) && (openInventory = received = opened = false, openChest = null);
+        (e.getPacket() instanceof C0DPacketCloseWindow || e.getPacket() instanceof S2EPacketCloseWindow) && (openInventory = received = opened = false, shouldOpen = null);
         e.getPacket() instanceof S30PacketWindowItems && timeout(startdelay.get(), function () {received = true});
-        e.getPacket() instanceof C02PacketUseEntity && e.getPacket().getAction() == C02PacketUseEntity.Action.ATTACK && (attackTimer.reset(), actionslist.get().contains("Auto Weapon") && !ScaffoldModule.state && !TowerModule.state && ~(targetSlot = getWeaponSlot()) && mc.thePlayer.inventory.currentItem != targetSlot && (mc.thePlayer.inventory.currentItem = targetSlot, mc.playerController.updateController(), mc.getNetHandler().addToSendQueue(e.getPacket()), e.cancelEvent()));
-        openChest && e.getPacket() instanceof S2DPacketOpenWindow && e.getPacket().getGuiId() == "minecraft:chest" && chestList.push(openChest);
+        e.getPacket() instanceof C02PacketUseEntity && e.getPacket().getAction() == "ATTACK" && (attackTimer.reset(), selectWeapon());
+        shouldOpen && e.getPacket() instanceof S2DPacketOpenWindow && e.getPacket().getGuiId() == "minecraft:chest" && chestList.push(shouldOpen);
     }
 }
 
 function sort() {
     if (!actionslist.get().contains("Sort Hotbar")) return true;
 
-    toSort = []; values = [slot1.get(), slot2.get(), slot3.get(), slot4.get(), slot5.get(), slot6.get(), slot7.get(), slot8.get(), slot9.get()];
-    values.forEach(function (v, i) {
-        if (!isSet(i))
-            switch (v) {
-                case "Ignore": case "Ignored": break
-                case "Food": stacks.some(function (stack, i2) {if (stack && (stack.getItem() instanceof ItemFood) && !~values.indexOf(stack.getDisplayName()) && !isSet(i2)) {toSort.push([i2, i]); return true}}); break
-                case "Blocks": case "Block": stacks.some(function (stack, i2) {if (stacks[slot] && stacks[slot].getItem() instanceof ItemBlock) return true; if (stack && (stack.getItem() instanceof ItemBlock) && !~values.indexOf(stack.getDisplayName()) && !isSet(i2)) {toSort.push([i2, i]); return true}}); break
-                default: stacks.some(function (stack, i2) {if (stacks[slot] && stacks[slot].getDisplayName().contains(v)) return true; if (stack && stack.getDisplayName().contains(v) && !isSet(i2)) {toSort.push([i2, i]); return true}}); break
-            }
-    });
+    toSort = []; values = [slot1.get(), slot2.get(), slot3.get(), slot4.get(), slot5.get(), slot6.get(), slot7.get(), slot8.get(), slot9.get()].map(function (v) {return v.replaceAll(";", ",").replaceAll(", ", ",")});
+    values.forEach(function (v, i) {v.split(",").some(function () {return stacks.some(function (s, i3) {if (s && shouldSet(i, i3)) return ~toSort.push([i3, i])})})});
 
-    return !(toSort.some(function (values) {checkOpen(); mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], 2, mc.thePlayer); timer.reset(); return !instaInv}) && toSort.length);
+    return !(toSort.some(function (values) {openInv(); mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], 2, mc.thePlayer); timer.reset(); return !instaInv}) && toSort.length);
+}
+
+function shouldSet(i1, i2) {
+    priority1 = getPriority(values[i1].split(","), stacks[i2]);
+    priority2 = getPriority(values[i1].split(","), stacks[i1 + 36]);
+    i2 > 35 && (priority3 = getPriority(values[i2 - 36].split(","), stacks[i2]));
+    
+    return ~priority1 && (!~priority2 || (priority1 < priority2)) && (i2 < 36 || !~priority3 || (priority1 < priority3));
+}
+
+function getPriority(array, stack) {
+    return stack ? array.find(function (v) {return v == "Food" ? stack.getItem() instanceof ItemFood : (v == "Block" || v == "Blocks") ? stack.getItem() instanceof ItemBlock : stack.getDisplayName().contains(v)}, true) : -1;
 }
 
 function drop() {
-    return !actionslist.get().contains("Drop Garbage") || !(garbage.some(function (value) {checkOpen(); mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, value, 1, 4, mc.thePlayer); timer.reset(); return !instaInv}) && garbage.length);
+    return !actionslist.get().contains("Drop Garbage") || !(garbage.some(function (value) {openInv(); mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, value, 1, 4, mc.thePlayer); timer.reset(); return !instaInv}) && garbage.length);
 }
 
 function equip() {
     if (!actionslist.get().contains("Equip Armor")) return true;
 
     armor = []; [helmets, chestplates, leggings, boots].forEach(function (c, i) {c.length && c[0] > 8 && !mc.thePlayer.inventory.armorInventory[3 - i] && armor.push(c[0])});
-    return !(armor.some(function (value) {checkOpen(); mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, value, 0, 1, mc.thePlayer); timer.reset(); return !instaInv}) && armor.length);
+    return !(armor.some(function (value) {openInv(); mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, value, 0, 1, mc.thePlayer); timer.reset(); return !instaInv}) && armor.length);
 }
 
 function steal() {
@@ -112,7 +122,8 @@ function steal() {
     bows.sort(function (a, b) {return b - a}).sort(function (b, a) {return getDurability(stacks[a]) - getDurability(stacks[b])}).sort(function (a, b) {return ItemUtils.getEnchantment(stacks[a], Enchantment.power) - ItemUtils.getEnchantment(stacks[b], Enchantment.power)});
     [helmets, chestplates, leggings, boots, swords, pickaxes, axes, spades, bows].forEach(function (c) {c.length && c[0] < mc.currentScreen.lowerChestInventory.getSizeInventory() && useful.push(c[0])});
     useful.sort().shuffle(randomize.get()); instaSteal = !(minstealdelay.get() + maxstealdelay.get());
-    if (!actionslist.get().contains("Sort Hotbar")) return !(useful.some(function (value) {checkOpen(); mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, value, 0, 2, mc.thePlayer); timer.reset(); closeTimer.reset(); return !instaSteal}) && useful.length);
+    if (!actionslist.get().contains("Sort Hotbar")) return !(useful.some(function (value) {mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, value, 0, 2, mc.thePlayer); timer.reset(); closeTimer.reset(); return !instaSteal}) && useful.length);
+
     toSteal = []; values = [slot1.get(), slot2.get(), slot3.get(), slot4.get(), slot5.get(), slot6.get(), slot7.get(), slot8.get(), slot9.get()].map(function (v) {return v});
     useful.forEach(function (s) {
         values.some(function (v, i) {
@@ -127,7 +138,18 @@ function steal() {
     return !(toSteal.some(function (values) {mc.playerController.windowClick(mc.thePlayer.openContainer.windowId, values[0], values[1], values[2] || 2, mc.thePlayer); timer.reset(); closeTimer.reset(); return !instaSteal}) && toSteal.length);
 }
 
-function open() {
+function openChest() {
+    mc.playerController.onPlayerRightClick(mc.thePlayer, mc.theWorld, null, shouldOpen.getPos(), EnumFacing.DOWN, mc.thePlayer.getLookVec()); openTimer.reset();
+    openswing.get() == "Visual" ? mc.thePlayer.swingItem() : openswing.get() == "Packet" && mc.getNetHandler().addToSendQueue(new C0APacketAnimation());
+}
+
+function throwPotion() {
+    mc.getNetHandler().addToSendQueue(new C08PacketPlayerBlockPlacement(shouldThrow));
+    mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(mc.thePlayer.inventory.currentItem));
+    shouldThrow = null; timer.reset();
+}
+
+function rotateToOpen() {
     Java.from(mc.theWorld.loadedTileEntityList).some(function (chest) {
         if (chest instanceof TileEntityChest && !~chestList.indexOf(chest)) {
             eyes = mc.thePlayer.getPositionEyes(.0);
@@ -135,29 +157,32 @@ function open() {
             distances = []; visible = false;
             [new Vec3(bb.minX, bb.minY, bb.minZ), new Vec3(bb.minX, bb.minY, bb.maxZ), new Vec3(bb.minX, bb.maxY, bb.minZ), new Vec3(bb.minX, bb.maxY, bb.maxZ), new Vec3(bb.maxX, bb.minY, bb.minZ), new Vec3(bb.maxX, bb.minY, bb.maxZ), new Vec3(bb.maxX, bb.maxY, bb.minZ), new Vec3(bb.maxX, bb.maxY, bb.maxZ)].forEach(function (v) {visible = visible || !(result = mc.theWorld.rayTraceBlocks(eyes, v)) || result.getBlockPos().equals(chest.getPos()); distances.push(Math.sqrt(Math.pow(eyes.xCoord - v.xCoord, 2) + Math.pow(eyes.yCoord - v.yCoord, 2) + Math.pow(eyes.zCoord - v.zCoord, 2)))});
             if (Math.min.apply(null, distances) < (visible ? openrange.get() : openwallsrange.get())) {
-                openrotation.get() != "None" && RotationUtils.setTargetRotation(rot = RotationUtils.faceBlock(chest.getPos()).getRotation(), openrotationlength.get());
-                openrotation.get() == "Visual" && (mc.thePlayer.rotationYaw = rot.getYaw(), mc.thePlayer.rotationPitch = rot.getPitch());
-                mc.playerController.onPlayerRightClick(mc.thePlayer, mc.theWorld, null, chest.getPos(), EnumFacing.DOWN, mc.thePlayer.getLookVec());
-                openswing.get() == "Visual" ? mc.thePlayer.swingItem() : openswing.get() == "Packet" && mc.getNetHandler().addToSendQueue(new C0APacketAnimation());
-                openTimer.reset(); return openChest = chest;
+                rotations.get() == "Packet" && RotationUtils.setTargetRotation(rot = RotationUtils.faceBlock(chest.getPos()).getRotation(), rotationslength.get());
+                rotations.get() == "Visual" && (mc.thePlayer.rotationYaw = rot.getYaw(), mc.thePlayer.rotationPitch = rot.getPitch());
+                return shouldOpen = chest;
             }
         }
     });
 }
 
-function isSet(i) {
-    if (stacks[slot = i + 36])
-        switch (values[i]) {
-            case "Ignore": case "Ignored": return false;
-            case "Food": return stacks[slot].getItem() instanceof ItemFood && !~values.indexOf(stacks[slot].getDisplayName());
-            case "Blocks": case "Block": return stacks[slot].getItem() instanceof ItemBlock && !~values.indexOf(stacks[slot].getDisplayName());
-            default: return !!values[i].contains(stacks[slot].getDisplayName());
+function rotateToThrow() {
+    if (mc.thePlayer.onGround)
+        for (i = 35; i++ < 44;) {
+            if (stacks[i] && stacks[i].getItem() instanceof ItemPotion && ItemPotion.isSplash(stacks[i].getItemDamage()) && !Java.from(new ItemPotion().getEffects(stacks[i])).some(function (e) {return Java.from(mc.thePlayer.getActivePotionEffects()).some(function (e2) {return e.getEffectName() == e2.getEffectName()}) || (mc.thePlayer.getHealth() > healthtoheal.get() && ["potion.regeneration", "potion.heal"].includes(e.getEffectName()))})) {
+                mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(i - 36));
+                rotations.get() == "Packet" && RotationUtils.setTargetRotation(new Rotation(mc.thePlayer.rotationYaw, 90), rotationslength.get());
+                rotations.get() == "Visual" && (mc.thePlayer.rotationPitch = 90);
+                return shouldThrow = stacks[i];
+            }
         }
 }
 
-function getWeaponSlot() {
-    for (i = bestSword = bestTool = -1; ++i < 9;) (stack = mc.thePlayer.inventory.mainInventory[i]) && (item = stack.getItem()) && (item instanceof ItemSword ? (!~bestSword || getAttackDamage(stack) > getAttackDamage(mc.thePlayer.inventory.mainInventory[bestSword])) && (bestSword = i) : !~bestSword && item instanceof ItemTool && (!~bestTool || getAttackDamage(stack) > getAttackDamage(mc.thePlayer.inventory.mainInventory[bestTool])) && (bestTool = i));
-    return ~bestSword ? bestSword : bestTool
+function selectWeapon() {
+    if (!ScaffoldModule.state && !TowerModule.state && actionslist.get().contains("Select Weapons")) {
+        for (i = bestSword = bestTool = -1; ++i < 9;) (stack = mc.thePlayer.inventory.mainInventory[i]) && (item = stack.getItem()) && (item instanceof ItemSword ? (!~bestSword || getAttackDamage(stack) > getAttackDamage(mc.thePlayer.inventory.mainInventory[bestSword])) && (bestSword = i) : !~bestSword && item instanceof ItemTool && (!~bestTool || getAttackDamage(stack) > getAttackDamage(mc.thePlayer.inventory.mainInventory[bestTool])) && (bestTool = i));
+
+        (~(targetSlot = ~bestSword ? bestSword : bestTool) && mc.thePlayer.inventory.currentItem != targetSlot) && (mc.thePlayer.inventory.currentItem = targetSlot, mc.playerController.updateController());
+    }
 }
 
 function shouldOperate() {
@@ -168,16 +193,17 @@ function shouldOperate() {
 
 function updateValues() {
     if (mc.currentScreen instanceof ClickGui) {
-        actions.get() && (~(valuesList = actionslist.get().split(", ")).indexOf(actions.get()) ? valuesList.splice(valuesList.indexOf(actions.get()), 1) : valuesList.push(actions.get()), actionslist.set(valuesList.filter(Boolean).sort(function (a, b) {return ["Open Chests", "Steal Items", "Drop Garbage", "Equip Armor", "Sort Hotbar", "Auto Weapon"].indexOf(a) - ["Open Chests", "Steal Items", "Drop Garbage", "Equip Armor", "Sort Hotbar", "Auto Weapon"].indexOf(b)}).join(", ")), actions.set(""), updated = false);
-        openrotation.get() != prevMode && (prevMode = openrotation.get(), updated = false);
+        actions.get() && (~(valuesList = actionslist.get().split(", ")).indexOf(actions.get()) ? valuesList.splice(valuesList.indexOf(actions.get()), 1) : valuesList.push(actions.get()), actionslist.set(valuesList.filter(Boolean).sort(function (a, b) {return ACTIONS.indexOf(a) - ACTIONS.indexOf(b)}).join(", ")), actions.set(""), updated = false);
+        rotations.get() != prevMode && (prevMode = rotations.get(), updated = false);
         if (!updated)
             active = [actions, actionslist, experimental],
             actionslist.get().split(", ").forEach(function (a) {
                 switch (a) {
-                    case "Open Chests": active.push(openinterval, openrange, openwallsrange, openswing, openrotation, openrotation.get() != "None" ? openrotationlength : null); break;
+                    case "Open Chests": active.push(openinterval, openrange, openwallsrange, openswing, rotations, rotations.get() == "Packet" ? rotationslength : null); break;
                     case "Steal Items": active.push(maxstealdelay, minstealdelay, startdelay, closedelay, randomize, invopen); break
                     case "Drop Garbage": case "Equip Armor": active.push(maxinvdelay, mininvdelay, noattackdelay, randomize, invopen); break
-                    case "Sort Hotbar": active.push(maxinvdelay, mininvdelay, noattackdelay, randomize, invopen, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, slot9);
+                    case "Sort Hotbar": active.push(maxinvdelay, mininvdelay, noattackdelay, randomize, invopen, slot1, slot2, slot3, slot4, slot5, slot6, slot7, slot8, slot9); break
+                    case "Throw Potions": active.push(rotations, rotations.get() == "Packet" ? rotationslength : null, healthtoheal);
                 }
             }),
             setValues(InventoryManagerModule, active.filter(Boolean).sort(function (a, b) {return list.indexOf(a) - list.indexOf(b)}).filter(function (item, pos, ary) {return !pos || item != ary[pos - 1]})), updated = true;
@@ -201,7 +227,7 @@ function getItems() {
                 item instanceof ItemSpade && spades.push(i);
             } else if (item instanceof ItemSword) swords.push(i);
             else if (item instanceof ItemBow) bows.push(i);
-            else (item instanceof ItemBlock ? ~blockBlacklist.indexOf(item.getBlock()) : !(item instanceof ItemFood || item instanceof ItemPotion || item instanceof ItemEnderPearl || item instanceof ItemEnchantedBook || item instanceof ItemBucket || ~itemWhitelist.indexOf(itemStack.getUnlocalizedName()))) && garbage.push(i);
+            else (item instanceof ItemBlock ? ~blockBlacklist.indexOf(item.getBlock()) : !(item instanceof ItemFood || (item instanceof ItemPotion && !isBad(itemStack)) || item instanceof ItemEnderPearl || item instanceof ItemEnchantedBook || item instanceof ItemBucket || ~itemWhitelist.indexOf(itemStack.getUnlocalizedName()))) && garbage.push(i);
         }
     });
     [helmets, chestplates, leggings, boots].forEach(function (c) {c.sort(function (b, a) {return getDurability(stacks[a]) - getDurability(stacks[b])}).sort(function (b, a) {return ARMOR_COMPARATOR.compare(new ArmorPiece(stacks[a], a), new ArmorPiece(stacks[b], b))})});
@@ -217,15 +243,18 @@ function getAttackDamage(stack) {
     return stack && (item = stack.getItem()) && (item instanceof ItemSword || item instanceof ItemTool) ? Java.from(item.getItemAttributeModifiers().get("generic.attackDamage"))[0].getAmount() + 1.25 * ItemUtils.getEnchantment(stack, Enchantment.sharpness) : -1;
 }
 
-function checkOpen() {
+function openInv() {
     !openInventory && mc.getNetHandler().addToSendQueue(new C16PacketClientStatus(C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT));
-    timer.reset();
-    return true
+    return !timer.reset();
+}
+
+function isBad(stack) {
+    return Java.from(new ItemPotion().getEffects(stack)).some(function (e) {return ["potion.poison", "potion.harm", "potion.moveSlowdown", "potion.weakness"].includes(e.getEffectName())});
 }
 
 script.import("Core.lib");
 
-var timer = new MSTimer(), openTimer = new MSTimer(), attackTimer = new MSTimer(), closeTimer = new MSTimer(), ARMOR_COMPARATOR = new ArmorComparator(), received = openInventory = updated = rotated = false, openChest, chestList = [], ghostItems = [], closeTimer, toOpen, prevMode = openrotation.get();
+var timer = new MSTimer(), openTimer = new MSTimer(), attackTimer = new MSTimer(), closeTimer = new MSTimer(), ARMOR_COMPARATOR = new ArmorComparator(), received = openInventory = updated = rotated = false, shouldOpen, chestList = [], ghostItems = [], closeTimer, toOpen, prevMode = rotations.get(), shouldOpen, shouldThrow;
 Enchantment = Java.type("net.minecraft.enchantment.Enchantment");
 ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui");
 TileEntityChest = Java.type("net.minecraft.tileentity.TileEntityChest");
