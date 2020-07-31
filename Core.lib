@@ -1,10 +1,14 @@
-//Core 1.5.2 - Simple, yet powerful ScriptAPI base
+//Core 1.6.0 - Simple, yet powerful ScriptAPI base
 
 var scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
 module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
 
+/*--------------*/
+/* Modules core */
+/*--------------*/
+
 function Module(m) {
-    this.getName = function () {return m.name || script.scriptName || "Module"};
+    this.getName = function () {return m.name || "Module"};
     this.getDescription = function () {return m.description || ""};
     this.getCategory = function () {return m.category || "Custom"};
     m.tag && (this.getTag = function () {return m.tag});
@@ -28,6 +32,10 @@ function Module(m) {
     m.onStrafe && (this.onStrafe = function (e) {m.onStrafe(e)});
     m.onSlowDown && (this.onSlowDown = function (e) {m.onSlowDown(e)});
 }
+
+/*---------------*/
+/* Commands core */
+/*---------------*/
 
 function Command(c) {
     this.getName = function () {return c.name || (c.commands && c.commands.length ? c.commands[0] : script.scriptName || "Command")};
@@ -58,6 +66,10 @@ function Command(c) {
         } else c.onExecute(_args);
     });
 }
+
+/*------------------*/
+/* Custom functions */
+/*------------------*/
 
 function isMovingHorizontally(entity) {
     return entity && entity != mc.thePlayer ? entity.lastTickPosX != entity.posX || entity.lastTickPosZ != entity.posZ : !!(mc.thePlayer.movementInput.moveForward || mc.thePlayer.movementInput.moveStrafe);
@@ -132,6 +144,29 @@ function getDurability(itemStack) {
     if (itemStack) return itemStack.getMaxDamage() - itemStack.getItemDamage();
 }
 
+function addCategory(name) {
+    name && !(_values = Java.from(_enumValues.get(null))).some(function (v) {return v.getDisplayName().toLowerCase() == name.toLowerCase()}) && _enumValues.set(null, Java.to(_values.concat(_accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"));
+}
+
+function removeCategory(name) {
+    Java.from(_enumValues.get(null)).some(function (v, i, a) {
+        if (v.getDisplayName().contains(name)) {
+            a.splice(i, 1);
+            return !_enumValues.set(null, Java.to(a, "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"));
+        }
+    });
+}
+
+function print() {
+    ClientUtils.displayChatMessage(Array.prototype.slice.call(arguments).join(" "));
+}
+
+/*------------------*/
+/* Object functions */
+/*------------------*/
+
+//array.shuffle([boolean]) - randomizes elements order, overwrites and returns the array
+//parameters: boolean - optional; false -> doesn't shuffle
 Object.defineProperty(Array.prototype, "shuffle", {
     writable: true,
     value: function (bool) {
@@ -145,18 +180,36 @@ Object.defineProperty(Array.prototype, "shuffle", {
     }
 });
 
-function addCategory(name) {
-    name && !(_values = Java.from(_enumValues.get(null))).some(function (v) {return v.getDisplayName().toLowerCase() == name.toLowerCase()}) && _enumValues.set(null, Java.to(_values.concat(_accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"));
-}
+//array.find(function, [boolean]) - finds first element that fullfills a condition, returns the element or index of the element
+//parameters: function - defines the condition, boolean - optional; true -> returns index
+Object.defineProperty(Array.prototype, "find", {
+    value: function (func, returnIndex) {
+        for (i in this) if (func(this[i])) return returnIndex ? i : this[i];
+        return returnIndex ? -1 : null;
+        //return this.filter(function (e) {return func(e)})[0];
+    }
+});
 
-function removeCategory(name) {
-    Java.from(_enumValues.get(null)).some(function (v, i, a) {
-        if (v.getDisplayName().contains(name)) {
-            a.splice(i, 1);
-            return !_enumValues.set(null, Java.to(a, "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"));
-        }
-    });
-}
+//array.includes(element) - checks if array has element, returns boolean
+//parameters: element - element of the array to check for
+Object.defineProperty(Array.prototype, "includes", {
+    value: function (element) {
+        return this.indexOf(element) > -1;
+    }
+});
+
+//string.includes(string, [boolean]) - checks if string contains other string, case sensitive / insensitive, returns boolean
+//parameters: string - string to check for, boolean - optional; true -> case insensitive search
+Object.defineProperty(String.prototype, "includes", {
+    value: function (string, ignoreCase) {
+        return ignoreCase ? this.toString().toLowerCase().contains(string.toLowerCase()) : this.toString().contains(string);
+        
+    }
+});
+
+/*----------------*/
+/* Java importing */
+/*----------------*/
 
 //net.minecraft.block.*
 ["Block","BlockAir","BlockAnvil","BlockBanner","BlockBarrier","BlockBasePressurePlate","BlockBeacon","BlockBed","BlockBookshelf","BlockBreakable","BlockBrewingStand","BlockBush","BlockButton","BlockButtonStone","BlockButtonWood","BlockCactus","BlockCake","BlockCarpet","BlockCarrot","BlockCauldron","BlockChest","BlockClay","BlockCocoa","BlockColored","BlockCommandBlock","BlockCompressedPowered","BlockContainer","BlockCrops","BlockDaylightDetector","BlockDeadBush","BlockDirectional","BlockDirt","BlockDispenser","BlockDoor","BlockDoublePlant","BlockDoubleStoneSlab","BlockDoubleStoneSlabNew","BlockDoubleWoodSlab","BlockDragonEgg","BlockDropper","BlockDynamicLiquid","BlockEnchantmentTable","BlockEnderChest","BlockEndPortal","BlockEndPortalFrame","BlockEventData","BlockFalling","BlockFarmland","BlockFence","BlockFenceGate","BlockFire","BlockFlower","BlockFlowerPot","BlockFurnace","BlockGlass","BlockGlowstone","BlockGrass","BlockGravel","BlockHalfStoneSlab","BlockHalfStoneSlabNew","BlockHalfWoodSlab","BlockHardenedClay","BlockHay","BlockHopper","BlockHugeMushroom","BlockIce","BlockJukebox","BlockLadder","BlockLeaves","BlockLeavesBase","BlockLever","BlockLilyPad","BlockLiquid","BlockLog","BlockMelon","BlockMobSpawner","BlockMushroom","BlockMycelium","BlockNetherBrick","BlockNetherrack","BlockNetherWart","BlockNewLeaf","BlockNewLog","BlockNote","BlockObsidian","BlockOldLeaf","BlockOldLog","BlockOre","BlockPackedIce","BlockPane","BlockPistonBase","BlockPistonExtension","BlockPistonMoving","BlockPlanks","BlockPortal","BlockPotato","BlockPressurePlate","BlockPressurePlateWeighted","BlockPrismarine","BlockPumpkin","BlockQuartz","BlockRail","BlockRailBase","BlockRailDetector","BlockRailPowered","BlockRedFlower","BlockRedSandstone","BlockRedstoneComparator","BlockRedstoneDiode","BlockRedstoneLight","BlockRedstoneOre","BlockRedstoneRepeater","BlockRedstoneTorch","BlockRedstoneWire","BlockReed","BlockRotatedPillar","BlockSand","BlockSandStone","BlockSapling","BlockSeaLantern","BlockSign","BlockSilverfish","BlockSkull","BlockSlab","BlockSlime","BlockSnow","BlockSnowBlock","BlockSoulSand","BlockSourceImpl","BlockSponge","BlockStainedGlass","BlockStainedGlassPane","BlockStairs","BlockStandingSign","BlockStaticLiquid","BlockStem","BlockStone","BlockStoneBrick","BlockStoneSlab","BlockStoneSlabNew","BlockTallGrass","BlockTNT","BlockTorch","BlockTrapDoor","BlockTripWire","BlockTripWireHook","BlockVine","BlockWall","BlockWallSign","BlockWeb","BlockWoodSlab","BlockWorkbench","BlockYellowFlower","IGrowable","ITileEntityProvider","material.MapColor","material.Material","material.MaterialLiquid","material.MaterialLogic","material.MaterialPortal","material.MaterialTransparent","properties.IProperty","properties.PropertyBool","properties.PropertyDirection","properties.PropertyEnum","properties.PropertyHelper","properties.PropertyInteger","state.BlockPistonStructureHelper","state.BlockState","state.BlockStateBase","state.BlockWorldState","state.IBlockState","state.pattern.BlockHelper","state.pattern.BlockPattern","state.pattern.BlockStateHelper","state.pattern.FactoryBlockPattern"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.block." + v + "\")")});
@@ -188,24 +241,27 @@ function removeCategory(name) {
 //net.ccbluex.liquidbounce.value.*
 ["BlockValue", "BoolValue", "FloatValue", "FontValue", "IntegerValue", "ListValue", "TextValue", "Value"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.value." + v + "\")")});
 
-//Others
+//others
 LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory");
+
+/*--------------*/
+/* Finalization */
+/*--------------*/
 
 function onLoad() {
     script.scriptName = (scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Script").toString();
     script.scriptAuthors = [(scriptAuthor || module[0].author || command[0].author || "Author").toString()];
     script.scriptVersion = (scriptVersion || module[0].version || command[0].version || 1.0).toString();
 
+    //Custom categories preparation
     (_enumValues = ModuleCategory.class.getDeclaredField("$VALUES")).setAccessible(true);
-
     (_modifiers = Field.class.getDeclaredField("modifiers")).setAccessible(true);
     _modifiers.setInt(_enumValues, _enumValues.getModifiers() & ~Modifier.FINAL);
-
     (_constructor = ModuleCategory.class.getDeclaredConstructors()[0]).setAccessible(true);
     (_acquireAccessor = Constructor.class.getDeclaredMethod("acquireConstructorAccessor")).setAccessible(true);
     _accessor = _acquireAccessor.invoke(_constructor);
 
-    module.forEach(function (m) {Object.keys(m).length && (addCategory(m.category), moduleManager.registerModule(new Module(m)))});
+    module.forEach(function (m) {Object.keys(m).length && (addCategory(new Module(m).getCategory()), moduleManager.registerModule(new Module(m)))});
     command.forEach(function (c) {Object.keys(c).length && commandManager.registerCommand(new Command(c))});
 }
 
