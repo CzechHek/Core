@@ -16,7 +16,8 @@ not_for_wtap = [
 module = {
     name: "SuperKnock",
     author: "Beast aka turtl aka shiv3r aka n3xt aka polak aka idk what names i had also",
-    version: 1.0,
+    version: 1.1,
+    description: "Increases knockback you deal",
     values: general_values_array,
     onUpdate: function () {
         ticks = ticks && ticks-1;
@@ -45,7 +46,7 @@ module = {
                 timeout(rand(minDelay.get(), maxDelay.get()), function () {
                     mc.gameSettings.keyBindForward.pressed = false;
                 });
-                timeout(rand(minDelay.get(), maxDelay.get()) * rand(minMultiplier.get(), maxMultiplier.get()),function () {
+                timeout(rand(minDelay.get(), maxDelay.get()) * rand(minMultiplier.get(), maxMultiplier.get()), function () {
                     mc.gameSettings.keyBindForward.pressed = Keyboard.isKeyDown(mc.gameSettings.keyBindForward.getKeyCode());
                     mc.thePlayer.setSprinting(sprint);
                 });
@@ -57,9 +58,5 @@ module = {
 }
 
 var ticks, current_values;
-
-function rand(min, max) {
-    return (Math.random() * (max - min)) + min;
-}
 
 script.import("Core.lib");
