@@ -10,7 +10,7 @@ var list = [
 module = {
     name: "HackerSpoofer",
     author: "CzechHek",
-    version: 1.3,
+    version: "1.3",
     values: list,
     onLoad: function () {
         LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.valuesConfig);

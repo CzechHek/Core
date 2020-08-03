@@ -1,6 +1,6 @@
 module = {
     name: "SkyPlay",
-    version: 1.3,
+    version: "1.3",
     author: "CzechHek",
     onUpdate: function () {
         if (config && !!mc.getCurrentServerData() && mc.getCurrentServerData().serverIP.match("skykingdoms.net")) commandManager.executeCommand(".config load https://pastebin.com/raw/3kXNxBYV"), config = false;

@@ -36,7 +36,7 @@ module = {
 	name: "TargetInfo",
 	description: "Renders information about target.",
 	author: "natte, CzechHek, As丶One, Nvaros",
-	version: 2.3,
+	version: "2.3",
 	values: list,
 	onLoad: function () {
 		LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.valuesConfig);

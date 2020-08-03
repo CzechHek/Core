@@ -7,7 +7,7 @@ list = [
 module = {
     name: "BlockAnimation",
     author: "CzechHek",
-    version: 1.5,
+    version: "1.5",
     values: list,
     onMotion: function () {
         mc.thePlayer.itemInUseCount = (fake.get() && !KillAura.getValue("AutoBlock").get() && KillAuraClass.target && !!(heldItem = mc.thePlayer.getHeldItem()) && heldItem.getItem() instanceof Java.type("net.minecraft.item.ItemSword")) || mc.thePlayer.isBlocking() ? 1337 : mc.thePlayer.itemInUseCount == 1337 ? 0 : mc.thePlayer.itemInUseCount;

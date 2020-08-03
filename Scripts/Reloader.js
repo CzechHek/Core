@@ -1,7 +1,7 @@
 command = {
     commands: ["Reloader", "r"],
     author: "CzechHek",
-    version: 3.3,
+    version: "3.3",
     onExecute: function () {
         try {
             start = Instant.now();

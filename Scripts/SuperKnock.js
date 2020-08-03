@@ -16,7 +16,7 @@ not_for_wtap = [
 module = {
     name: "SuperKnock",
     author: "Beast aka turtl aka shiv3r aka n3xt aka polak aka idk what names i had also",
-    version: 1.1,
+    version: "1.1",
     description: "Increases knockback you deal",
     values: general_values_array,
     onUpdate: function () {

@@ -4,7 +4,7 @@ command = {
     commands: ["MusicPlayer", "mp"],
     subcommands: {play:"name / url",stop:"",youtube:"query",list:"",folder:""},
     author: "natte",
-    version: 1.4,
+    version: "1.4",
     onExecute: function (args) {
         try {
             setup();

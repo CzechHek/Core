@@ -9,7 +9,7 @@ module = {
     name: "Clipper",
     author: "CzechHek",
     description: "VClips through blocks using space and shift.",
-    version: 2.1,
+    version: "2.1",
     values: list,
     onUpdate: function () {
         if (mc.thePlayer.onGround) {

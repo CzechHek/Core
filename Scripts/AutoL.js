@@ -32,7 +32,7 @@ module = {//untested!
     name: "AutoL",
     description: "Automatically insults the player you've killed.",
     category: "Player",
-    version: 2.20,
+    version: "2.20",
     author: "Tsikyng Kirisame, CzechHek",//Big thx XD
     values: list,
     tag: mode.get(),

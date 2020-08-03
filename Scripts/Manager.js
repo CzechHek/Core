@@ -32,7 +32,7 @@ command = {
     commands: ["Manager", "mngr", "m"],
     subcommands: {config:{list:{online:"",local:""},download:"name",upload:"name",save:"name",load:"name",delete:"name",folder:""},theme:{list:{online:"",local:""},download:"name",upload:"name",save:"name",load:"name",delete:"name",folder:""},script:{list:{online:"",local:""},download:"name",upload:"name",load:"name",delete:"name",folder:""},music:{list:{online:"",local:""},download:"name",upload:"name",delete:"name",folder:""}},
     author: "natte, CzechHek",
-    version: 1.8,
+    version: "1.8",
     onExecute: function (args) {
         if (!new File("LiquidBounce-1.8/themes/").exists()) new File("LiquidBounce-1.8/themes/").mkdir();
         if (!new File("LiquidBounce-1.8/settings/").exists()) new File("LiquidBounce-1.8/settings/").mkdir();

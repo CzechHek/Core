@@ -30,7 +30,7 @@ module = {
     name: "InventoryManager",
     category: "Player",
     author: "CzechHek",
-    version: 5.8,
+    version: "5.8",
     values: list,
     onMotion: function (e) {
         if (e.getEventState() == "PRE") {

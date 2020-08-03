@@ -24,7 +24,7 @@ module = {
     author: "Nvaros",
 	category: "Misc",
     description: "Panel that shows your local settings",
-    version: 1.1,
+    version: "1.1",
     values: list,
     onEnable: function() {
 		hasLoadedPanel = false;

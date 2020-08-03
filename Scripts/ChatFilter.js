@@ -34,7 +34,7 @@ keywords = [
 module = {
     name: "ChatFilter",
     author: "Tsikyng Kirisame",
-    version: 0.1,
+    version: "0.1",
     category: "Misc",
     values: [showCountValue = value.createBoolean("ShowCount", true)],
     tag: showCountValue.get() ? count.toString() : "",

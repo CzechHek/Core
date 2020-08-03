@@ -2,7 +2,7 @@ module = {
     name: "TowerScaffoldz",
     description: "Scaffold Addon",
     author: "CzechHek, yorik100",
-    version: 2.1,
+    version: "2.1",
     onEnable: function () {
         TowerModule.state = !(ScaffoldModule.state = true);
     },
