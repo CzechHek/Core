@@ -26,7 +26,7 @@ list = [
     slot4 = value.createText("Slot4", "Axe"),
     slot5 = value.createText("Slot5", "Bow"),
     slot6 = value.createText("Slot6", "Golden Apple, Food"),
-    slot7 = value.createText("Slot7", "Potion, Ender Pearl"),
+    slot7 = value.createText("Slot7", "Splash Potion, Ender Pearl"),
     slot8 = value.createText("Slot8", "Water Bucket, Block"),
     slot9 = value.createText("Slot9", "Block"),
 ]
