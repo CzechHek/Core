@@ -1,7 +1,7 @@
-//Core 1.6.5 - Simple, yet powerful ScriptAPI base
+//Core 1.6.7 - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "1.6.5", scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [],
-module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
+var coreVersion = "1.6.7", coreAutoUpdate, scriptAutoUpdate,
+scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [], module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
 
 /*--------------*/
 /* Modules core */
@@ -11,7 +11,7 @@ function Module(m) {
     this.getName = function () {return m.name || "Module"};
     this.getDescription = function () {return m.description || ""};
     this.getCategory = function () {return m.category || "Custom"};
-    m.tag && (this.getTag = function () {return m.tag});
+    m.getTag && (this.getTag = function () {return m.getTag()});
     m.values && (this.addValues = function (e) {(Array.isArray(m.values) ? m.values : [m.values]).forEach(function (v) {e.add(v)})});
     m.onEnable && (this.onEnable = function () {m.onEnable()});
     m.onDisable && (this.onDisable = function () {m.onDisable()});
@@ -161,6 +161,15 @@ function print() {
     ClientUtils.displayChatMessage(Array.prototype.slice.call(arguments).join(" "));
 }
 
+function showMessage(text, title, alwaysOnTop, type) {
+    new Thread(new Runnable({
+        run: function () {
+            (dialog = new JOptionPane(text || "", type || JOptionPane.INFORMATION_MESSAGE).createDialog(title || "")).setAlwaysOnTop(alwaysOnTop != null ? alwaysOnTop : true);
+            dialog.setVisible(true);
+        }
+    })).start();
+}
+
 /*------------------*/
 /* Object functions */
 /*------------------*/
@@ -242,7 +251,7 @@ Object.defineProperty(String.prototype, "includes", {
 ["BlockValue", "BoolValue", "FloatValue", "FontValue", "IntegerValue", "ListValue", "TextValue", "Value"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.value." + v + "\")")});
 
 //others
-LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); Runtime = Java.type("java.lang.Runtime").getRuntime();
+LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); JOptionPane = Java.type("javax.swing.JOptionPane"); Thread = Java.type("java.lang.Thread"); Runnable = Java.type("java.lang.Runnable");
 
 /*--------------*/
 /* Finalization */
@@ -257,16 +266,16 @@ function onLoad() {
 
     if (!LiquidBounce.clickGui) {
         try {
-            if (!LiquidBounce.scriptManager.scripts.size() && (_response = HttpUtils.get("https://dyskord.cc/check?name=Core&ver=" + coreVersion))) {
+            if (coreAutoUpdate !== false && !LiquidBounce.scriptManager.scripts.size() && (_response = HttpUtils.get("https://dyskord.cc/check?name=Core&ver=" + coreVersion))) {
                 HttpUtils.download("https://raw.githubusercontent.com/CzechHek/Core/master/Core.lib", new File("LiquidBounce-1.8/scripts/Core.lib")); _isLatest = false;
-                Runtime.exec("PowerShell -Command \"Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('Updated Core " + coreVersion + " to " + _response + "', 'Core Updater', 'OK', 'Information')\"");
+                showMessage("Automatically updated Core " + coreVersion + " to " + _response, "Core Updater");
             };
-            if (_response = HttpUtils.get("https://dyskord.cc/check?name=" + script.scriptName + "&ver=" + script.scriptVersion)) {
-                HttpUtils.download("https://raw.githubusercontent.com/CzechHek/Core/master/Scripts/" + script.scriptName + ".js", new File(script.getScriptFile())); _isLatest = false;
-                Runtime.exec("PowerShell -Command \"Add-Type -AssemblyName PresentationFramework;[System.Windows.MessageBox]::Show('Updated " + script.scriptName + " " + script.scriptVersion + " to " + _response + "', 'Core Updater', 'OK', 'Information')\"");
+            if (scriptAutoUpdate !== false && (_response = HttpUtils.get("https://dyskord.cc/check?name=" + script.scriptName + "&ver=" + script.scriptVersion))) {
+                HttpUtils.download("https://raw.githubusercontent.com/CzechHek/Core/master/Scripts/" + script.scriptName + ".js", script.getScriptFile()); _isLatest = false;
+                showMessage("Automatically updated " + script.scriptName + " " + script.scriptVersion + " to " + _response, "Core Updater");
             };
         } catch (e) {
-            print("Couldn't check for", script.scriptName, "updates!", e);
+            print("Couldn't check", script.scriptName, "for updates!", e);
         };
     };
 
