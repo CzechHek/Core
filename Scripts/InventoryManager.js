@@ -35,7 +35,7 @@ module = {
     name: "InventoryManager",
     category: "Player",
     author: "CzechHek",
-    version: "6.12",
+    version: "6.13",
     values: list,
     onMotion: function (e) {
         if (e.getEventState() == "PRE") {
@@ -159,7 +159,7 @@ function rotateToOpen() {
 function rotateToThrow() {
     if (mc.thePlayer.onGround)
         for (i = 35; i++ < 44;) {
-            if (stacks[i] && stacks[i].getItem() instanceof ItemPotion && ItemPotion.isSplash(stacks[i].getItemDamage()) && !Java.from(new ItemPotion().getEffects(stacks[i])).some(function (e) {return Java.from(mc.thePlayer.getActivePotionEffects()).some(function (e2) {return e.getEffectName() == e2.getEffectName()}) || (mc.thePlayer.getHealth() > healthtoheal.get() && ["potion.regeneration", "potion.heal"].includes(e.getEffectName()))})) {
+            if (stacks[i] && stacks[i].getItem() instanceof ItemPotion && ItemPotion.isSplash(stacks[i].getItemDamage()) && !isBad(stacks[i]) && !Java.from(new ItemPotion().getEffects(stacks[i])).some(function (e) {return Java.from(mc.thePlayer.getActivePotionEffects()).some(function (e2) {return e.getEffectName() == e2.getEffectName()}) || (mc.thePlayer.getHealth() > healthtoheal.get() && ["potion.regeneration", "potion.heal"].includes(e.getEffectName()))})) {
                 mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(i - 36));
                 rotations.get() == "Visual" ? (mc.thePlayer.rotationPitch = 90) : RotationUtils.setTargetRotation(new Rotation(mc.thePlayer.rotationYaw, 90), rotationslength.get());
                 return shouldThrow = stacks[i];
