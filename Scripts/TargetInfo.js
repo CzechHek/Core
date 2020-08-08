@@ -36,7 +36,7 @@ module = {
 	name: "TargetInfo",
 	description: "Renders information about target.",
 	author: "natte, CzechHek, As丶One, Nvaros",
-	version: "2.3",
+	version: "2.4",
 	values: list,
 	onLoad: function () {
 		LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.valuesConfig);
@@ -55,7 +55,7 @@ module = {
 		editpos.get() && (mc.displayGuiScreen(positionScreen), editpos.set(false));
 	},
 	onRender2D: function () {
-		if (mc.thePlayer && (target = KillAuraClass.target || (showpointingat.get() ? mc.pointedEntity : null) || (mc.currentScreen == positionScreen ? mc.thePlayer : null)) instanceof EntityPlayer) {
+		if (mc.thePlayer && (target = KillAuraModule.target || (showpointingat.get() ? mc.pointedEntity : null) || (mc.currentScreen == positionScreen ? mc.thePlayer : null)) instanceof EntityPlayer) {
 			xPos = x.get() / scale.get(); yPos = y.get() / scale.get(); textYPos = texty.get() / scale.get();
 			GL11.glPushMatrix();
 			GL11.glScaled(scale.get(), scale.get(), scale.get());
