@@ -1,6 +1,6 @@
-//Core 1.6.8 - Simple, yet powerful ScriptAPI base
+//Core 1.6.9 - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "1.6.8", coreAutoUpdate, scriptAutoUpdate,
+var coreVersion = "1.6.9", coreAutoUpdate, scriptAutoUpdate,
 scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [], module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
 
 /*--------------*/
@@ -71,25 +71,15 @@ function Command(c) {
 /* Custom functions */
 /*------------------*/
 
-function isMovingHorizontally(entity) {
-    return entity && entity != mc.thePlayer ? entity.lastTickPosX != entity.posX || entity.lastTickPosZ != entity.posZ : !!(mc.thePlayer.movementInput.moveForward || mc.thePlayer.movementInput.moveStrafe);
-}
+function isMovingHorizontally(entity) entity && entity != mc.thePlayer ? entity.lastTickPosX != entity.posX || entity.lastTickPosZ != entity.posZ : !!(mc.thePlayer.movementInput.moveForward || mc.thePlayer.movementInput.moveStrafe);
 
-function isMovingVertically(entity) {
-    return entity && entity != mc.thePlayer ? entity.lastTickPosY != entity.posY : mc.thePlayer.movementInput.jump || mc.thePlayer.movementInput.sneak;
-}
+function isMovingVertically(entity) entity && entity != mc.thePlayer ? entity.lastTickPosY != entity.posY : mc.thePlayer.movementInput.jump || mc.thePlayer.movementInput.sneak;
 
-function isMoving(entity) {
-    return isMovingHorizontally(entity) || isMovingVertically(entity);
-}
+function isMoving(entity) isMovingHorizontally(entity) || isMovingVertically(entity);
 
-function isInputHorizontally() {
-    return Keyboard.isKeyDown(mc.gameSettings.keyBindForward.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindLeft.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindBack.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindRight.getKeyCode());
-}
+function isInputHorizontally() Keyboard.isKeyDown(mc.gameSettings.keyBindForward.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindLeft.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindBack.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindRight.getKeyCode());
 
-function isInputVertically() {
-    return Keyboard.isKeyDown(mc.gameSettings.keyBindJump.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindSneak.getKeyCode());
-}
+function isInputVertically() Keyboard.isKeyDown(mc.gameSettings.keyBindJump.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindSneak.getKeyCode());
 
 function move(horizontal, vertical, timer, event, ignoreInput) {
     horizontal = ignoreInput ? horizontal : isInputHorizontally() ? horizontal : 0;
@@ -100,13 +90,9 @@ function move(horizontal, vertical, timer, event, ignoreInput) {
     vertical != null && ((mc.thePlayer.motionY = vertical), (event && event.setY(vertical)));
 }
 
-function interval(ms, func) {
-	return _timer = new Timer("setInterval", true), _timer.schedule(func, 0, ms), _timer;
-}
+function interval(ms, func) (_timer = new Timer("setInterval", true), _timer.schedule(func, 0, ms), _timer);
 
-function timeout(ms, func) {
-	return _timer = new Timer("setTimeout", true), _timer.schedule(func, ms), _timer;
-}
+function timeout(ms, func) (_timer = new Timer("setTimeout", true), _timer.schedule(func, ms), _timer);
 
 function setValues(module, values) {
     if (!(module instanceof ScriptModule)) return
@@ -136,38 +122,32 @@ function getPlayer(nick) {
     return _playerEntity;
 }
 
-function rand(min, max) {
-    return Math.random() * (max - min) + min;
-}
+function rand(min, max) Math.random() * (max - min) + min;
 
-function getDurability(itemStack) {
-    if (itemStack) return itemStack.getMaxDamage() - itemStack.getItemDamage();
-}
+function getDurability(itemStack) itemStack && itemStack.getMaxDamage() - itemStack.getItemDamage();
 
-function addCategory(name) {
-    name && !(_values = Java.from(_enumValues.get(null))).some(function (v) {return v.getDisplayName().toLowerCase() == name.toLowerCase()}) && _enumValues.set(null, Java.to(_values.concat(_accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"));
-}
+function addCategory(name) name && !(_values = Java.from(_enumValues.get(null))).some(function (v) {return v.getDisplayName().toLowerCase() == name.toLowerCase()}) && _enumValues.set(null, Java.to(_values.concat(_accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"));
 
-function removeCategory(name) {
-    Java.from(_enumValues.get(null)).some(function (v, i, a) {
-        if (v.getDisplayName().contains(name)) {
-            a.splice(i, 1);
-            return !_enumValues.set(null, Java.to(a, "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"));
-        }
-    });
-}
+function removeCategory(name) Java.from(_enumValues.get(null)).some(function (v, i, a) {if (v.getDisplayName().contains(name)) {a.splice(i, 1); return !_enumValues.set(null, Java.to(a, "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"))}});
 
-function print() {
-    ClientUtils.displayChatMessage(Array.prototype.slice.call(arguments).join(" "));
-}
+function print() ClientUtils.displayChatMessage(Array.prototype.slice.call(arguments).join(" "));
 
-function showMessage(text, title, alwaysOnTop, type) {
+function showMessage(text, title, alwaysOnTop, type)
     new Thread(new Runnable({
         run: function () {
             (dialog = new JOptionPane(text || "", type || JOptionPane.INFORMATION_MESSAGE).createDialog(title || "")).setAlwaysOnTop(alwaysOnTop != null ? alwaysOnTop : true);
             dialog.setVisible(true);
         }
     })).start();
+
+function getMethod(clazz, methodName) {
+    (_method = Java.from(clazz.class.getDeclaredMethods()).find(function (m) m.getName() == methodName)).setAccessible(true);
+    return _method;
+}
+
+function getField(clazz, fieldName) {
+    (_field = Java.from(clazz.class.getDeclaredFields()).find(function (f) f.getName() == fieldName)).setAccessible(true);
+    return _field;
 }
 
 /*------------------*/
@@ -180,11 +160,11 @@ Object.defineProperty(Array.prototype, "shuffle", {
     writable: true,
     value: function (bool) {
         if (bool === false || !(i = this.length)) return this;
-		while (--i) {
-			j = ~~(Math.random() * (i + 1));
-			temp = this[i];
-			this[i] = this[j];
-			this[j] = temp;
+        while (--i) {
+            j = ~~(Math.random() * (i + 1));
+            temp = this[i];
+            this[i] = this[j];
+            this[j] = temp;
         } return this;
     }
 });
@@ -212,7 +192,6 @@ Object.defineProperty(Array.prototype, "includes", {
 Object.defineProperty(String.prototype, "includes", {
     value: function (string, ignoreCase) {
         return ignoreCase ? this.toString().toLowerCase().contains(string.toLowerCase()) : this.toString().contains(string);
-        
     }
 });
 
@@ -300,8 +279,8 @@ function onLoad() {
 }
 
 function onEnable() {
-    FileUtils.deleteQuietly(_file); _file = undefined;
-    LiquidBounce.moduleManager.modules.forEach(function (v) {eval(v.name + "Module=v;" + v.name + "Class=Java.type(\"" + v.class.getName() + "\")")});
+    FileUtils.deleteQuietly(new File("logs/coreUpdater.log"));
+    LiquidBounce.moduleManager.modules.forEach(function (m) {eval(m.name + "Module=m")});
     module.forEach(function (m) {m.onLoad && m.onLoad()});
     command.forEach(function (c) {c.onLoad && c.onLoad()});
 }
