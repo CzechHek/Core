@@ -18,14 +18,13 @@ list = [
 module = {
     name: "BlockAnimations",
     author: "CzechHek",
-    version: "0.3",
+    version: "0.4",
     category: "Render",
     values: list,
     onEnable: function () {
         mc.entityRenderer.itemRenderer = new (Java.extend(ItemRenderer))(mc) {
             func_178103_d: function (swingProgress) {
-                offset = Math.pow(mc.thePlayer.swingProgress - 0.5, 2) * deviation.get();
-                offset2 = offset / 100;
+                offset = Math.pow(mc.thePlayer.swingProgress - 0.5, 2) * deviation.get(); offset2 = offset / 100;
                 GlStateManager.translate(posX.get() + (deviateXPos.get() ? offset2 : 0), posY.get() + (deviateYPos.get() ? offset2 : 0), posZ.get() + (deviateZPos.get() ? offset2 : 0));
                 GlStateManager.rotate(rotX.get() + (deviateXRot.get() ? offset : 0), 0.0, 1.0, 0.0);
                 GlStateManager.rotate(rotY.get() + (deviateYRot.get() ? offset : 0), 1.0, 0.0, 0.0);
@@ -51,7 +50,7 @@ module = {
 
                 if (itemToRender != null) {
                     if (itemToRender.getItem() == Items.filled_map) getMethod(ItemRenderer, "func_178097_a").invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, pitch, equipProgress, swingProgress);
-                    else if (mc.thePlayer.itemInUseCount > 0 || KillAuraModule.blockingStatus || wasBlocking) {
+                    else if (mc.thePlayer.itemInUseCount > 0 || (KillAuraModule.blockingStatus || wasBlocking) && itemToRender.getItem() instanceof ItemSword) {
                         switch (itemToRender.getItemUseAction()) {
                             case EnumAction.NONE:
                                 getMethod(ItemRenderer, "func_178096_b").invoke(mc.entityRenderer.itemRenderer, equipProgress, new Float(.0));
