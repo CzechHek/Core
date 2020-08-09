@@ -35,7 +35,7 @@ module = {
     name: "InventoryManager",
     category: "Player",
     author: "CzechHek",
-    version: "6.13",
+    version: "6.14",
     values: list,
     onMotion: function (e) {
         if (e.getEventState() == "PRE") {
@@ -43,9 +43,9 @@ module = {
             !attackTimer.hasTimePassed(noattackdelay.get()) && mc.currentScreen instanceof GuiChest && shouldOpen && (mc.thePlayer.closeScreen(), chestList.pop());
             
             if (shouldOperate()) {
-                if (!openInventory && openTimer.hasTimePassed(openinterval.get()) && actionslist.get().contains("Open Chests") && (!mc.currentScreen || mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof GuiIngameMenu || mc.currentScreen instanceof GuiChat)) rotateToOpen();
-                else if (timer.hasTimePassed(rand(minstealdelay.get(), maxstealdelay.get())) && actionslist.get().contains("Steal Items") && mc.currentScreen instanceof GuiChest) received && steal() && closeTimer.hasTimePassed(closedelay.get()) && mc.thePlayer.closeScreen();
-                else timer.hasTimePassed(rand(mininvdelay.get(), maxinvdelay.get())) && (mc.currentScreen instanceof GuiInventory || (!invopen.get() && (!mc.currentScreen || mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof GuiIngameMenu || mc.currentScreen instanceof GuiChat))) && (getItems(), drop() && sort() && equip() && !mc.currentScreen && openInventory ? mc.getNetHandler().addToSendQueue(new C0DPacketCloseWindow(mc.thePlayer.inventoryContainer.windowId)) : rotateToThrow());
+                !openInventory && openTimer.hasTimePassed(openinterval.get()) && actionslist.get().contains("Open Chests") && (!mc.currentScreen || mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof GuiIngameMenu || mc.currentScreen instanceof GuiChat) && rotateToOpen();
+                timer.hasTimePassed(rand(minstealdelay.get(), maxstealdelay.get())) && actionslist.get().contains("Steal Items") && mc.currentScreen instanceof GuiChest && received && steal() && closeTimer.hasTimePassed(closedelay.get()) && mc.thePlayer.closeScreen();
+                timer.hasTimePassed(rand(mininvdelay.get(), maxinvdelay.get())) && (mc.currentScreen instanceof GuiInventory || (!invopen.get() && (!mc.currentScreen || mc.currentScreen instanceof ClickGui || mc.currentScreen instanceof GuiIngameMenu || mc.currentScreen instanceof GuiChat))) && (getItems(), drop() && sort() && equip() && !mc.currentScreen && openInventory ? mc.getNetHandler().addToSendQueue(new C0DPacketCloseWindow(mc.thePlayer.inventoryContainer.windowId)) : rotateToThrow());
             }
         } else {
             shouldOpen && openChest();
