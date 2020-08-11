@@ -4,7 +4,7 @@ command = {
     commands: ["MusicPlayer", "mp"],
     subcommands: {play:"name / url",stop:"",youtube:"query",list:"",folder:""},
     author: "natte",
-    version: "1.4",
+    version: "1.5",
     onExecute: function (args) {
         try {
             setup();
@@ -62,13 +62,13 @@ command = {
                             query = java.lang.String.join(" ", Arrays.copyOfRange(args, 2, args.length));
 
                             chat.print("§8▏ §aFinding '§2§l" + query + "§a'");
-                            response = get("http://167.172.173.239:3000/search/single/" + query.replaceAll(" ", "%20")); json = JSON.parse(response); code = json.code; message = json.message;
+                            response = HttpUtils.get("http://167.172.173.239:3000/search/single/" + query.replaceAll(" ", "%20")); json = JSON.parse(response); code = json.code; message = json.message;
         
                             if (code == 1) {
                                 id = message.id; title = message.title; author = message.author;
         
                                 chat.print("§8▏ §aConverting, please wait...");
-                                response = get("http://167.172.173.239:3000/download/" + id); json = JSON.parse(response); code = json.code; message = json.message;
+                                response = HttpUtils.get("http://167.172.173.239:3000/download/" + id); json = JSON.parse(response); code = json.code; message = json.message;
         
                                 if (code == 1) {
                                     url = message.url;
@@ -143,23 +143,9 @@ function setup() {
     if (!new File("LiquidBounce-1.8/music/").exists()) new File("LiquidBounce-1.8/music/").mkdir();
 
     if (!new File("LiquidBounce-1.8/music-api.jar").exists()) {
-        
-        connection = new URL("https://cloud.natte.dev/music-api.jar").openConnection(); connection.setRequestProperty("User-Agent", "Mozilla/5.0");
-        channel = Channels.newChannel(connection.getInputStream()); output = new FileOutputStream(new File("LiquidBounce-1.8/music-api.jar"));
-        
-        output.getChannel().transferFrom(channel, 0, Long.MAX_VALUE); output.close();
-
+        HttpUtils.download("https://cloud.natte.dev/music-api.jar", new File("LiquidBounce-1.8/music-api.jar"));
         Player = classLoader.type("javazoom.jl.player.Player");
     }
-}
-
-function get(url) {
-    connection = new URL(url).openConnection(); connection.requestMethod = "GET"; connection.setRequestProperty("User-Agent", "Mozilla/5.0");
-    input = connection.getInputStream(); encoding = connection.getContentEncoding(); encoding = encoding == null ? "UTF-8" : encoding;
-    body = IOUtils.toString(input, encoding);
-    input.close();
-
-    return body;
 }
 
 function ClassLoader() {
@@ -170,7 +156,7 @@ function ClassLoader() {
     }
 
     this.type = function (className) {
-        var clazz = Class.forName(className, true, this.classLoader);
+        clazz = Class.forName(className, true, this.classLoader);
         return StaticClass.forClass(clazz);
     }
 

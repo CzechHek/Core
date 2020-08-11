@@ -1,6 +1,5 @@
 HudConfig = Java.type("net.ccbluex.liquidbounce.file.configs.HudConfig");
 FileConfig = Java.type("net.ccbluex.liquidbounce.file.FileConfig");
-Script = Java.type("net.ccbluex.liquidbounce.script.Script");
 OutputStreamWriter = Java.type("java.io.OutputStreamWriter");
 Fonts = Java.type("net.ccbluex.liquidbounce.ui.font.Fonts");
 FileOutputStream = Java.type("java.io.FileOutputStream");
@@ -22,7 +21,6 @@ Arrays = Java.type("java.util.Arrays");
 Thread = Java.type("java.lang.Thread");
 Long = Java.type("java.lang.Long");
 Font = Java.type("java.awt.Font");
-File = Java.type("java.io.File");
 URL = Java.type("java.net.URL");
 
 baseUrl = "https://cloud.natte.dev/manager/"
@@ -32,7 +30,7 @@ command = {
     commands: ["Manager", "mngr", "m"],
     subcommands: {config:{list:{online:"",local:""},download:"name",upload:"name",save:"name",load:"name",delete:"name",folder:""},theme:{list:{online:"",local:""},download:"name",upload:"name",save:"name",load:"name",delete:"name",folder:""},script:{list:{online:"",local:""},download:"name",upload:"name",load:"name",delete:"name",folder:""},music:{list:{online:"",local:""},download:"name",upload:"name",delete:"name",folder:""}},
     author: "natte, CzechHek",
-    version: "1.8",
+    version: "1.9",
     onExecute: function (args) {
         if (!new File("LiquidBounce-1.8/themes/").exists()) new File("LiquidBounce-1.8/themes/").mkdir();
         if (!new File("LiquidBounce-1.8/settings/").exists()) new File("LiquidBounce-1.8/settings/").mkdir();
@@ -44,7 +42,7 @@ command = {
                     case "list": {
                         switch (args[3]) {
                             case "online": {
-                                response = get(baseUrl + "list?type=music");
+                                response = HttpUtils.get(baseUrl + "list?type=music");
 
                                 json = toJsonObject(response);
                                 array = json.get("message").getAsJsonArray();
@@ -219,7 +217,7 @@ command = {
                             case "list": {
                                 switch (args[3]) {
                                     case "online": {
-                                        response = get(baseUrl + "list?type=configs");
+                                        response = HttpUtils.get(baseUrl + "list?type=configs");
         
                                         json = toJsonObject(response);
                                         array = json.get("message").getAsJsonArray();
@@ -321,7 +319,7 @@ command = {
                             case "list": {
                                 switch (args[3]) {
                                     case "online": {
-                                        response = get(baseUrl + "list?type=themes");
+                                        response = HttpUtils.get(baseUrl + "list?type=themes");
         
                                         json = toJsonObject(response);
                                         array = json.get("message").getAsJsonArray();
@@ -501,17 +499,8 @@ function uploadFile(url, file) {
 
 function downloadFile(url, file, theme) {
     try {
-        con = new URL(url).openConnection();
-   
-        con.setRequestProperty("User-Agent", "Mozilla/5.0");
-        channel = Channels.newChannel(con.getInputStream());
-        output = new FileOutputStream(file);
-        
-        output.getChannel().transferFrom(channel, 0, Long.MAX_VALUE);
-        output.flush(); output.close();
-
-        if (theme) checkFonts(file);
-
+        HttpUtils.download(url, file);
+        theme && checkFonts(file);
         return true;
     } catch(e) {
         printError("Couldn't find '§4§l" + file.getName() + "§c'");
@@ -520,20 +509,6 @@ function downloadFile(url, file, theme) {
         }
         return false;
     }
-}
-
-function get(theUrl) {
-    var con = new URL(theUrl).openConnection();
-    con.requestMethod = "GET";
-    con.setRequestProperty("User-Agent", "Mozilla/5.0");
-
-    input = con.getInputStream();
-    encoding = con.getContentEncoding();
-    encoding = encoding == null ? "UTF-8" : encoding;
-    body = IOUtils.toString(input, encoding);
-    input.close();
-
-    return body;
 }
 
 function toJsonObject(content) {
