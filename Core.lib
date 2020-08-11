@@ -1,6 +1,6 @@
-//Core 1.6.9 - Simple, yet powerful ScriptAPI base
+//Core 1.6.10 - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "1.6.9", coreAutoUpdate, scriptAutoUpdate,
+var coreVersion = "1.6.10", coreAutoUpdate, scriptAutoUpdate,
 scriptName, scriptAuthor, scriptVersion, modulelist = [], commandlist = [], module = Array.isArray(module) ? module : [module || {}], command = Array.isArray(command) ? command : (command = [command || {}]);
 
 /*--------------*/
@@ -224,7 +224,7 @@ Object.defineProperty(String.prototype, "includes", {
 ["AxisAlignedBB","BlockPos","Cartesian","ChatAllowedCharacters","ChatComponentProcessor","ChatComponentScore","ChatComponentSelector","ChatComponentStyle","ChatComponentText","ChatComponentTranslation","ChatComponentTranslationFormatException","ChatStyle","ClassInheritanceMultiMap","CombatEntry","CombatTracker","CryptManager","DamageSource","EnchantmentNameParts","EntityDamageSource","EntityDamageSourceIndirect","EntitySelectors","EnumChatFormatting","EnumFacing","EnumParticleTypes","EnumTypeAdapterFactory","EnumWorldBlockLayer","FoodStats","FrameTimer","HttpUtil","IChatComponent","IJsonSerializable","IntegerCache","IntHashMap","IObjectIntIterable","IProgressUpdate","IRegistry","IStringSerializable","IThreadListener","ITickable","JsonSerializableSet","JsonUtils","LazyLoadBase","LoggingPrintStream","LongHashMap","MapPopulator","MathHelper","Matrix4f","MessageDeserializer","MessageDeserializer2","MessageSerializer","MessageSerializer2","MinecraftError","MouseFilter","MouseHelper","MovementInput","MovementInputFromOptions","MovingObjectPosition","ObjectIntIdentityMap","RegistryDefaulted","RegistryNamespaced","RegistryNamespacedDefaultedByKey","RegistrySimple","ReportedException","ResourceLocation","Rotations","ScreenShotHelper","Session","StatCollector","StringTranslate","StringUtils","ThreadSafeBoundList","Timer","Tuple","TupleIntJsonSerializable","Util","Vec3","Vec3i","Vec4b","Vector3d","WeightedRandom","WeightedRandomChestContent","WeightedRandomFishable"].forEach(function (v) {eval(v + "=Java.type(\"net.minecraft.util." + v + "\")")});
 
 //net.ccbluex.liquidbounce.utils.*
-["CPSCounter","ClassUtils","ClientUtils","EntityUtils","InventoryUtils","MinecraftInstance","MovementUtils","PathUtils","RaycastUtils","RollingArrayLongBuffer","Rotation","RotationUtils","ServerUtils","SettingsUtils","TabUtils","block.BlockUtils","block.PlaceInfo","extensions.BlockExtensionKt","extensions.PlayerExtensionKt","item.ArmorComparator","item.ArmorPiece","item.ItemUtils","login.LoginUtils","login.MinecraftAccount","login.UserUtils","misc.FallingPlayer","misc.HttpUtils","misc.MiscUtils","misc.RandomUtils","misc.StringUtils","render.AnimationUtils","render.ColorUtils","render.IconUtils","render.ParticleUtils","render.RenderUtils","render.shader.FramebufferShader","render.shader.Shader","render.shader.shaders.BackgroundShader","render.shader.shaders.GlowShader","render.shader.shaders.OutlineShader","timer.MSTimer","timer.TickTimer","timer.TimeUtils"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.ccbluex.liquidbounce.utils." + v + "\")")});
+["CPSCounter","ClassUtils","ClientUtils","EntityUtils","InventoryUtils","MinecraftInstance","MovementUtils","PathUtils","RaycastUtils","RollingArrayLongBuffer","Rotation","RotationUtils","ServerUtils","SettingsUtils","TabUtils","block.BlockUtils","block.PlaceInfo","extensions.BlockExtensionKt","extensions.PlayerExtensionKt","item.ArmorComparator","item.ArmorPiece","item.ItemUtils","login.LoginUtils","login.MinecraftAccount","login.UserUtils","misc.FallingPlayer","misc.HttpUtils","misc.MiscUtils","misc.RandomUtils"/*,"misc.StringUtils"*/,"render.AnimationUtils","render.ColorUtils","render.IconUtils","render.ParticleUtils","render.RenderUtils","render.shader.FramebufferShader","render.shader.Shader","render.shader.shaders.BackgroundShader","render.shader.shaders.GlowShader","render.shader.shaders.OutlineShader","timer.MSTimer","timer.TickTimer","timer.TimeUtils"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.ccbluex.liquidbounce.utils." + v + "\")")});
 
 //net.ccbluex.liquidbounce.value.*
 ["BlockValue", "BoolValue", "FloatValue", "FontValue", "IntegerValue", "ListValue", "TextValue", "Value"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.value." + v + "\")")});
@@ -281,6 +281,7 @@ function onLoad() {
 function onEnable() {
     FileUtils.deleteQuietly(new File("logs/coreUpdater.log"));
     LiquidBounce.moduleManager.modules.forEach(function (m) {eval(m.name + "Module=m")});
+
     module.forEach(function (m) {m.onLoad && m.onLoad()});
     command.forEach(function (c) {c.onLoad && c.onLoad()});
 }

@@ -100,16 +100,16 @@ function updateValues () {
 		if (prevSettings == settings.get()) return
 		switch (prevSettings = settings.get()) {
 			case "General":
-				setValues(TargetInfoClass, [settings, scale, editpos, showpointingat]); break
+				setValues(TargetInfoModule, [settings, scale, editpos, showpointingat]); break
 			case "Background":
-				setValues(TargetInfoClass, [settings, bgred, bggreen, bgblue, bgalpha]); break
+				setValues(TargetInfoModule, [settings, bgred, bggreen, bgblue, bgalpha]); break
 			case "Text":
-				setValues(TargetInfoClass, [settings, textred, textgreen, textblue, texty, textshadow, fontint, fontvalue]); break
+				setValues(TargetInfoModule, [settings, textred, textgreen, textblue, texty, textshadow, fontint, fontvalue]); break
 			case "Border":
-				setValues(TargetInfoClass, [settings, bordervalue, borderred, bordergreen, borderblue, borderalpha, borderstrength]); break
+				setValues(TargetInfoModule, [settings, bordervalue, borderred, bordergreen, borderblue, borderalpha, borderstrength]); break
 		}
 	} else if (prevSettings) {
-		setValues(TargetInfoClass, list);
+		setValues(TargetInfoModule, list);
 		LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.valuesConfig);
 		prevSettings = null;
 	}
