@@ -9,7 +9,7 @@ module = {
     name: "Clipper",
     author: "CzechHek",
     description: "VClips through blocks using space and shift.",
-    version: "2.1",
+    version: "2.2",
     values: list,
     onUpdate: function () {
         if (mc.thePlayer.onGround) {
@@ -35,9 +35,9 @@ module = {
         }
     },
     onRender2D: function () {
-        indicate.get() && (up || down) && mc.ingameGUI.drawCenteredString(mc.fontRendererObj, (up ? "§8[§5▲ §dUp§8]" : "") + (up && down ? " " : "") + (down ? "§8[§5▼ §dDown§8]" : ""), res.getScaledWidth() / 2, res.getScaledHeight() / 1.25, -1);
+        indicate.get() && (up || down) && mc.ingameGUI.drawCenteredString(mc.fontRendererObj, (up ? "§8[§5▲ §dUp§8]" : "") + (up && down ? " " : "") + (down ? "§8[§5▼ §dDown§8]" : ""), mc.displayWidth / 4, mc.displayHeight / 2.5, -1);
     }
 }
 
 script.import("Core.lib");
-up = down = 0; jumpStop = false; res = new ScaledResolution(mc);
+up = down = 0; jumpStop = false;
