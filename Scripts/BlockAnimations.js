@@ -19,13 +19,13 @@ list = [
 module = {
     name: "BlockAnimations",
     author: "CzechHek",
-    version: "0.5",
+    version: "0.6",
     category: "Render",
     values: list,
     onEnable: function () {
         mc.entityRenderer.itemRenderer = new (Java.extend(ItemRenderer))(mc) {
             func_178103_d: function () {
-                offset = Math.pow(Math.sin(progress += 0.002 * swingSpeed.get()), 2) * deviation.get(); offset2 = offset / 100;
+                offset = Math.pow(Math.sin(progress += 0.02 * swingSpeed.get()), 2) * deviation.get(); offset2 = offset / 100;
                 GlStateManager.translate(posX.get() + (deviateXPos.get() ? offset2 : 0), posY.get() + (deviateYPos.get() ? offset2 : 0), posZ.get() + (deviateZPos.get() ? offset2 : 0));
                 GlStateManager.rotate(rotX.get() + (deviateXRot.get() ? offset : 0), 0.0, 1.0, 0.0);
                 GlStateManager.rotate(rotY.get() + (deviateYRot.get() ? offset : 0), 1.0, 0.0, 0.0);
@@ -68,7 +68,7 @@ module = {
                                 getMethod(ItemRenderer, "func_178096_b").invoke(mc.entityRenderer.itemRenderer, equipProgress, new Float(.0));
                                 getMethod(ItemRenderer, "func_178098_a").invoke(mc.entityRenderer.itemRenderer, partialTicks, mc.thePlayer);
                         }
-                    } else if (!progress) {
+                    } else {
                         getMethod(ItemRenderer, "func_178105_d").invoke(mc.entityRenderer.itemRenderer, swingProgress);
                         getMethod(ItemRenderer, "func_178096_b").invoke(mc.entityRenderer.itemRenderer, equipProgress, swingProgress);
                         progress = 0;
