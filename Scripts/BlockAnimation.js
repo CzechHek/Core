@@ -50,7 +50,7 @@ module = {
 
                 if (itemToRender != null) {
                     if (itemToRender.getItem() == Items.filled_map) getMethod(ItemRenderer, "func_178097_a").invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, pitch, equipProgress, swingProgress);
-                    else if (mc.thePlayer.itemInUseCount > 0 || KillAuraModule.blockingStatus && itemToRender.getItem() instanceof ItemSword) {
+                    else if (mc.thePlayer.itemInUseCount > 0 && itemToRender.getItem() instanceof ItemSword) {
                         switch (itemToRender.getItemUseAction()) {
                             case EnumAction.NONE:
                                 getMethod(ItemRenderer, "func_178096_b").invoke(mc.entityRenderer.itemRenderer, equipProgress, new Float(.0));
