@@ -11,10 +11,8 @@ localSettingsButtons = [];
 shouldDelete = [];
 shouldOverwrite = [];
 LocalFiles = LiquidBounce.fileManager.settingsDir.listFiles();
-prevLocalListLength = LocalFiles.length;
-LocalListLength = LocalFiles.length;
+prevLocalListLength = LocalListLength = LocalFiles.length;
 isPanelEnabled = hasLoadedPanel = false;
-
 
 APanel = Java.extend(Panel, { setupItems: function() {} });
 localSettingsPanel = APanel.class.getConstructors()[0].newInstance("-=LocalConfigs=-", 1, 1, 100, 18, true);
