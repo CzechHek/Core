@@ -1,7 +1,12 @@
-module = {
+///api_version=2
+(script = registerScript({
     name: "ValueBinder",
-    author: "CzechHek",
-    version: "1.5",
+    version: "1.6",
+    authors: ["CzechHek"]
+})).import("Core.lib");
+
+module = {
+    category: "Misc",
     values: [bindslist = value.createText("Binds", "{}")],
     onLoad: function () {
         ValueBinderModule.state = true;
@@ -45,5 +50,3 @@ Notification = Java.type("net.ccbluex.liquidbounce.ui.client.hud.element.element
 function playSound (name) {
     mc.theWorld.playSound(mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ, name, 1, 1, false);
 }
-
-script.import("Core.lib");

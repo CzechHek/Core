@@ -1,3 +1,10 @@
+///api_version=2
+(script = registerScript({
+    name: "SuperKnock",
+    version: "1.2",
+    authors: ["Beast aka turtl aka shiv3r aka n3xt aka polak aka idk what names i had also"]
+})).import("Core.lib");
+
 general_values_array = [
     mode = value.createList("Mode", ["Packet","PacketW-Tap", "W-Tap"], "Packet"),
     hurtTime = value.createInteger("HurtTime", 10, 1, 10),
@@ -14,15 +21,13 @@ not_for_wtap = [
 ]
 
 module = {
-    name: "SuperKnock",
-    author: "Beast aka turtl aka shiv3r aka n3xt aka polak aka idk what names i had also",
-    version: "1.1",
+    category: "Combat",
     description: "Increases knockback you deal",
     values: general_values_array,
     onUpdate: function () {
         ticks = ticks && ticks-1;
         current_values = general_values_array.concat(mode.get() != "W-Tap" ? not_for_wtap : []);
-        setValues(SuperKnockClass, current_values);
+        setValues(SuperKnockModule, current_values);
     },
     onPacket: function (e) {
         if (e.getPacket() instanceof C02PacketUseEntity && e.getPacket().getAction() == C02PacketUseEntity.Action.ATTACK) {
@@ -58,5 +63,3 @@ module = {
 }
 
 var ticks, current_values;
-
-script.import("Core.lib");

@@ -1,3 +1,10 @@
+///api_version=2
+(script = registerScript({
+    name: "HackerSpoofer",
+    version: "1.4",
+    authors: ["CzechHek"]
+})).import("Core.lib");
+
 var list = [
     range = value.createFloat("Range", 4, 1, 8),
     look = value.createBoolean("Look", true),
@@ -8,9 +15,7 @@ var list = [
 ], prevSettings, ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui");
 
 module = {
-    name: "HackerSpoofer",
-    author: "CzechHek",
-    version: "1.3",
+    category: "Render",
     values: list,
     onLoad: function () {
         LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.valuesConfig);
@@ -38,5 +43,3 @@ function updateValues() {
 }
 
 Mouse = Java.type("org.lwjgl.input.Mouse");
-
-script.import("Core.lib");

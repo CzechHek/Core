@@ -1,4 +1,11 @@
-var target = null; //EntityLivingBase?
+///api_version=2
+(script = registerScript({
+    name: "AutoL",
+    version: "2.21",
+    authors: ["Tsikyng Kirisame", "CzechHek"]
+})).import("Core.lib");
+
+target = null; //EntityLivingBase?
 list = [
     mode = value.createList("Mode", ["TargetHealth", "PacketChat"], "TargetHealth"),
     onlyPlayer = value.createBoolean("OnlyPlayer", true),
@@ -29,11 +36,8 @@ list = [
 **/
 
 module = {//untested!
-    name: "AutoL",
     description: "Automatically insults the player you've killed.",
     category: "Player",
-    version: "2.20",
-    author: "Tsikyng Kirisame, CzechHek",//Big thx XD
     values: list,
     tag: mode.get(),
     /**
@@ -88,9 +92,4 @@ module = {//untested!
     }
 }
 
-EntityPlayer = Java.type("net.minecraft.entity.player.EntityPlayer");
-EntityLivingBase = Java.type("net.minecraft.entity.EntityLivingBase");
-MSTimer = Java.type('net.ccbluex.liquidbounce.utils.timer.MSTimer');
-
-script.import("Core.lib");
 //script.import("lib/AbuseUtils.js");

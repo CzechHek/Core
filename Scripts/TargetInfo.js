@@ -1,3 +1,10 @@
+///api_version=2
+(script = registerScript({
+    name: "TargetInfo",
+    version: "2.5",
+    authors: ["natte", "CzechHek", "As丶One", "Nvaros"]
+})).import("Core.lib");
+
 GL11 = Java.type("org.lwjgl.opengl.GL11");
 Color = Java.type("java.awt.Color");
 Fonts = Java.type("net.ccbluex.liquidbounce.ui.font.Fonts");
@@ -33,10 +40,8 @@ list = [
 var fonti, prevSettings;
 
 module = {
-	name: "TargetInfo",
 	description: "Renders information about target.",
-	author: "natte, CzechHek, As丶One, Nvaros",
-	version: "2.4",
+	category: "Render",
 	values: list,
 	onLoad: function () {
 		LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.valuesConfig);
@@ -114,5 +119,3 @@ function updateValues () {
 		prevSettings = null;
 	}
 }
-
-script.import("Core.lib");

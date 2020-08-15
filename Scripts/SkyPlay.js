@@ -1,7 +1,11 @@
-module = {
+///api_version=2
+(script = registerScript({
     name: "SkyPlay",
-    version: "1.3",
-    author: "CzechHek",
+    version: "1.4",
+    authors: ["CzechHek"]
+})).import("Core.lib");
+
+module = {
     onUpdate: function () {
         if (config && !!mc.getCurrentServerData() && mc.getCurrentServerData().serverIP.match("skykingdoms.net")) commandManager.executeCommand(".config load https://pastebin.com/raw/3kXNxBYV"), config = false;
         if (mc.thePlayer.getActivePotionEffect(Java.type("net.minecraft.potion.Potion").invisibility) && leave) mc.thePlayer.sendChatMessage("/sw leave"), leave = false;
@@ -13,9 +17,8 @@ module = {
         if (!leave) mc.thePlayer.sendChatMessage("/sw autojoin"), leave = true;
     },
     onLoad: function () {
-        moduleManager.getModule(this.name).state = true;
+        LiquidBounce.moduleManager.getModule(this.name).state = true;
     }
 }
 
-leave = true; config = true;
-script.import("Core.lib");
+leave = config = true;

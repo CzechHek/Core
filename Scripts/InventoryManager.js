@@ -1,4 +1,9 @@
-IntegerValue = Java.type("net.ccbluex.liquidbounce.value.IntegerValue");
+///api_version=2
+(script = registerScript({
+    name: "InventoryManager",
+    version: "6.15",
+    authors: ["CzechHek"]
+})).import("Core.lib");
 
 list = [
     actions = value.createList("Actions", ACTIONS = ["Open Chests", "Steal Items", "Drop Garbage", "Equip Armor", "Sort Hotbar", "Select Weapons", "Throw Potions", ""], ""),
@@ -6,10 +11,10 @@ list = [
     experimental = value.createBoolean("Experimental lobby detection", true),
     randomize = value.createBoolean("Randomize", false),
     invopen = value.createBoolean("InvOpen", false),
-    maxinvdelay = new _AdaptedValue(new (Java.extend(IntegerValue))("MaxInvDelay", 50, 0, 1000) {onChanged: function (o, n) {n < mininvdelay.get() && maxinvdelay.set(mininvdelay.get())}}),
-    mininvdelay = new _AdaptedValue(new (Java.extend(IntegerValue))("MinInvDelay", 50, 0, 1000) {onChanged: function (o, n) {n > maxinvdelay.get() && mininvdelay.set(maxinvdelay.get())}}),
-    maxstealdelay = new _AdaptedValue(new (Java.extend(IntegerValue))("MaxStealDelay", 50, 0, 1000) {onChanged: function (o, n) {n < minstealdelay.get() && maxstealdelay.set(minstealdelay.get())}}),
-    minstealdelay = new _AdaptedValue(new (Java.extend(IntegerValue))("MinStealDelay", 50, 0, 1000) {onChanged: function (o, n) {n > maxstealdelay.get() && minstealdelay.set(maxstealdelay.get())}}),
+    maxinvdelay = new (Java.extend(IntegerValue))("MaxInvDelay", 50, 0, 1000) {onChanged: function (o, n) {n < mininvdelay.get() && maxinvdelay.set(mininvdelay.get())}},
+    mininvdelay = new (Java.extend(IntegerValue))("MinInvDelay", 50, 0, 1000) {onChanged: function (o, n) {n > maxinvdelay.get() && mininvdelay.set(maxinvdelay.get())}},
+    maxstealdelay = new (Java.extend(IntegerValue))("MaxStealDelay", 50, 0, 1000) {onChanged: function (o, n) {n < minstealdelay.get() && maxstealdelay.set(minstealdelay.get())}},
+    minstealdelay = new (Java.extend(IntegerValue))("MinStealDelay", 50, 0, 1000) {onChanged: function (o, n) {n > maxstealdelay.get() && minstealdelay.set(maxstealdelay.get())}},
     startdelay = value.createInteger("StartDelay", 100, 0, 1000),
     closedelay = value.createInteger("CloseDelay", 100, 0, 1000),
     noattackdelay = value.createInteger("NoAttackDelay", 500, 0, 1000),
@@ -32,10 +37,7 @@ list = [
 ]
 
 module = {
-    name: "InventoryManager",
     category: "Player",
-    author: "CzechHek",
-    version: "6.14",
     values: list,
     onMotion: function (e) {
         if (e.getEventState() == "PRE") {
@@ -241,8 +243,6 @@ function openInv() {
 function isBad(stack) {
     return Java.from(new ItemPotion().getEffects(stack)).some(function (e) {return ["potion.poison", "potion.harm", "potion.moveSlowdown", "potion.weakness"].includes(e.getEffectName())});
 }
-
-script.import("Core.lib");
 
 var timer = new MSTimer(), openTimer = new MSTimer(), attackTimer = new MSTimer(), closeTimer = new MSTimer(), ARMOR_COMPARATOR = new ArmorComparator(), received = openInventory = updated = rotated = false, shouldOpen, chestList = [], ghostItems = [], closeTimer, toOpen, prevMode = rotations.get(), shouldThrow, lastChest;
 Enchantment = Java.type("net.minecraft.enchantment.Enchantment");

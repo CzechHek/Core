@@ -1,6 +1,11 @@
-module = {
+///api_version=2
+(script = registerScript({
     name: "MineFCAutoThings",
-    author: "Choco, CzechHek",
+    version: "1.1",
+    authors: ["Choco", "CzechHek"]
+})).import("Core.lib");
+
+module = {
     values: [
         Winmessage = value.createText("Winmessage", "gg"),
         Startmessage = value.createText("Startmessage", "xD"),
@@ -14,5 +19,3 @@ module = {
         }
     }
 }
-
-script.import("Core.lib");

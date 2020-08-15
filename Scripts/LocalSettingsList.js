@@ -1,18 +1,23 @@
-var LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce");
-var ButtonElement = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.elements.ButtonElement");
-var Panel = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.Panel");
-var localSettingsButtons = [];
-var shouldDelete = [];
-var shouldOverwrite = [];
-var LocalFiles = LiquidBounce.fileManager.settingsDir.listFiles();
-var prevLocalListLength = LocalFiles.length;
-var LocalListLength = LocalFiles.length;
-var isPanelEnabled = false;
-var hasLoadedPanel = false;
+///api_version=2
+(script = registerScript({
+    name: "LocalSettingsList",
+    version: "1.2",
+    authors: ["Nvaros"]
+})).import("Core.lib");
+
+ButtonElement = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.elements.ButtonElement");
+Panel = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.Panel");
+localSettingsButtons = [];
+shouldDelete = [];
+shouldOverwrite = [];
+LocalFiles = LiquidBounce.fileManager.settingsDir.listFiles();
+prevLocalListLength = LocalFiles.length;
+LocalListLength = LocalFiles.length;
+isPanelEnabled = hasLoadedPanel = false;
 
 
-var APanel = Java.extend(Panel, { setupItems: function() {} });
-var localSettingsPanel = APanel.class.getConstructors()[0].newInstance("-=LocalConfigs=-", 1, 1, 100, 18, true);
+APanel = Java.extend(Panel, { setupItems: function() {} });
+localSettingsPanel = APanel.class.getConstructors()[0].newInstance("-=LocalConfigs=-", 1, 1, 100, 18, true);
 
 list = [
 	RetardSafe = value.createBoolean("RetardSafe", false),
@@ -20,11 +25,8 @@ list = [
 ]
 
 module = {
-    name: "LocalSettingsList",
-    author: "Nvaros",
 	category: "Misc",
     description: "Panel that shows your local settings",
-    version: "1.1",
     values: list,
     onEnable: function() {
 		hasLoadedPanel = false;
@@ -52,7 +54,7 @@ module = {
 				shouldOverwrite.length = 0;
 				
 				
-				var localsettingsElements = localSettingsPanel.getElements();
+				localsettingsElements = localSettingsPanel.getElements();
 				for (i in localsettingsElements) {
 					
 					localSettingsPanel.getElements().remove(localsettingsElements[0]);
@@ -85,7 +87,7 @@ module = {
 
 function createLocalSettingsButton(name) {
 	
-	var length = localSettingsButtons.length;
+	length = localSettingsButtons.length;
 	localSettingsButtons[length] = new (Java.extend(ButtonElement))(name) {
 		mouseClicked: function(mouseX, mouseY, mouseButton) {
 			if (localSettingsButtons[length].isHovering(mouseX, mouseY)) {
@@ -133,5 +135,3 @@ function createLocalSettingsButton(name) {
 	}
 	return localSettingsButtons[length];
 }
-
-script.import("Core.lib");
