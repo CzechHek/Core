@@ -1,6 +1,6 @@
-//Core 3.3 - Simple, yet powerful ScriptAPI base
+//Core 3.4 - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.3", coreAutoUpdate = false, scriptAutoUpdate = false, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.4", coreAutoUpdate = false, scriptAutoUpdate = false, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 function registerModule(m) {
@@ -44,18 +44,18 @@ function registerCommand(c) {
         c.onExecute && command.on("execute", function (a) {
             _prefix = LiquidBounce.commandManager.prefix;
             a = Java.from(a).map(function (a, i) a.toLowerCase().replace(!i ? _prefix : "", ""));
-            _error = null; _lastIndex = -1;
-            (_object = c.subcommands) && a.some(function (a, i) {
+            _error = null; _lastIndex = -1; _lastObject = null;
+            (_object = c.subcommands) && a.some(function (arg, i) {
                 if (i) {
-                    if ((_object = _object[a]) instanceof Object) _lastIndex = i;
-                    else if (_object == undefined && (!~_lastIndex || i <= (_lastIndex + 1))) return _error = a;
+                    if ((_object = _object[arg]) instanceof Object) _lastIndex = i + 1, _lastObject = _object;
+                    else if (_object == undefined && (!~_lastIndex || i <= _lastIndex)) return _error = [arg, a.slice(0, _lastIndex), _lastObject || c.subcommands];
                 }
             });
 
             if (_object || _error) {
                 print("");
                 a.length == 1 && print("§8▏§7§l", command.getCommand(), "§8v§l" + (c.version || script.scriptVersion), "§7by§8§l", (c.author || Java.from(script.scriptAuthors)));
-                _object ? _object instanceof Object ? (print("§8▏ §7Valid subcommands§8: (§7§l" + Object.keys(_object).length + "§8)"), print("§8▏§f", _prefix + a.join(" "), "§8[§f" + Object.keys(_object).join("§7, §f") + "§8]")) : print("§8▏ §7Usage§8:§f", _prefix + a.join(" "), "„§7" + _object + "§f“") : print("§4▏ §cInvalid argument§4:§c", _prefix + a.join(" ").replace(_error, "„§4§l" + _error + "§c“"));
+                _object ? _object instanceof Object ? (print("§8▏ §7Valid subcommands§8: (§7§l" + Object.keys(_object).length + "§8)"), print("§8▏§f", _prefix + a.join(" "), "§8[§f" + Object.keys(_object).join("§7, §f") + "§8]")) : print("§8▏ §7Usage§8:§f", _prefix + a.join(" "), "„§7" + _object + "§f“") : (print("§4▏ §cInvalid argument§4:§c", _prefix + a.join(" ").replace(_error[0], "„§4§l" + _error[0] + "§c“")), print("§8▏ §7Valid subcommands§8: (§7§l" + Object.keys(_error[2]).length + "§8)"), print("§8▏§f", _prefix + _error[1].join(" "), "§8[§f" + Object.keys(_error[2]).join("§7, §f") + "§8]"));
                 a.length == 1 && c.commands.length > 1 && (print("§8▏ §7Available aliases§8: (§7§l" + (c.commands.length - 1) + "§8)"), print("§8▏§f", _prefix + c.commands.map(function (e) e.toLowerCase()).filter(function (e) e != a[0]).join("§7, §f" + _prefix)));
             } else c.onExecute(a);
         });
