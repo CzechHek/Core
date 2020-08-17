@@ -1,6 +1,6 @@
-//Core 3.2 - Simple, yet powerful ScriptAPI base
+//Core 3.3 - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.2", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.3", coreAutoUpdate = false, scriptAutoUpdate = false, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 function registerModule(m) {
@@ -44,43 +44,20 @@ function registerCommand(c) {
         c.onExecute && command.on("execute", function (a) {
             _prefix = LiquidBounce.commandManager.prefix;
             a = Java.from(a).map(function (a, i) a.toLowerCase().replace(!i ? _prefix : "", ""));
-            _error = null;
-            if (_object = c.subcommands) {
-                bool = a.slice(1).some(function (a) {
-                    _object = _object[a];
-                    if (_object == undefined) return _error = a;
-                    return !(_object instanceof Object) && _object;
-                });
-
-                print(bool, _object === undefined, _object instanceof Object ? Object.keys(_object) : _object, _error);
-            }
+            _error = null; _lastIndex = -1;
+            (_object = c.subcommands) && a.some(function (a, i) {
+                if (i) {
+                    if ((_object = _object[a]) instanceof Object) _lastIndex = i;
+                    else if (_object == undefined && (!~_lastIndex || i <= (_lastIndex + 1))) return _error = a;
+                }
+            });
 
             if (_object || _error) {
                 print("");
-                a.length == 1 ? print("§8▏§7§l", command.getCommand(), "§8v§l" + (c.version || script.scriptVersion), "§7by§8§l", (c.author || script.scriptAuthor)) :
-                _object ? _object instanceof Object ? (print("§8▏ §7Valid subcommands§8: (§7§l" + Object.keys(_object).length + "§8)"), print("§8▏§f", _prefix + a.join(" "), "§8[§f" + Object.keys(_object).join("§7, §f") + "§8]")) : print("§8▏ §7Usage§8:§f", _prefix + a.join(" "), " „§7" + _object + "§f“") : print("§4▏ §cInvalid argument:", _prefix + a.join(" "), "„§4§l" + _error + "§c“");
-            }
-            /*
-            _subcommands = []; _error = ""; _propertyindex = 100;
-            _commands = []; _command.aliases.forEach(function (c) {_commands.push(c.toLowerCase())});
-    
-            if (c.subcommands) {
-                _object = c.subcommands;
-                for (i in _arg = _args.slice(1)) {
-                    if (~Object.keys(_object).indexOf(_arg[i])) {
-                        if ((_property = _object[_arg[i]]) instanceof Object) _object = _property;
-                        else {_subcommands = [_property]; _propertyindex = parseInt(i) + (_property ? 3 : 2); break};
-                    } else {_error = _arg[i]; _args.length = parseInt(i) + 1; break};
-                } !_subcommands.length && (_subcommands = Object.keys(_object));
-            }
-    
-            if (_object !== null) {
-                chat.print("");
-                _args.length == 1 && chat.print("§8▏ §7§l" + _command.name + " §8v§l" + (c.version || script.scriptVersion) + " §7by §8§l" + (c.author || Java.from(script.scriptAuthors)));
-                _args.length != _propertyindex - 1 ? (chat.print("§8▏ §7Valid subcommands§8: (§7§l" + _subcommands.length + "§8)"), chat.print("§8▏ §f" + _prefix + _args.join(" ") + " §8[§f" + _subcommands.join("§7, §f") + "§8]")) : chat.print("§8▏ §7Usage§8: §f" + _prefix + _args.join(" ") + " „§7" + _subcommands[0] + "§f“");
-                _commands.length > 1 && _args.length == 1 && (chat.print("§8▏ §7Available aliases§8: (§7§l" + _commands.length + "§8)"), chat.print("§8▏ §f" + _prefix + _commands.join("§7, §f" + _prefix)));
-                _error && chat.print("§4▏ §cInvalid argument: " + _prefix + _args.join(" ") + " „§4§l" + _error + "§c“");
-            } else c.onExecute(_args);*/
+                a.length == 1 && print("§8▏§7§l", command.getCommand(), "§8v§l" + (c.version || script.scriptVersion), "§7by§8§l", (c.author || Java.from(script.scriptAuthors)));
+                _object ? _object instanceof Object ? (print("§8▏ §7Valid subcommands§8: (§7§l" + Object.keys(_object).length + "§8)"), print("§8▏§f", _prefix + a.join(" "), "§8[§f" + Object.keys(_object).join("§7, §f") + "§8]")) : print("§8▏ §7Usage§8:§f", _prefix + a.join(" "), "„§7" + _object + "§f“") : print("§4▏ §cInvalid argument§4:§c", _prefix + a.join(" ").replace(_error, "„§4§l" + _error + "§c“"));
+                a.length == 1 && c.commands.length > 1 && (print("§8▏ §7Available aliases§8: (§7§l" + (c.commands.length - 1) + "§8)"), print("§8▏§f", _prefix + c.commands.map(function (e) e.toLowerCase()).filter(function (e) e != a[0]).join("§7, §f" + _prefix)));
+            } else c.onExecute(a);
         });
     });
 }
