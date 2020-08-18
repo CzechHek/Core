@@ -85,9 +85,9 @@ function move(horizontal, vertical, timer, event, ignoreInput) {
     vertical != null && ((mc.thePlayer.motionY = vertical), (event && event.setY(vertical)));
 }
 
-function interval(ms, func) (_timer = new Timer("setInterval", true), _timer.schedule(func, 0, ms), _timer);
+function interval(ms, func) (_timer = new JavaTimer("setInterval", true), _timer.schedule(func, 0, ms), _timer);
 
-function timeout(ms, func) (_timer = new Timer("setTimeout", true), _timer.schedule(func, ms), _timer);
+function timeout(ms, func) (_timer = new JavaTimer("setTimeout", true), _timer.schedule(func, ms), _timer);
 
 function setValues(module, values) {
     if (!(module instanceof ScriptModule)) return
@@ -215,7 +215,7 @@ Object.defineProperty(String.prototype, "includes", {
 /*----------------*/
 
 //Used classes
-LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); JOptionPane = Java.type("javax.swing.JOptionPane"); Thread = Java.type("java.lang.Thread"); Runnable = Java.type("java.lang.Runnable"); FileUtils = Java.type("org.apache.commons.io.FileUtils"); ClassLoader = Java.type("java.lang.ClassLoader"); Class = Java.type("java.lang.Class"); chat = Chat; moduleManager = LiquidBounce.moduleManager; _isLatest = true;
+LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); JavaTimer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); JOptionPane = Java.type("javax.swing.JOptionPane"); Thread = Java.type("java.lang.Thread"); Runnable = Java.type("java.lang.Runnable"); FileUtils = Java.type("org.apache.commons.io.FileUtils"); ClassLoader = Java.type("java.lang.ClassLoader"); Class = Java.type("java.lang.Class"); chat = Chat; moduleManager = LiquidBounce.moduleManager; _isLatest = true;
 _classes = Java.from(getField(ClassLoader, "classes").get(Thread.currentThread().getContextClassLoader())); StaticClass = getMethod(_class = Class.forName("jdk.internal.dynalink.beans.StaticClass"), "forClass").invoke(null, _class); _class = undefined;
 
 //Packages
