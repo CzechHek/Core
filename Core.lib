@@ -1,15 +1,16 @@
-//Core 3.4 - Simple, yet powerful ScriptAPI base
+//Core 3.6 - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.4", coreAutoUpdate = false, scriptAutoUpdate = false, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.6", coreAutoUpdate = false, scriptAutoUpdate = false, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 function registerModule(m) {
     if (!Object.keys(m).length) return;
-    addCategory(m.category); _settings = {}; m.values && (Array.isArray(m.values) ? m.values : [m.values]).forEach(function (v, i) {_settings[v.getName()] = !API_V2 && v instanceof _AdaptedValue ? v.getValue() : v});
+    addCategory(m.category || "Core");
+     _settings = {}; m.values && (Array.isArray(m.values) ? m.values : [m.values]).forEach(function (v, i) {_settings[v.getName()] = !API_V2 && v instanceof _AdaptedValue ? v.getValue() : v});
 
     script.registerModule({
-        name: m.name || API_V2 ? script.scriptName || "Module" : "Module",
-        category: m.category || "Custom",
+        name: m.name || API_V2 ? script.scriptName : "Module",
+        category: m.category || "Core",
         description: m.description || "",
         settings: _settings
     }, function (module) {
@@ -141,6 +142,8 @@ function getField(clazz, fieldName) ((_field = Java.from((clazz instanceof Class
 
 function importPackage() Array.prototype.slice.call(arguments).forEach(function (e) _classes.filter(function (c) c.name.startsWith(e) && !c.name.contains("$")).forEach(function (c) eval(c.simpleName + "=StaticClass.forClass(c)")));
 
+function openFolder(folder) Desktop.open(folder);
+
 value = {
     createBlock: function (name, value) {
         return new BlockValue(name, value)
@@ -214,35 +217,36 @@ Object.defineProperty(String.prototype, "includes", {
 /* Java importing */
 /*----------------*/
 
-//Used classes
-LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); JOptionPane = Java.type("javax.swing.JOptionPane"); Thread = Java.type("java.lang.Thread"); Runnable = Java.type("java.lang.Runnable"); FileUtils = Java.type("org.apache.commons.io.FileUtils"); ClassLoader = Java.type("java.lang.ClassLoader"); Class = Java.type("java.lang.Class"); chat = Chat; moduleManager = LiquidBounce.moduleManager; _isLatest = true;
-_classes = Java.from(getField(ClassLoader, "classes").get(Thread.currentThread().getContextClassLoader())); StaticClass = getMethod(_class = Class.forName("jdk.internal.dynalink.beans.StaticClass"), "forClass").invoke(null, _class); _class = undefined;
-
 //Packages
+ClassLoader = Java.type("java.lang.ClassLoader"); Thread = Java.type("java.lang.Thread"); Class = Java.type("java.lang.Class");
+_classes = Java.from(getField(ClassLoader, "classes").get(Thread.currentThread().getContextClassLoader())); StaticClass = getMethod(_class = Class.forName("jdk.internal.dynalink.beans.StaticClass"), "forClass").invoke(null, _class); _class = undefined;
 importPackage("net.minecraft.block", "net.minecraft.client.gui", "net.minecraft.client.renderer", "net.minecraft.entity", "net.minecraft.init", "net.minecraft.item", "net.minecraft.network", "net.ccbluex.liquidbounce.utils", "net.minecraft.util", "net.ccbluex.liquidbounce.value");
+
+//Used classes
+LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); JOptionPane = Java.type("javax.swing.JOptionPane"); Runnable = Java.type("java.lang.Runnable"); FileUtils = Java.type("org.apache.commons.io.FileUtils"); HttpUtils = Java.type("net.ccbluex.liquidbounce.utils.misc.HttpUtils"); Desktop = Java.type("java.awt.Desktop").getDesktop(); moduleManager = LiquidBounce.moduleManager; commandManager = LiquidBounce.commandManager; _isLatest = true;
 
 script.on("load", function () {
     module = Array.isArray(module) ? module : [module || {}]; command = Array.isArray(command) ? command : [command || {}];
+
     if (!API_V2) {
         script.scriptName = (scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Script").toString();
         script.scriptAuthors = [(scriptAuthor || module[0].author || command[0].author || "Author").toString()];
         script.scriptVersion = (scriptVersion || module[0].version || command[0].version || "1.0").toString();
     }
 
-    if (!LiquidBounce.clickGui) {
-        _updated = (_file = new File("logs/coreUpdater.log")).exists() ? JSON.parse(FileUtils.readFileToString(_file)) : {};
-        try {
-            ["Core", script.scriptName].forEach(function (n, i) {
-                if ([coreAutoUpdate, scriptAutoUpdate][i] !== false && !_updated[n]) {
-                    if (_response = HttpUtils.get("https://dyskord.cc/check?name=" + n + "&ver=" + [coreVersion, script.scriptVersion][i])) {
-                        HttpUtils.download("https://raw.githubusercontent.com/CzechHek/Core/master/" + ["Core.lib", "Scripts/" + n + ".js"][i], [new File("LiquidBounce-1.8/scripts/Core.lib"), script.getScriptFile()][i]);
-                        showMessage("Automatically updated " + n + " " + [coreVersion, script.scriptVersion][i] + " to " + _response, "Core Updater"); _isLatest = false;
-                    } _updated[n] = true;
-                }
-            }); FileUtils.writeStringToFile(_file, JSON.stringify(_updated));
-        } catch (e) {
-            print("Couldn't check", script.scriptName, "for updates!", e); _isLatest = true;
-        };
+    _updated = (_file = new File("logs/coreUpdater.log")).exists() ? JSON.parse(FileUtils.readFileToString(_file)) : {};
+    !_file.exists() && FileUtils.forceDeleteOnExit(_file);
+    try {
+        ["Core", script.scriptName].forEach(function (n, i) {
+            if ([coreAutoUpdate, scriptAutoUpdate][i] !== false && !_updated[n]) {
+                if (_response = HttpUtils.get("https://dyskord.cc/check?name=" + n + "&ver=" + [coreVersion, script.scriptVersion][i])) {
+                    HttpUtils.download("https://raw.githubusercontent.com/CzechHek/Core/master/" + ["Core.lib", "Scripts/" + n + ".js"][i], [new File("LiquidBounce-1.8/scripts/Core.lib"), script.getScriptFile()][i]);
+                    showMessage("Automatically updated " + n + " " + [coreVersion, script.scriptVersion][i] + " to " + _response, "Core Updater"); _isLatest = false;
+                } _updated[n] = true;
+            }
+        }); FileUtils.writeStringToFile(_file, JSON.stringify(_updated));
+    } catch (e) {
+        print("Couldn't check", script.scriptName, "for updates!", e); _isLatest = true;
     };
 
     if (!_isLatest) {
@@ -264,7 +268,6 @@ script.on("load", function () {
 });
 
 script.on("enable", function () {
-    FileUtils.deleteQuietly(new File("logs/coreUpdater.log"));
     LiquidBounce.moduleManager.modules.forEach(function (m) eval(m.name + "Module=m"));
     [module, command].forEach(function (c) c.forEach(function (v) v.onLoad && v.onLoad()));
 });
