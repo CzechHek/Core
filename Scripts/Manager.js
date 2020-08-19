@@ -309,7 +309,7 @@ command = {
 
                             case "folder": {
                                 folder = new File("LiquidBounce-1.8/settings/");
-                                Java.type("java.awt.Desktop").getDesktop().open(folder);
+                                openFolder(folder);
                                 chat.print("§8▏ §aFolder opened");
                                 break;
                             }

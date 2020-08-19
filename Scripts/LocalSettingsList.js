@@ -18,8 +18,8 @@ APanel = Java.extend(Panel, { setupItems: function() {} });
 localSettingsPanel = APanel.class.getConstructors()[0].newInstance("-=LocalConfigs=-", 1, 1, 100, 18, true);
 
 list = [
-	RetardSafe = value.createBoolean("RetardSafe", false),
-	UsePanel = value.createBoolean("UsePanel", false)
+	RetardSafe = value.createBoolean("RetardSafe", true),
+	UsePanel = value.createBoolean("UsePanel", true)
 ]
 
 module = {
@@ -28,13 +28,12 @@ module = {
     values: list,
     onEnable: function() {
 		hasLoadedPanel = false;
-		prevLocalListLength = LocalFiles.length;
-		LocalListLength = LocalFiles.length;
+		prevLocalListLength = LocalListLength = LocalFiles.length;
 	},
 	
 	onDisable: function() {
-		delay(20, function() {
-			commandManager.executeCommand(".t localsettingslist")
+		timeout(20, function() {
+			LocalSettingsListModule.state = true;
 		});
 	},
 	
@@ -77,26 +76,26 @@ module = {
     },
 
     onLoad: function () {
-        delay(2500, function() {
-            moduleManager.getModule(this.name).state = true;
+        timeout(2500, function() {
+            LocalSettingsListModule.state = true;
         });
     }
 }
 
 function createLocalSettingsButton(name) {
-	
-	length = localSettingsButtons.length;
+	var length = localSettingsButtons.length;
 	localSettingsButtons[length] = new (Java.extend(ButtonElement))(name) {
 		mouseClicked: function(mouseX, mouseY, mouseButton) {
+			print(localSettingsButtons[length]);
 			if (localSettingsButtons[length].isHovering(mouseX, mouseY)) {
 				switch (mouseButton) {
 					case 0:
-						commandManager.executeCommand(".localconfig load " + name);
+						commandManager.executeCommands(".localconfig load " + name);
 					break;
 						
 					case 1:
 						if (RetardSafe.get() ? shouldOverwrite[2 * length] : true) {
-							commandManager.executeCommand(".localconfig save " + name);
+							commandManager.executeCommands(".localconfig save " + name);
 							shouldOverwrite[2 * length] = false;
 							if (RetardSafe.get()) {
 								shouldOverwrite[2 * length + 1].cancel();
@@ -104,7 +103,7 @@ function createLocalSettingsButton(name) {
 						} else {
 							chat.print("§8[§9§lLiquidBounce§8] §aAre you sure you want to overwrite the config §c'" + name + "'§a? Right-click again!");
 							shouldOverwrite[2 * length] = true;
-							shouldOverwrite[2 * length + 1] = delay(1500, function() {
+							shouldOverwrite[2 * length + 1] = timeout(1500, function() {
 								shouldOverwrite[2 * length] = false;
 							});
 						}
@@ -113,7 +112,7 @@ function createLocalSettingsButton(name) {
 					
 					case 2:
 						if (RetardSafe.get() ? shouldDelete[2 * length] : true) {
-							commandManager.executeCommand(".localconfig delete " + name);
+							commandManager.executeCommands(".localconfig delete " + name);
 							shouldDelete[2 * length] = false;
 							if (RetardSafe.get()) {
 								shouldDelete[2 * length + 1].cancel();
@@ -121,7 +120,7 @@ function createLocalSettingsButton(name) {
 						} else {
 							chat.print("§8[§9§lLiquidBounce§8] §aAre you sure you want to delete the config §c'" + name + "'§a? Mid-click again!");
 							shouldDelete[2 * length] = true;
-							shouldDelete[2 * length + 1] = delay(1500, function() {
+							shouldDelete[2 * length + 1] = timeout(1500, function() {
 								shouldDelete[2 * length] = false;
 							});
 						}

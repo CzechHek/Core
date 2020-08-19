@@ -125,7 +125,7 @@ command = {
                 }
 
                 case "folder": {
-                    Desktop.getDesktop().open(folder);
+                    openFolder(folder);
                     chat.print("§8▏ §aOpened folder");
                     break;
                 }
@@ -150,6 +150,8 @@ function setup() {
     if (!new File("LiquidBounce-1.8/music-api.jar").exists()) {
         HttpUtils.download("https://cloud.natte.dev/music-api.jar", new File("LiquidBounce-1.8/music-api.jar"));
         Player = classLoader.type("javazoom.jl.player.Player");
+        classLoader = new ClassLoader("LiquidBounce-1.8/music-api.jar");
+
     }
 }
 
@@ -168,4 +170,4 @@ function ClassLoader() {
     this.classLoader = new URLClassLoader(this._convertArguments(arguments));
 }
 
-classLoader = new ClassLoader("LiquidBounce-1.8/music-api.jar"); Player = null; if (new File("LiquidBounce-1.8/music-api.jar").exists()) Player = classLoader.type("javazoom.jl.player.Player"); player = null; thread = null; folder = null;
+var player, thread, folder;

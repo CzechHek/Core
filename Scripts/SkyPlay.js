@@ -17,7 +17,7 @@ module = {
         if (!leave) mc.thePlayer.sendChatMessage("/sw autojoin"), leave = true;
     },
     onLoad: function () {
-        LiquidBounce.moduleManager.getModule(this.name).state = true;
+        SkyPlayModule.state = true;
     }
 }
 
