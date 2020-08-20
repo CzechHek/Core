@@ -1,3 +1,10 @@
+///api_version=2
+(script = registerScript({
+    name: "ChatFilter",
+    version: "0.2",
+    authors: ["Tsikyng Kirisame"]
+})).import("Core.lib");
+
 count = 0;
 
 /**
@@ -32,9 +39,6 @@ keywords = [
 ];
 
 module = {
-    name: "ChatFilter",
-    author: "Tsikyng Kirisame",
-    version: "0.1",
     category: "Misc",
     values: [showCountValue = value.createBoolean("ShowCount", true)],
     tag: showCountValue.get() ? count.toString() : "",
@@ -50,5 +54,3 @@ module = {
         });
     }
 }
-
-script.import("Core.lib");

@@ -1,3 +1,10 @@
+///api_version=2
+(script = registerScript({
+    name: "BlockAnimations",
+    version: "0.7",
+    authors: ["CzechHek"]
+})).import("Core.lib");
+
 list = [
     posX = value.createFloat("posX", -0.5, -2, 2),
     posY = value.createFloat("posY", 0.2, -2, 2),
@@ -13,13 +20,10 @@ list = [
     deviateYRot = value.createBoolean("deviateYRot", true),
     deviateZRot = value.createBoolean("deviateZRot", false),
     swingSpeed = value.createFloat("swingSpeed", 5, 0, 10),
-    reset = new _AdaptedValue(new (Java.extend(Java.type("net.ccbluex.liquidbounce.value.BoolValue")))("resetValues", false) {onChanged: function () {posX.set(-0.5); posY.set(0.2); posZ.set(0); rotX.set(30); rotY.set(-80); rotZ.set(60); deviation.set(60); deviateXPos.set(false); deviateYPos.set(false); deviateZPos.set(false); deviateXRot.set(false); deviateYRot.set(true); deviateZRot.set(false); swingSpeed.set(5); reset.set(false)}})
+    reset = new (Java.extend(Java.type("net.ccbluex.liquidbounce.value.BoolValue")))("resetValues", false) {onChanged: function () {posX.set(-0.5); posY.set(0.2); posZ.set(0); rotX.set(30); rotY.set(-80); rotZ.set(60); deviation.set(60); deviateXPos.set(false); deviateYPos.set(false); deviateZPos.set(false); deviateXRot.set(false); deviateYRot.set(true); deviateZRot.set(false); swingSpeed.set(5); reset.set(false)}}
 ]
 
 module = {
-    name: "BlockAnimations",
-    author: "CzechHek",
-    version: "0.6",
     category: "Render",
     values: list,
     onEnable: function () {
@@ -89,4 +93,3 @@ module = {
 
 progress = 0;
 Float = Java.type("java.lang.Float");
-script.import("Core.lib");

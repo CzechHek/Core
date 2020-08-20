@@ -1,9 +1,15 @@
+///api_version=2
+(script = registerScript({
+    name: "Manager",
+    version: "2.0",
+    authors: ["natte", "CzechHek"]
+})).import("Core.lib");
+
 HudConfig = Java.type("net.ccbluex.liquidbounce.file.configs.HudConfig");
 FileConfig = Java.type("net.ccbluex.liquidbounce.file.FileConfig");
 OutputStreamWriter = Java.type("java.io.OutputStreamWriter");
 Fonts = Java.type("net.ccbluex.liquidbounce.ui.font.Fonts");
 FileOutputStream = Java.type("java.io.FileOutputStream");
-FileUtils = Java.type("org.apache.commons.io.FileUtils");
 JsonElement = Java.type("com.google.gson.JsonElement");
 GsonBuilder = Java.type("com.google.gson.GsonBuilder");
 Collectors = Java.type("java.util.stream.Collectors");
@@ -29,8 +35,6 @@ devMode = false;
 command = {
     commands: ["Manager", "mngr", "m"],
     subcommands: {config:{list:{online:"",local:""},download:"name",upload:"name",save:"name",load:"name",delete:"name",folder:""},theme:{list:{online:"",local:""},download:"name",upload:"name",save:"name",load:"name",delete:"name",folder:""},script:{list:{online:"",local:""},download:"name",upload:"name",load:"name",delete:"name",folder:""},music:{list:{online:"",local:""},download:"name",upload:"name",delete:"name",folder:""}},
-    author: "natte, CzechHek",
-    version: "1.9",
     onExecute: function (args) {
         if (!new File("LiquidBounce-1.8/themes/").exists()) new File("LiquidBounce-1.8/themes/").mkdir();
         if (!new File("LiquidBounce-1.8/settings/").exists()) new File("LiquidBounce-1.8/settings/").mkdir();
@@ -160,7 +164,7 @@ command = {
                                 if (downloadFile(baseUrl + "scripts/" + args[3] + ".js", file = new File("LiquidBounce-1.8/scripts/" + args[3] + ".js"))) {
                                     chat.print("§8▏ §aDownloaded '§2§l" + args[3] + ".js§a'");
         
-                                    LiquidBounce.INSTANCE.getScriptManager().loadScript(file);
+                                    LiquidBounce.scriptManager.loadScript(file);
         
                                     chat.print("§8▏ §aLoaded '§2§l" + file.getName() + "§a'");
                                 }
@@ -196,7 +200,7 @@ command = {
                                     printError("Couldn't find '§4§l" + args[3] + ".js§c'");
                                     return;
                                 }
-                                LiquidBounce.INSTANCE.getScriptManager().deleteScript(new Script(file));
+                                LiquidBounce.scriptManager.deleteScript(new Script(file));
         
                                 chat.print("§8▏ §cDeleted '§4§l" + file.getName() + "§c'");
                                 break;
@@ -305,7 +309,7 @@ command = {
 
                             case "folder": {
                                 folder = new File("LiquidBounce-1.8/settings/");
-                                Java.type("java.awt.Desktop").getDesktop().open(folder);
+                                openFolder(folder);
                                 chat.print("§8▏ §aFolder opened");
                                 break;
                             }
@@ -413,10 +417,10 @@ command = {
                                 
                                 Fonts.loadFonts();
                                 config = new HudConfig(file);
-                                LiquidBounce.INSTANCE.getFileManager().loadConfig(config);
+                                LiquidBounce.fileManager.loadConfig(config);
                                 chat.print("§8▏ §aLoaded '§2§l" + file.getName() + "§a'");
-                                LiquidBounce.INSTANCE.getFileManager().hudConfig = config;
-                                LiquidBounce.INSTANCE.getFileManager().saveConfig(LiquidBounce.INSTANCE.getFileManager().hudConfig);
+                                LiquidBounce.fileManager.hudConfig = config;
+                                LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.hudConfig);
                                 break;
                             }
         
@@ -453,10 +457,7 @@ command = {
     }
 }
 
-function findScript(name, author) {
-    scripts = Java.from(scriptManager.getScripts()); 
-    for (i in scripts) if (scripts[i].scriptName == name && scripts[i].scriptAuthor == author) return scripts[i]; return null;
-}
+function findScript(name, author) Java.from(scriptManager.getScripts()).find(function (s) s.scriptName == name && s.scriptAuthor == author);
 
 function uploadFile(url, file) {
     try {
@@ -518,9 +519,7 @@ function toJsonObject(content) {
     return element.getAsJsonObject();
 }
 
-function printError(error) {
-    chat.print("§8▏ §c§lError:§r§c " + error);
-}
+function printError(error) print("§8▏ §c§lError:§c", error);
 
 function checkFonts(themeFile, upload) {
     themeContent = JSON.parse(FileUtils.readFileToString(themeFile)); customFonts = []; fontNames = []; installedFonts = null;
@@ -588,5 +587,3 @@ function downloadLibs() {
         }
     }
 }
-
-script.import("Core.lib");

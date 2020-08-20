@@ -1,3 +1,10 @@
+///api_version=2
+(script = registerScript({
+    name: "TargetStrafe",
+    version: "1.7",
+    authors: ["CzechHek"]
+})).import("Core.lib");
+
 list = [
     range = value.createFloat("Distance", 3, 0.5, 8),
     speed = value.createFloat("Speed", 0.28, 0.1, 1),
@@ -8,10 +15,8 @@ list = [
 ]
 
 module = {
-    name: "TargetStrafe",
+    category: "Movement",
     values: list,
-    author: "CzechHek",
-    version: "1.6",
     onMove: function (e) {
         strafing = false;
         if ((target = getNearestTarget()) && (mc.gameSettings.keyBindForward.pressed || !onmove.get()) && !mc.gameSettings.keyBindSneak.pressed && !mc.thePlayer.moveStrafing) {
@@ -46,5 +51,3 @@ direction = 1; strafing = false;
 function isAboveGround(x, y, z) {
     for (i = Math.ceil(y); (y - 5) < i--;) if (!mc.theWorld.isAirBlock(new BlockPos(x, i, z))) return true
 }
-
-script.import("Core.lib");

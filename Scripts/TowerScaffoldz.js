@@ -1,8 +1,13 @@
-module = {
+///api_version=2
+(script = registerScript({
     name: "TowerScaffoldz",
+    version: "1.7",
+    authors: ["CzechHek", "yorik100"]
+})).import("Core.lib");
+
+module = {
+    category: "World",
     description: "Scaffold Addon",
-    author: "CzechHek, yorik100",
-    version: "2.1",
     onEnable: function () {
         TowerModule.state = !(ScaffoldModule.state = true);
     },
@@ -16,5 +21,3 @@ module = {
         !(ScaffoldModule.state = !(TowerModule.state = isMovingVertically() && !isMovingHorizontally())) && e.zeroXZ();
     }
 }
-
-script.import("Core.lib");

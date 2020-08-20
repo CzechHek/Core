@@ -1,10 +1,15 @@
-StaticClass = Java.type("jdk.internal.dynalink.beans.StaticClass"); FileOutputStream = Java.type("java.io.FileOutputStream"); FileInputStream = Java.type("java.io.FileInputStream"); URLClassLoader = Java.type("java.net.URLClassLoader"); IOUtils = Java.type("org.apache.commons.io.IOUtils"); Channels = Java.type("java.nio.channels.Channels"); Runnable = Java.type("java.lang.Runnable"); Desktop = Java.type("java.awt.Desktop"); Arrays = Java.type("java.util.Arrays"); Thread = Java.type("java.lang.Thread"); Class = Java.type("java.lang.Class"); Long = Java.type("java.lang.Long"); File = Java.type("java.io.File"); URL = Java.type("java.net.URL");
+///api_version=2
+(script = registerScript({
+    name: "MusicPlayer",
+    version: "1.6",
+    authors: ["natte"]
+})).import("Core.lib");
+
+FileOutputStream = Java.type("java.io.FileOutputStream"); FileInputStream = Java.type("java.io.FileInputStream"); URLClassLoader = Java.type("java.net.URLClassLoader"); IOUtils = Java.type("org.apache.commons.io.IOUtils"); Channels = Java.type("java.nio.channels.Channels"); Desktop = Java.type("java.awt.Desktop"); Arrays = Java.type("java.util.Arrays"); Long = Java.type("java.lang.Long"); URL = Java.type("java.net.URL");
 
 command = {
     commands: ["MusicPlayer", "mp"],
     subcommands: {play:"name / url",stop:"",youtube:"query",list:"",folder:""},
-    author: "natte",
-    version: "1.5",
     onExecute: function (args) {
         try {
             setup();
@@ -120,7 +125,7 @@ command = {
                 }
 
                 case "folder": {
-                    Desktop.getDesktop().open(folder);
+                    openFolder(folder);
                     chat.print("§8▏ §aOpened folder");
                     break;
                 }
@@ -145,6 +150,8 @@ function setup() {
     if (!new File("LiquidBounce-1.8/music-api.jar").exists()) {
         HttpUtils.download("https://cloud.natte.dev/music-api.jar", new File("LiquidBounce-1.8/music-api.jar"));
         Player = classLoader.type("javazoom.jl.player.Player");
+        classLoader = new ClassLoader("LiquidBounce-1.8/music-api.jar");
+
     }
 }
 
@@ -163,4 +170,4 @@ function ClassLoader() {
     this.classLoader = new URLClassLoader(this._convertArguments(arguments));
 }
 
-script.import("Core.lib"); classLoader = new ClassLoader("LiquidBounce-1.8/music-api.jar"); Player = null; if (new File("LiquidBounce-1.8/music-api.jar").exists()) Player = classLoader.type("javazoom.jl.player.Player"); player = null; thread = null; folder = null;
+var player, thread, folder;

@@ -1,3 +1,10 @@
+///api_version=2
+(script = registerScript({
+    name: "Clipper",
+    version: "2.3",
+    authors: ["CzechHek"]
+})).import("Core.lib");
+
 list = [
     clipdown = value.createFloat("Down", 10, 0, 10),
     clipup = value.createFloat("Up", 2, 0, 10),
@@ -6,10 +13,7 @@ list = [
 ]
 
 module = {
-    name: "Clipper",
-    author: "CzechHek",
     description: "VClips through blocks using space and shift.",
-    version: "2.2",
     values: list,
     onUpdate: function () {
         if (mc.thePlayer.onGround) {
@@ -39,5 +43,4 @@ module = {
     }
 }
 
-script.import("Core.lib");
 up = down = 0; jumpStop = false;

@@ -1,9 +1,13 @@
-module = {
+///api_version=2
+(script = registerScript({
     name: "AutoFindBlock",
+    version: "2.2",
+    authors: ["Lolmc", "CzechHek"]
+})).import("Core.lib");
+
+module = {
     category: "Misc",
     description: "Helps you to automatically select a block",
-    author: "Lolmc, CzechHek",
-    version: "2.1",
     onUpdate: function () {
         if ((ScaffoldModule.state || TowerModule.state) && ~(blockSlot = InventoryUtils.findAutoBlockBlock())) {
             !~slot && (slot = mc.thePlayer.inventory.currentItem);
@@ -16,5 +20,4 @@ module = {
     }
 }
 
-var slot = -1;
-script.import("Core.lib");
+slot = -1;
