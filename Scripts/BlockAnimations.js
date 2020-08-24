@@ -1,7 +1,7 @@
 ///api_version=2
 (script = registerScript({
     name: "BlockAnimations",
-    version: "0.71",
+    version: "0.8",
     authors: ["CzechHek"]
 })).import("Core.lib");
 
@@ -20,7 +20,9 @@ list = [
     deviateYRot = value.createBoolean("deviateYRot", true),
     deviateZRot = value.createBoolean("deviateZRot", false),
     swingSpeed = value.createFloat("swingSpeed", 5, 0, 10),
-    reset = new (Java.extend(BoolValue))("resetValues", false) {onChanged: function () {posX.set(-0.5); posY.set(0.2); posZ.set(0); rotX.set(30); rotY.set(-80); rotZ.set(60); deviation.set(60); deviateXPos.set(false); deviateYPos.set(false); deviateZPos.set(false); deviateXRot.set(false); deviateYRot.set(true); deviateZRot.set(false); swingSpeed.set(5); reset.set(false)}}
+    equipAnimation = value.createBoolean("equipAnimation", false),
+    fake = value.createBoolean("fake", false),
+    reset = new (Java.extend(BoolValue))("resetValues", false) {onChanged: function () {posX.set(-0.5); posY.set(0.2); posZ.set(0); rotX.set(30); rotY.set(-80); rotZ.set(60); deviation.set(60); deviateXPos.set(false); deviateYPos.set(false); deviateZPos.set(false); deviateXRot.set(false); deviateYRot.set(true); deviateZRot.set(false); swingSpeed.set(5); equipAnimation.set(false); fake.set(false); reset.set(false)}}
 ]
 
 module = {
@@ -28,57 +30,57 @@ module = {
     values: list,
     onEnable: function () {
         mc.entityRenderer.itemRenderer = new (Java.extend(ItemRenderer))(mc) {
-            func_178103_d: function () {
-                offset = Math.pow(Math.sin(progress += 0.02 * swingSpeed.get()), 2) * deviation.get(); offset2 = offset / 100;
+            doBlockTransformations: function () {
+                offset = Math.pow(Math.sin(progress += 0.005 * swingSpeed.get()), 2) * deviation.get(); offset2 = offset / 100;
                 GlStateManager.translate(posX.get() + (deviateXPos.get() ? offset2 : 0), posY.get() + (deviateYPos.get() ? offset2 : 0), posZ.get() + (deviateZPos.get() ? offset2 : 0));
                 GlStateManager.rotate(rotX.get() + (deviateXRot.get() ? offset : 0), 0.0, 1.0, 0.0);
                 GlStateManager.rotate(rotY.get() + (deviateYRot.get() ? offset : 0), 1.0, 0.0, 0.0);
                 GlStateManager.rotate(rotZ.get() + (deviateZRot.get() ? offset : 0), 0.0, 1.0, 0.0);
             },
             func_78440_a: function (partialTicks) {
-                prevEquippedProgress = getField(ItemRenderer, "field_78451_d").get(mc.entityRenderer.itemRenderer);
-                equippedProgress = getField(ItemRenderer, "field_78454_c").get(mc.entityRenderer.itemRenderer);
-                itemToRender = getField(ItemRenderer, "field_78453_b").get(mc.entityRenderer.itemRenderer);
+                prevEquippedProgress = prevEquippedProgressField.get(mc.entityRenderer.itemRenderer);
+                equippedProgress = equippedProgressField.get(mc.entityRenderer.itemRenderer);
+                itemToRender = itemToRenderField.get(mc.entityRenderer.itemRenderer);
                 equipProgress = new Float(1 - (prevEquippedProgress + (equippedProgress - prevEquippedProgress) * partialTicks));
                 swingProgress = mc.thePlayer.getSwingProgress(partialTicks);
-                pitch = new Float(mc.thePlayer.prevRotationPitch + (mc.thePlayer.rotationPitch - mc.thePlayer.prevRotationPitch) * partialTicks);
-                yaw = new Float(mc.thePlayer.prevRotationYaw + (mc.thePlayer.rotationYaw - mc.thePlayer.prevRotationYaw) * partialTicks);
+                //pitch = new Float(mc.thePlayer.prevRotationPitch + (mc.thePlayer.rotationPitch - mc.thePlayer.prevRotationPitch) * partialTicks);
+                //yaw = new Float(mc.thePlayer.prevRotationYaw + (mc.thePlayer.rotationYaw - mc.thePlayer.prevRotationYaw) * partialTicks);
                 partialTicks = new Float(partialTicks);
 
-                getMethod(ItemRenderer, "func_178101_a").invoke(mc.entityRenderer.itemRenderer, pitch, yaw);
-                getMethod(ItemRenderer, "func_178109_a").invoke(mc.entityRenderer.itemRenderer, mc.thePlayer);
-                getMethod(ItemRenderer, "func_178110_a").invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, partialTicks);
+                //rotateArroundXAndYMethod.invoke(mc.entityRenderer.itemRenderer, pitch, yaw);
+                //setLightMapFromPlayerMethod.invoke(mc.entityRenderer.itemRenderer, mc.thePlayer);
+                //rotateWithPlayerRotationsMethod.invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, partialTicks);
 
                 GlStateManager.enableRescaleNormal();
                 GlStateManager.pushMatrix();
 
                 if (itemToRender != null) {
-                    if (itemToRender.getItem() == Items.filled_map) getMethod(ItemRenderer, "func_178097_a").invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, pitch, equipProgress, swingProgress);
-                    else if (mc.thePlayer.itemInUseCount > 0 || KillAuraModule.blockingStatus && itemToRender.getItem() instanceof ItemSword) {
+                    if (itemToRender.getItem() == Items.filled_map) renderItemMapMethod.invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, pitch, equipProgress, swingProgress);
+                    else if (mc.thePlayer.itemInUseCount > 0 || KillAuraModule.blockingStatus || (KillAuraModule.target && fake.get())) {
                         switch (itemToRender.getItemUseAction()) {
                             case EnumAction.NONE:
-                                getMethod(ItemRenderer, "func_178096_b").invoke(mc.entityRenderer.itemRenderer, equipProgress, new Float(.0));
+                                transformFirstPersonItemMethod.invoke(mc.entityRenderer.itemRenderer, equipProgress, new Float(0));
                                 break
                             case EnumAction.EAT:
                             case EnumAction.DRINK:
-                                getMethod(ItemRenderer, "func_178104_a").invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, partialTicks);
-                                getMethod(ItemRenderer, "func_178096_b").invoke(mc.entityRenderer.itemRenderer, equipProgress, new Float(.0));
+                                performDrinkingMethod.invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, partialTicks);
+                                transformFirstPersonItemMethod.invoke(mc.entityRenderer.itemRenderer, equipProgress, new Float(0));
                                 break
                             case EnumAction.BLOCK:
-                                getMethod(ItemRenderer, "func_178096_b").invoke(mc.entityRenderer.itemRenderer, equipProgress, new Float(.0));
-                                this.func_178103_d();
+                                    transformFirstPersonItemMethod.invoke(mc.entityRenderer.itemRenderer, equipAnimation.get() ? equipProgress : new Float(0), new Float(0));
+                                    KillAuraModule.target ? this.doBlockTransformations() : doBlockTransformationsMethod.invoke(mc.entityRenderer.itemRenderer);
                                 break
                             case EnumAction.BOW:
-                                getMethod(ItemRenderer, "func_178096_b").invoke(mc.entityRenderer.itemRenderer, equipProgress, new Float(.0));
-                                getMethod(ItemRenderer, "func_178098_a").invoke(mc.entityRenderer.itemRenderer, partialTicks, mc.thePlayer);
+                                transformFirstPersonItemMethod.invoke(mc.entityRenderer.itemRenderer, equipProgress, new Float(0));
+                                doBowTransformationsMethod.invoke(mc.entityRenderer.itemRenderer, partialTicks, mc.thePlayer);
                         }
                     } else {
-                        getMethod(ItemRenderer, "func_178105_d").invoke(mc.entityRenderer.itemRenderer, swingProgress);
-                        getMethod(ItemRenderer, "func_178096_b").invoke(mc.entityRenderer.itemRenderer, equipProgress, swingProgress);
+                        doItemUsedTransformationsMethod.invoke(mc.entityRenderer.itemRenderer, swingProgress);
+                        transformFirstPersonItemMethod.invoke(mc.entityRenderer.itemRenderer, equipProgress, swingProgress);
                         progress = 0;
                     }
-                    getMethod(ItemRenderer, "func_178099_a").invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, itemToRender, ItemCameraTransforms.TransformType.FIRST_PERSON);
-                } else if (!mc.thePlayer.isInvisible()) getMethod(ItemRenderer, "func_178095_a").invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, equipProgress, swingProgress);
+                    renderItemMethod.invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, itemToRender, ItemCameraTransforms.TransformType.FIRST_PERSON);
+                } else if (!mc.thePlayer.isInvisible()) renderPlayerArmMethod.invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, equipProgress, swingProgress);
 
                 GlStateManager.popMatrix();
                 GlStateManager.disableRescaleNormal();
@@ -93,3 +95,20 @@ module = {
 
 progress = 0;
 Float = Java.type("java.lang.Float");
+
+prevEquippedProgressField = getField(ItemRenderer, "field_78451_d");
+equippedProgressField = getField(ItemRenderer, "field_78454_c");
+itemToRenderField = getField(ItemRenderer, "field_78453_b");
+
+//rotateArroundXAndYMethod = getMethod(ItemRenderer, "func_178101_a");
+//setLightMapFromPlayerMethod = getMethod(ItemRenderer, "func_178109_a");
+//rotateWithPlayerRotationsMethod = getMethod(ItemRenderer, "func_178110_a");
+renderItemMapMethod = getMethod(ItemRenderer, "func_178097_a");
+transformFirstPersonItemMethod = getMethod(ItemRenderer, "func_178096_b");
+performDrinkingMethod = getMethod(ItemRenderer, "func_178104_a");
+doBlockTransformationsMethod = getMethod(ItemRenderer, "func_178103_d");
+doBowTransformationsMethod = getMethod(ItemRenderer, "func_178098_a");
+doItemUsedTransformationsMethod = getMethod(ItemRenderer, "func_178105_d");
+renderItemMethod = getMethod(ItemRenderer, "func_178099_a");
+renderPlayerArmMethod = getMethod(ItemRenderer, "func_178095_a");
+
