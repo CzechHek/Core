@@ -1,6 +1,6 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.7", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.8", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 function registerModule(m) {
@@ -139,6 +139,8 @@ function showMessage(text, title, alwaysOnTop, type)
 function getMethod(clazz, methodName) ((_method = Java.from((clazz instanceof Class ? clazz : clazz.class).getDeclaredMethods()).find(function (m) m.getName() == methodName)).setAccessible(true), _method);
 
 function getField(clazz, fieldName) ((_field = Java.from((clazz instanceof Class ? clazz : clazz.class).getDeclaredFields()).find(function (f) f.getName() == fieldName)).setAccessible(true), _field);
+
+function getConstructor(clazz, index) ((_constructor = (clazz instanceof Class ? clazz : clazz.class).getDeclaredConstructors()[index]).setAccessible(true), _constructor);
 
 function importPackage() Array.prototype.slice.call(arguments).forEach(function (e) _classes.filter(function (c) c.name.startsWith(e) && !c.name.contains("$")).forEach(function (c) eval(c.simpleName + "=StaticClass.forClass(c)")));
 
@@ -284,14 +286,8 @@ script.on("load", function () {
         return
     } else _updated = _response = _isLatest = undefined;
 
-    (_enumValues = ModuleCategory.class.getDeclaredField("$VALUES")).setAccessible(true);
-
-    (_modifiers = Field.class.getDeclaredField("modifiers")).setAccessible(true);
-    _modifiers.setInt(_enumValues, _enumValues.getModifiers() & ~Modifier.FINAL);
-
-    (_constructor = ModuleCategory.class.getDeclaredConstructors()[0]).setAccessible(true);
-    (_acquireAccessor = Constructor.class.getDeclaredMethod("acquireConstructorAccessor")).setAccessible(true);
-    _accessor = _acquireAccessor.invoke(_constructor);
+    getField(Field, "modifiers").setInt(_enumValues = getField(ModuleCategory, "$VALUES"), _enumValues.getModifiers() & ~Modifier.FINAL);
+    _accessor = getMethod(Constructor, "acquireConstructorAccessor").invoke(getConstructor(ModuleCategory, 0));
     
     [module, command].forEach(function (c, i) c.forEach(function (v) [registerModule, registerCommand][i](v)));
 });
