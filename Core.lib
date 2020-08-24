@@ -1,16 +1,15 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.8", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.9", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 function registerModule(m) {
     if (!Object.keys(m).length) return;
-    addCategory(m.category || "Core");
-     _settings = {}; m.values && (Array.isArray(m.values) ? m.values : [m.values]).forEach(function (v, i) {_settings[v.getName()] = !API_V2 && v instanceof _AdaptedValue ? v.getValue() : v});
+    _settings = {}; m.values && (Array.isArray(m.values) ? m.values : [m.values]).forEach(function (v, i) {_settings[v.getName()] = !API_V2 && v instanceof _AdaptedValue ? v.getValue() : v});
 
     script.registerModule({
         name: m.name || API_V2 ? script.scriptName : "Module",
-        category: m.category || "Core",
+        category: _categories.add(m.category || "Core"),
         description: m.description || "",
         settings: _settings
     }, function (module) {
@@ -122,10 +121,6 @@ function rand(min, max) Math.random() * (max - min) + min;
 
 function getDurability(itemStack) itemStack && itemStack.getMaxDamage() - itemStack.getItemDamage();
 
-function addCategory(name) name && !(_values = Java.from(_enumValues.get(null))).some(function (v) {return v.getDisplayName().toLowerCase() == name.toLowerCase()}) && _enumValues.set(null, Java.to(_values.concat(_accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"));
-
-function removeCategory(name) Java.from(_enumValues.get(null)).some(function (v, i, a) {if (v.getDisplayName().contains(name)) {a.splice(i, 1); return !_enumValues.set(null, Java.to(a, "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"))}});
-
 print = (Chat = chat = {print: function () {ClientUtils.displayChatMessage(Array.prototype.slice.call(arguments).join(" "))}}).print;
 
 function showMessage(text, title, alwaysOnTop, type)
@@ -145,6 +140,16 @@ function getConstructor(clazz, index) ((_constructor = (clazz instanceof Class ?
 function importPackage() Array.prototype.slice.call(arguments).forEach(function (e) _classes.filter(function (c) c.name.startsWith(e) && !c.name.contains("$")).forEach(function (c) eval(c.simpleName + "=StaticClass.forClass(c)")));
 
 function openFolder(folder) Desktop.open(folder);
+
+function EditableEnum (target) {
+    getField(Field, "modifiers").setInt(values = getField(target, "$VALUES"), values.getModifiers() & ~Modifier.FINAL);
+    accessor = getMethod(Constructor, "acquireConstructorAccessor").invoke(getConstructor(target, 0));
+
+    this.add = function (name) (!(array = Java.from(values.get(null))).some(function (v) {return v.getDisplayName().toLowerCase() == name.toLowerCase()}) && values.set(null, Java.to(array.concat(accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]")), name);
+    this.remove = function (name) (Java.from(values.get(null)).some(function (v, i, a) {if (v.getDisplayName().contains(name)) {a.splice(i, 1); return !values.set(null, Java.to(a, "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"))}}), name);
+    this.get = function () target;
+    this.values = function () Java.from(values.get(null));
+}
 
 value = {
     createBlock: function (name, value) {
@@ -265,8 +270,7 @@ script.on("load", function () {
         script.scriptVersion = (scriptVersion || module[0].version || command[0].version || "1.0").toString();
     }
 
-    _updated = (_file = new File("logs/coreUpdater.log")).exists() ? JSON.parse(FileUtils.readFileToString(_file)) : {};
-    !_file.exists() && FileUtils.forceDeleteOnExit(_file);
+    _updated = (_file = new File("logs/coreUpdater.log")).exists() ? JSON.parse(FileUtils.readFileToString(_file)) : {}; FileUtils.forceDeleteOnExit(_file);
     try {
         ["Core", script.scriptName].forEach(function (n, i) {
             if ([coreAutoUpdate, scriptAutoUpdate][i] !== false && !_updated[n]) {
@@ -286,9 +290,7 @@ script.on("load", function () {
         return
     } else _updated = _response = _isLatest = undefined;
 
-    getField(Field, "modifiers").setInt(_enumValues = getField(ModuleCategory, "$VALUES"), _enumValues.getModifiers() & ~Modifier.FINAL);
-    _accessor = getMethod(Constructor, "acquireConstructorAccessor").invoke(getConstructor(ModuleCategory, 0));
-    
+    _categories = new EditableEnum(ModuleCategory);
     [module, command].forEach(function (c, i) c.forEach(function (v) [registerModule, registerCommand][i](v)));
 });
 
