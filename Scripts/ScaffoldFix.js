@@ -2,14 +2,14 @@
 (script = registerScript({
     name: "ScaffoldFix",
     authors: ["CzechHek"],
-    version: "1.0"
+    version: "1.1"
 })).import("Core.lib");
 
 module = {
     category: "World",
     description: "Fixes Scaffold AutoBlock detections.",
     onPacket: function (e) {
-        (p = e.getPacket()) instanceof C09PacketHeldItemChange && p.getSlotId() == prevSlot ? e.cancelEvent() : (prevSlot = p.getSlotId());
+        e.getPacket() instanceof C09PacketHeldItemChange && e.getPacket().getSlotId() == prevSlot ? e.cancelEvent() : (prevSlot = e.getPacket().getSlotId());
     }
 }
 
