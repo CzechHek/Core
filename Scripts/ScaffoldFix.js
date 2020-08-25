@@ -9,7 +9,7 @@ module = {
     category: "World",
     description: "Fixes Scaffold AutoBlock detections.",
     onPacket: function (e) {
-        e.getPacket() instanceof C09PacketHeldItemChange && e.getPacket().getSlotId() == prevSlot ? e.cancelEvent() : (prevSlot = e.getPacket().getSlotId());
+        (p = e.getPacket()) instanceof C09PacketHeldItemChange && (e.getPacket().getSlotId() == prevSlot ? e.cancelEvent() : (prevSlot = e.getPacket().getSlotId()));
     }
 }
 
