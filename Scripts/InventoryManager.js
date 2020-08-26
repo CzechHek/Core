@@ -1,7 +1,7 @@
 ///api_version=2
 (script = registerScript({
     name: "InventoryManager",
-    version: "6.15",
+    version: "6.16",
     authors: ["CzechHek"]
 })).import("Core.lib");
 
@@ -159,7 +159,7 @@ function rotateToOpen() {
 }
 
 function rotateToThrow() {
-    if (mc.thePlayer.onGround)
+    if (mc.thePlayer.onGround && actionslist.get().contains("Throw Potions"))
         for (i = 35; i++ < 44;) {
             if (stacks[i] && stacks[i].getItem() instanceof ItemPotion && ItemPotion.isSplash(stacks[i].getItemDamage()) && !isBad(stacks[i]) && !Java.from(new ItemPotion().getEffects(stacks[i])).some(function (e) {return Java.from(mc.thePlayer.getActivePotionEffects()).some(function (e2) {return e.getEffectName() == e2.getEffectName()}) || (mc.thePlayer.getHealth() > healthtoheal.get() && ["potion.regeneration", "potion.heal"].includes(e.getEffectName()))})) {
                 mc.getNetHandler().addToSendQueue(new C09PacketHeldItemChange(i - 36));
@@ -227,7 +227,7 @@ function getItems() {
     swords.sort(function (b, a) {return getDurability(stacks[a]) - getDurability(stacks[b])}).sort(function (b, a) {return getAttackDamage(stacks[a]) - getAttackDamage(stacks[b])});
     bows.sort(function (b, a) {return getDurability(stacks[a]) - getDurability(stacks[b])}).sort(function (a, b) {return ItemUtils.getEnchantment(stacks[a], Enchantment.power) - ItemUtils.getEnchantment(stacks[b], Enchantment.power)});
     [helmets, chestplates, leggings, boots, swords, pickaxes, axes, spades, bows].forEach(function (c) {c.length > 1 && (garbage = garbage.concat(c.slice(1)))});
-    garbage.shuffle(randomize.get());
+    garbage = garbage.filter(function (a) !stacks.find(function (b) stacks[b] && ItemStack.areItemStacksEqual(stacks[a], stacks[b]))).shuffle(randomize.get());
     instaInv = !(mininvdelay.get() + maxinvdelay.get());
 }
 
