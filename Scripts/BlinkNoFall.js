@@ -2,7 +2,7 @@
 (script = registerScript({
     name: "BlinkNoFall",
     authors: ["CzechHek"],
-    version: "1.2"
+    version: "1.3"
 })).import("Core.lib");
 
 module = {
@@ -11,7 +11,7 @@ module = {
         if (mc.thePlayer && !mc.thePlayer.isOnLadder() && !mc.thePlayer.isInWater() && (packet = e.getPacket()) instanceof C03PacketPlayer) {
             if (packet.onGround) catchPackets && (catchPackets = false, packets.forEach(function (p) mc.getNetHandler().addToSendQueue(p)), packets = []);
             else if (catchPackets = catchPackets || !isAboveGround()) {
-                (packet.onGround = mc.thePlayer.fallDistance > 3.3) && (mc.thePlayer.fallDistance = 0);
+                (packet.onGround = (mc.thePlayer.fallDistance - mc.thePlayer.motionY) > 3.3) && (mc.thePlayer.fallDistance = 0);
                 packets.push(packet); e.cancelEvent();
             }
         }
