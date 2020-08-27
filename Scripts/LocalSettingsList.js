@@ -1,7 +1,7 @@
 ///api_version=2
 (script = registerScript({
     name: "LocalSettingsList",
-    version: "1.2",
+    version: "1.3",
     authors: ["Nvaros"]
 })).import("Core.lib");
 
@@ -86,7 +86,6 @@ function createLocalSettingsButton(name) {
 	var length = localSettingsButtons.length;
 	localSettingsButtons[length] = new (Java.extend(ButtonElement))(name) {
 		mouseClicked: function(mouseX, mouseY, mouseButton) {
-			print(localSettingsButtons[length]);
 			if (localSettingsButtons[length].isHovering(mouseX, mouseY)) {
 				switch (mouseButton) {
 					case 0:
@@ -101,7 +100,7 @@ function createLocalSettingsButton(name) {
 								shouldOverwrite[2 * length + 1].cancel();
 							}
 						} else {
-							chat.print("§8[§9§lLiquidBounce§8] §aAre you sure you want to overwrite the config §c'" + name + "'§a? Right-click again!");
+							print("§8[§9§lLiquidBounce§8] §aAre you sure you want to overwrite the config §c'" + name + "'§a? Right-click again!");
 							shouldOverwrite[2 * length] = true;
 							shouldOverwrite[2 * length + 1] = timeout(1500, function() {
 								shouldOverwrite[2 * length] = false;
@@ -118,7 +117,7 @@ function createLocalSettingsButton(name) {
 								shouldDelete[2 * length + 1].cancel();
 							}
 						} else {
-							chat.print("§8[§9§lLiquidBounce§8] §aAre you sure you want to delete the config §c'" + name + "'§a? Mid-click again!");
+							print("§8[§9§lLiquidBounce§8] §aAre you sure you want to delete the config §c'" + name + "'§a? Mid-click again!");
 							shouldDelete[2 * length] = true;
 							shouldDelete[2 * length + 1] = timeout(1500, function() {
 								shouldDelete[2 * length] = false;
