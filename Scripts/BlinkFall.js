@@ -2,7 +2,7 @@
 (script = registerScript({
     name: "BlinkFall",
     authors: ["CzechHek"],
-    version: "3.3"
+    version: "3.4"
 })).import("Core.lib");
 
 module = {
@@ -19,10 +19,12 @@ module = {
     },
     onMove: function (e) {
         if (!catchPackets) {
-            yaw = MovementUtils.getDirection();
-            mc.thePlayer.onGround && (lastPos = [mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ]);
-            if (isMovingHorizontally() && mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, mc.thePlayer.getEntityBoundingBox().offset(-Math.sin(yaw) * 1, -2, Math.cos(yaw) * 1).expand(0, 2, 0)).isEmpty())
-                catchPackets = !timer.reset();
+            if (!ScaffoldModule.state && !TowerModule.state) {
+                yaw = MovementUtils.getDirection();
+                mc.thePlayer.onGround && (lastPos = [mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ]);
+                if (isMovingHorizontally() && mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, mc.thePlayer.getEntityBoundingBox().offset(-Math.sin(yaw) * e.getX(), -2, Math.cos(yaw) * e.getZ()).expand(0, 2, 0)).isEmpty())
+                    catchPackets = !timer.reset();
+            }
         } else {
             if (timer.hasTimePassed(maxfalltime.get()) || sendPackets || mc.thePlayer.isOnLadder() || mc.thePlayer.isInWater()) {
                 if (sendPackets || mc.thePlayer.isOnLadder() || mc.thePlayer.isInWater()) {
