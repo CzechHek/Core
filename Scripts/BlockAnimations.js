@@ -1,7 +1,7 @@
 ///api_version=2
 (script = registerScript({
     name: "BlockAnimations",
-    version: "0.9",
+    version: "0.91",
     authors: ["CzechHek"]
 })).import("Core.lib");
 
@@ -12,7 +12,7 @@ list = [
     rotX = value.createFloat("rotX", 30, -180, 180),
     rotY = value.createFloat("rotY", -80, -180, 180),
     rotZ = value.createFloat("rotZ", 60, -180, 180),
-    deviation = value.createFloat("deviation", 125, -500, 500),
+    deviation = value.createFloat("deviation", 75, -500, 500),
     deviateXPos = value.createBoolean("deviateXPos", false),
     deviateYPos = value.createBoolean("deviateYPos", false),
     deviateZPos = value.createBoolean("deviateZPos", false),
@@ -22,7 +22,7 @@ list = [
     swingDuration = value.createFloat("swingDuration", 500, 0, 2000),
     equipAnimation = value.createBoolean("equipAnimation", false),
     fake = value.createBoolean("fake", false),
-    reset = new (Java.extend(BoolValue))("resetValues", false) {onChanged: function () {posX.set(0); posY.set(0.5); posZ.set(0.3); rotX.set(30); rotY.set(-80); rotZ.set(60); deviation.set(125); deviateXPos.set(false); deviateYPos.set(false); deviateZPos.set(false); deviateXRot.set(false); deviateYRot.set(true); deviateZRot.set(false); swingDuration.set(500); equipAnimation.set(false); fake.set(false); reset.set(false)}}
+    reset = new (Java.extend(BoolValue))("resetValues", false) {onChanged: function () {posX.set(0); posY.set(0.5); posZ.set(0.3); rotX.set(30); rotY.set(-80); rotZ.set(60); deviation.set(75); deviateXPos.set(false); deviateYPos.set(false); deviateZPos.set(false); deviateXRot.set(false); deviateYRot.set(true); deviateZRot.set(false); swingDuration.set(500); equipAnimation.set(false); fake.set(false); reset.set(false)}}
 ]
 
 module = {
@@ -90,7 +90,7 @@ module = {
     }
 }
 
-Float = Java.type("java.lang.Float"); timer = new MSTimer();
+Float = Java.type("java.lang.Float"); timer = new MSTimer(); progress = 1;
 
 prevEquippedProgressField = getField(ItemRenderer, "field_78451_d");
 equippedProgressField = getField(ItemRenderer, "field_78454_c");
