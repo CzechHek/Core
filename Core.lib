@@ -1,6 +1,6 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.9", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.10", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 function registerModule(m) {
@@ -208,7 +208,7 @@ Object.defineProperty(Array.prototype, "find", {
 //parameters: element - element of the array to check for
 Object.defineProperty(Array.prototype, "includes", {
     value: function (element) {
-        return this.indexOf(element) > -1;
+        return this.indexOf(element) != -1;
     }
 });
 
@@ -217,6 +217,14 @@ Object.defineProperty(Array.prototype, "includes", {
 Object.defineProperty(String.prototype, "includes", {
     value: function (string, ignoreCase) {
         return ignoreCase ? this.toString().toLowerCase().contains(string.toLowerCase()) : this.toString().contains(string);
+    }
+});
+
+//array.remove(element) - removes element from array, returns if successful
+//parameters: element - element to remove
+Object.defineProperty(Array.prototype, "remove", {
+    value: function (element) {
+        return !!(~(index = this.indexOf(element)) && this.splice(index, 1));
     }
 });
 
