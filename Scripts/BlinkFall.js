@@ -2,7 +2,7 @@
 (script = registerScript({
     name: "BlinkFall",
     authors: ["CzechHek"],
-    version: "4.1"
+    version: "4.2"
 })).import("Core.lib");
 
 module = {
@@ -16,7 +16,7 @@ module = {
         if (catchPackets && e.getPacket() instanceof C03PacketPlayer) {
             if (!sendPackets) {
                 e.cancelEvent(); packet = e.getPacket();
-                packet.onGround ? (sendPackets = mc.thePlayer.posY != lastPos[1]) : (nofall.get() && (packet.onGround = mc.thePlayer.fallDistance > 3) && (mc.thePlayer.fallDistance = 0));
+                packet.onGround ? (sendPackets = wasInAir) : (wasInAir = true, nofall.get() && (packet.onGround = mc.thePlayer.fallDistance > 3) && (mc.thePlayer.fallDistance = 0));
                 !packets.length && (time = System.currentTimeMillis());
                 packets.push([packet, packetmode.get() == "SimulatedDelay" ? (System.currentTimeMillis() - time) / simulatedtimer.get() : 0]);
             } else e.getPacket() != lastPacket && e.cancelEvent();
@@ -25,6 +25,7 @@ module = {
     onMove: function (e) {
         if (!catchPackets) {
             if (!ScaffoldModule.state && !TowerModule.state && !mc.thePlayer.isSneaking() && !mc.thePlayer.isOnLadder() && !mc.thePlayer.isInWater()) {
+                wasInAir = false;
                 yaw = MovementUtils.getDirection();
                 mc.thePlayer.onGround && (lastPos = [mc.thePlayer.posX, mc.thePlayer.posY, mc.thePlayer.posZ]);
                 if (isMovingHorizontally() && !isSafe(e))
@@ -54,4 +55,4 @@ function isSafe(e) {
     for (i = -1; i++ < 6;) if (!mc.theWorld.isAirBlock(blockPos.down(i))) return true
 }
 
-var packets = [], timer = new MSTimer(), catchPackets, lastPos = [], sendPackets = false, System = Java.type("java.lang.System"), time, isSending, lastPacket;
+var packets = [], timer = new MSTimer(), catchPackets, lastPos = [], sendPackets = false, System = Java.type("java.lang.System"), time, isSending, lastPacket, wasInAir;
