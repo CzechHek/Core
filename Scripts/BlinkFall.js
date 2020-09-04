@@ -10,7 +10,7 @@ module = {
     values: [
         maxfalltime = value.createInteger("MaxFallTime", 1500, 0, 10000),
         nofall = value.createBoolean("NoFall", true),
-        packetmode = value.createList("LandingMode", ["SimulateFall", "Instant"], "Instant"), simulatedtimer = value.createFloat("SimulatedTimer", 1, 1, 10)
+        landingmode = value.createList("LandingMode", ["SimulateFall", "Instant"], "Instant"), simulatedtimer = value.createFloat("SimulatedTimer", 1, 1, 10)
     ],
     onPacket: function (e) {
         if (catchPackets && e.getPacket() instanceof C03PacketPlayer) {
@@ -18,7 +18,7 @@ module = {
                 e.cancelEvent(); packet = e.getPacket();
                 packet.onGround ? (sendPackets = wasInAir) : (wasInAir = true, nofall.get() && (packet.onGround = mc.thePlayer.fallDistance > 3) && (mc.thePlayer.fallDistance = 0));
                 !packets.length && (time = System.currentTimeMillis());
-                packets.push([packet, packetmode.get() == "SimulatedDelay" ? (System.currentTimeMillis() - time) / simulatedtimer.get() : 0]);
+                packets.push([packet, landingmode.get() == "SimulateFall" ? (System.currentTimeMillis() - time) / simulatedtimer.get() : 0]);
             } else e.getPacket() != lastPacket && e.cancelEvent();
         }
     },
