@@ -2,7 +2,7 @@
 (script = registerScript({
     name: "BlinkFall",
     authors: ["CzechHek"],
-    version: "4.2"
+    version: "4.3"
 })).import("Core.lib");
 
 module = {
@@ -10,7 +10,7 @@ module = {
     values: [
         maxfalltime = value.createInteger("MaxFallTime", 1500, 0, 10000),
         nofall = value.createBoolean("NoFall", true),
-        packetmode = value.createList("PacketMode", ["SimulatedDelay", "Instant"], "Instant"), simulatedtimer = value.createFloat("SimulatedTimer", 1, 1, 10)
+        packetmode = value.createList("LandingMode", ["SimulateFall", "Instant"], "Instant"), simulatedtimer = value.createFloat("SimulatedTimer", 1, 1, 10)
     ],
     onPacket: function (e) {
         if (catchPackets && e.getPacket() instanceof C03PacketPlayer) {
@@ -42,7 +42,7 @@ module = {
                 } else {
                     mc.thePlayer.setPositionAndUpdate(lastPos[0], lastPos[1], lastPos[2]);
                     e.zeroXZ(); mc.thePlayer.motionX = mc.thePlayer.motionZ = 0;
-                    packets = []; print("antivoid");
+                    packets = []; print("tp back");
                 }
                 !(catchPackets = packets.length) && print("end");
             }
