@@ -1,11 +1,11 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.11", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.12", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 function registerModule(m) {
     if (!Object.keys(m).length) return;
-    _settings = {}; m.values && (Array.isArray(m.values) ? m.values : [m.values]).forEach(function (v, i) {_settings[v.getName()] = !API_V2 && v instanceof _AdaptedValue ? v.getValue() : v});
+    _settings = {}; toArray(m.values).forEach(function (v) {_settings[v.getName()] = !API_V2 && v instanceof _AdaptedValue ? v.getValue() : v});
 
     script.registerModule({
         name: m.name || (API_V2 ? script.scriptName : "Module"),
@@ -50,7 +50,7 @@ function registerCommand(c) {
             (_object = c.subcommands) && a.some(function (arg, i) {
                 if (i) {
                     if ((_object = _object[arg]) instanceof Object) _lastIndex = i + 1, _lastObject = _object;
-                    else if (_object == undefined && (!~_lastIndex || i <= _lastIndex)) return _error = [arg, a.slice(0, _lastIndex), _lastObject || c.subcommands];
+                    else if (_object === undefined && (!~_lastIndex || i <= _lastIndex)) return _error = [arg, a.slice(0, _lastIndex), _lastObject || c.subcommands];
                 }
             });
 
@@ -93,31 +93,16 @@ function timeout(ms, func) (_timer = new Timer("setTimeout", true), _timer.sched
 
 function setValues(module, values) {
     if (!(module instanceof ScriptModule)) return
-    _valuesmap = new LinkedHashMap();
-    (Array.isArray(values) ? values : [values]).forEach(function (v, i) {_valuesmap.put(i, v instanceof Value ? v : v.getValue())});
-    (_valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
-    _valuesField.set(module, _valuesmap); _valuesmap = undefined;
+    _valuesMap = new LinkedHashMap();
+    toArray(values).forEach(function (v, i) {_valuesMap.put(i, v instanceof Value ? v : v.getValue())});
+    getField(module, "_values").set(module, _valuesMap); _valuesMap = undefined;
 }
 
-function getValues(module) {
-    if (module instanceof ScriptModule) {
-        (_valuesField = module.class.getDeclaredField("_values")).setAccessible(true);
-        return Java.from(_valuesField.get(module).values());
-    } else return Java.from(module.values);
-}
+function getValues(module) Java.from(module.values);
 
-function getNearestTarget(entityType, entity) {
-    _targetList = []; entity = entity || mc.thePlayer;
-    mc.theWorld.loadedEntityList.forEach(function (e) {e != entity && (entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)) && _targetList.push(e)});
-    _targetList.sort(function (a,b) {return entity.getDistanceToEntity(a) - entity.getDistanceToEntity(b)});
-    return _targetList[0];
-}
+function getNearestTarget(entityType, fromEntity) Java.from(mc.theWorld.loadedEntityList).filter(function (e) e != mc.thePlayer && entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)).sort(function (a, b) (entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - entity.getDistanceToEntity(b))[0];
 
-function getPlayer(nick) {
-    _playerEntity = null;
-    Java.from(mc.theWorld.playerEntities).some(function (e) {if (StringUtils.stripControlCodes(e.getName()).equals(nick)) return _playerEntity = e});
-    return _playerEntity;
-}
+function getPlayer(nick) Java.from(mc.theWorld.playerEntities).find(function (e) StringUtils.stripControlCodes(e.getName()).equals(nick));
 
 function rand(min, max) Math.random() * (max - min) + min;
 
@@ -144,6 +129,8 @@ function getConstructor(clazz, index) ((_constructor = (clazz instanceof Class ?
 function importPackage() Array.prototype.slice.call(arguments).forEach(function (e) _classes.filter(function (c) c.name.startsWith(e) && !c.name.contains("$")).forEach(function (c) eval(c.simpleName + "=StaticClass.forClass(c)")));
 
 function openFolder(folder) Desktop.open(folder);
+
+function toArray(object) Array.isArray(object) ? object : [object];
 
 function EditableEnum (target) {
     getField(Field, "modifiers").setInt(values = getField(target, "$VALUES"), values.getModifiers() & ~Modifier.FINAL);
@@ -276,7 +263,7 @@ LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Ja
 _isLatest = true;
 
 script.on("load", function () {
-    module = Array.isArray(module) ? module : [module || {}]; command = Array.isArray(command) ? command : [command || {}];
+    module = toArray(module || {}); command = toArray(command || {});
 
     if (!API_V2) {
         script.scriptName = (scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Script").toString();
@@ -307,7 +294,7 @@ script.on("load", function () {
     } else _response = _isLatest = undefined;
 
     _categories = new EditableEnum(ModuleCategory);
-    [module, command].forEach(function (c, i) c.forEach(function (v)[registerModule, registerCommand][i](v)));
+    [module, command].forEach(function (c, i) c.forEach(function (v) [registerModule, registerCommand][i](v)));
     
     script.on("enable", function () {
         moduleManager.modules.forEach(function (m) eval(m.name + "Module=m"));
@@ -328,7 +315,6 @@ script.on("load", function () {
                         func_73866_w_: function () {
                             this.callEvent("clickGuiOpen");
                         },
-                        
                         func_146281_b: function () {
                             this.callEvent("clickGuiClosed");
                             LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.clickGuiConfig);
@@ -340,6 +326,6 @@ script.on("load", function () {
             });
         } else _updated = undefined;
     });
-    
+
     script.on("disable", function () [module, command].forEach(function (c) c.forEach(function (v) v.onUnload && v.onUnload())));
 });
