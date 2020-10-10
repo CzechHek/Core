@@ -341,5 +341,5 @@ script.on("load", function () {
         } else _updated = undefined;
     });
     
-    script.on("disable", function ()[module, command].forEach(function (c) c.forEach(function (v) v.onUnload && v.onUnload())));
+    script.on("disable", function () [module, command].forEach(function (c) c.forEach(function (v) v.onUnload && v.onUnload())));
 });
