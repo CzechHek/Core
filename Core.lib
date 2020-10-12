@@ -1,6 +1,6 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.12", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.13", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 function registerModule(m) {
@@ -130,7 +130,16 @@ function importPackage() Array.prototype.slice.call(arguments).forEach(function 
 
 function openFolder(folder) Desktop.open(folder);
 
-function toArray(object) Array.isArray(object) ? object : [object];
+function toArray(object) (Array.isArray(object) ? object : [object]).filter(Boolean);
+
+function canStep(stepHeight) {
+    yaw = MovementUtils.getDirection(); bb = mc.thePlayer.getEntityBoundingBox(); _possiblePlaces = [];
+    for (i = 0; (i += 0.125) <= stepHeight;) {
+        if (!mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, bb.offset(0, i, 0)).isEmpty()) break
+        if (mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, otherBB = bb.offset(-Math.sin(yaw) * 0.5, i, Math.cos(yaw) * 0.5)).isEmpty() && !mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, otherBB.offset(0, -0.125, 0)).isEmpty()) _possiblePlaces.push(i);
+    }
+    return _possiblePlaces.length && Math.max.apply(null, _possiblePlaces);
+}
 
 function EditableEnum (target) {
     getField(Field, "modifiers").setInt(values = getField(target, "$VALUES"), values.getModifiers() & ~Modifier.FINAL);
