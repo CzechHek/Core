@@ -1,7 +1,7 @@
 ///api_version=2
 (script = registerScript({
     name: "TowerScaffoldz",
-    version: "1.8",
+    version: "1.9",
     authors: ["CzechHek", "yorik100"]
 })).import("Core.lib");
 
@@ -20,6 +20,6 @@ module = {
         !isInputHorizontally() && e.cancelEvent();
     },
     onMove: function (e) {
-        !(ScaffoldModule.state = !(TowerModule.state = isInputVertically() && !isInputHorizontally())) && e.zeroXZ();
+        !(ScaffoldModule.state = !(TowerModule.state = Keyboard.isKeyDown(mc.gameSettings.keyBindJump.getKeyCode()) && !isInputHorizontally())) && e.zeroXZ();
     }
 }
