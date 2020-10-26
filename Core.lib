@@ -1,6 +1,6 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.13", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.14", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 function registerModule(m) {
@@ -33,6 +33,7 @@ function registerModule(m) {
         m.onSlowDown && module.on("slowDown", function (e) m.onSlowDown(e));
         m.onClickGuiOpen && module.on("clickGuiOpen", function () m.onClickGuiOpen());
         m.onClickGuiClosed && module.on("clickGuiClosed", function () m.onClickGuiClosed());
+        m.onClickGuiLoaded && module.on("clickGuiLoaded", function () m.onClickGuiLoaded());
     });
 }
 
@@ -55,8 +56,9 @@ function registerCommand(c) {
             });
 
             if (_object || _error) {
+                print(typeof _object, _error);
                 print("");
-                a.length == 1 && print("§8▏§7§l", command.getCommand(), "§8v§l" + (c.version || script.scriptVersion), "§7by§8§l", (c.author || Java.from(script.scriptAuthors)));
+                a.length == 1 && print("§8▏§7§l", command.getCommand(), "§8v§l" + (c.version || script.scriptVersion), "§7by§8§l", toArray(c.author || Java.from(script.scriptAuthors)).join("§7, §8§l"));
                 _object ? _object instanceof Object ? (print("§8▏ §7Valid subcommands§8: (§7§l" + Object.keys(_object).length + "§8)"), print("§8▏§f", _prefix + a.join(" "), "§8[§f" + Object.keys(_object).join("§7, §f") + "§8]")) : print("§8▏ §7Usage§8:§f", _prefix + a.join(" "), "„§7" + _object + "§f“") : (print("§4▏ §cInvalid argument§4:§c", _prefix + a.join(" ").replace(_error[0], "„§4§l" + _error[0] + "§c“")), print("§8▏ §7Valid subcommands§8: (§7§l" + Object.keys(_error[2]).length + "§8)"), print("§8▏§f", _prefix + _error[1].join(" "), "§8[§f" + Object.keys(_error[2]).join("§7, §f") + "§8]"));
                 a.length == 1 && c.commands.length > 1 && (print("§8▏ §7Available aliases§8: (§7§l" + (c.commands.length - 1) + "§8)"), print("§8▏§f", _prefix + c.commands.map(function (e) e.toLowerCase()).filter(function (e) e != a[0]).join("§7, §f" + _prefix)));
             } else c.onExecute(a);
@@ -104,7 +106,7 @@ function getNearestTarget(entityType, fromEntity) Java.from(mc.theWorld.loadedEn
 
 function getPlayer(nick) Java.from(mc.theWorld.playerEntities).find(function (e) StringUtils.stripControlCodes(e.getName()).equals(nick));
 
-function rand(min, max) Math.random() * (max - min) + min;
+function rand(min, max) (Array.isArray(min) && (max = min[1], min = min[0]), Math.random() * (max - min) + min);
 
 function getDurability(itemStack) itemStack && itemStack.getMaxDamage() - itemStack.getItemDamage();
 
@@ -140,6 +142,12 @@ function canStep(stepHeight) {
     }
     return _possiblePlaces.length && Math.max.apply(null, _possiblePlaces);
 }
+
+function callEvent(name, args) scriptManager.scripts.forEach(function (s) Java.from(_registeredModulesField.get(s)).forEach(function (m) _callEventMethod.invoke(m, name, args)));
+
+function playSound(name, pitch) mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation(name), pitch || 1));
+
+function sendPacket(packet) mc.getNetHandler().getNetworkManager().sendPacket(packet);
 
 function EditableEnum (target) {
     getField(Field, "modifiers").setInt(values = getField(target, "$VALUES"), values.getModifiers() & ~Modifier.FINAL);
@@ -198,9 +206,8 @@ Object.defineProperty(Array.prototype, "shuffle", {
 //parameters: function - defines the condition, boolean - optional; true -> returns index
 Object.defineProperty(Array.prototype, "find", {
     value: function (func, returnIndex) {
-        for (i in this) if (func(this[i])) return returnIndex ? i : this[i];
+        for (i in this) if (func(this[i], i, this)) return returnIndex ? i : this[i];
         return returnIndex ? -1 : null;
-        //return this.filter(function (e) {return func(e)})[0];
     }
 });
 
@@ -228,13 +235,16 @@ Object.defineProperty(Array.prototype, "remove", {
     }
 });
 
+//array.last() - returns last element of array
+Object.defineProperty(Array.prototype, "last", {
+    value: function () {
+        return this[this.length - 1];
+    }
+});
+
 /*----------------*/
 /* Java importing */
 /*----------------*/
-
-//Packages
-ClassLoader = Java.type("java.lang.ClassLoader"); Thread = Java.type("java.lang.Thread"); Class = Java.type("java.lang.Class");
-_classes = Java.from(getField(ClassLoader, "classes").get(Thread.currentThread().getContextClassLoader())); StaticClass = getMethod(_class = Class.forName("jdk.internal.dynalink.beans.StaticClass"), "forClass").invoke(null, _class); _class = undefined;
 
 //net.minecraft.block.*
 ["Block","BlockAir","BlockAnvil","BlockBanner","BlockBarrier","BlockBasePressurePlate","BlockBeacon","BlockBed","BlockBookshelf","BlockBreakable","BlockBrewingStand","BlockBush","BlockButton","BlockButtonStone","BlockButtonWood","BlockCactus","BlockCake","BlockCarpet","BlockCarrot","BlockCauldron","BlockChest","BlockClay","BlockCocoa","BlockColored","BlockCommandBlock","BlockCompressedPowered","BlockContainer","BlockCrops","BlockDaylightDetector","BlockDeadBush","BlockDirectional","BlockDirt","BlockDispenser","BlockDoor","BlockDoublePlant","BlockDoubleStoneSlab","BlockDoubleStoneSlabNew","BlockDoubleWoodSlab","BlockDragonEgg","BlockDropper","BlockDynamicLiquid","BlockEnchantmentTable","BlockEnderChest","BlockEndPortal","BlockEndPortalFrame","BlockEventData","BlockFalling","BlockFarmland","BlockFence","BlockFenceGate","BlockFire","BlockFlower","BlockFlowerPot","BlockFurnace","BlockGlass","BlockGlowstone","BlockGrass","BlockGravel","BlockHalfStoneSlab","BlockHalfStoneSlabNew","BlockHalfWoodSlab","BlockHardenedClay","BlockHay","BlockHopper","BlockHugeMushroom","BlockIce","BlockJukebox","BlockLadder","BlockLeaves","BlockLeavesBase","BlockLever","BlockLilyPad","BlockLiquid","BlockLog","BlockMelon","BlockMobSpawner","BlockMushroom","BlockMycelium","BlockNetherBrick","BlockNetherrack","BlockNetherWart","BlockNewLeaf","BlockNewLog","BlockNote","BlockObsidian","BlockOldLeaf","BlockOldLog","BlockOre","BlockPackedIce","BlockPane","BlockPistonBase","BlockPistonExtension","BlockPistonMoving","BlockPlanks","BlockPortal","BlockPotato","BlockPressurePlate","BlockPressurePlateWeighted","BlockPrismarine","BlockPumpkin","BlockQuartz","BlockRail","BlockRailBase","BlockRailDetector","BlockRailPowered","BlockRedFlower","BlockRedSandstone","BlockRedstoneComparator","BlockRedstoneDiode","BlockRedstoneLight","BlockRedstoneOre","BlockRedstoneRepeater","BlockRedstoneTorch","BlockRedstoneWire","BlockReed","BlockRotatedPillar","BlockSand","BlockSandStone","BlockSapling","BlockSeaLantern","BlockSign","BlockSilverfish","BlockSkull","BlockSlab","BlockSlime","BlockSnow","BlockSnowBlock","BlockSoulSand","BlockSourceImpl","BlockSponge","BlockStainedGlass","BlockStainedGlassPane","BlockStairs","BlockStandingSign","BlockStaticLiquid","BlockStem","BlockStone","BlockStoneBrick","BlockStoneSlab","BlockStoneSlabNew","BlockTallGrass","BlockTNT","BlockTorch","BlockTrapDoor","BlockTripWire","BlockTripWireHook","BlockVine","BlockWall","BlockWallSign","BlockWeb","BlockWoodSlab","BlockWorkbench","BlockYellowFlower","IGrowable","ITileEntityProvider","material.MapColor","material.Material","material.MaterialLiquid","material.MaterialLogic","material.MaterialPortal","material.MaterialTransparent","properties.IProperty","properties.PropertyBool","properties.PropertyDirection","properties.PropertyEnum","properties.PropertyHelper","properties.PropertyInteger","state.BlockPistonStructureHelper","state.BlockState","state.BlockStateBase","state.BlockWorldState","state.IBlockState","state.pattern.BlockHelper","state.pattern.BlockPattern","state.pattern.BlockStateHelper","state.pattern.FactoryBlockPattern"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.block." + v + "\")")});
@@ -266,10 +276,15 @@ _classes = Java.from(getField(ClassLoader, "classes").get(Thread.currentThread()
 //net.ccbluex.liquidbounce.value.*
 ["BlockValue", "BoolValue", "FloatValue", "FontValue", "IntegerValue", "ListValue", "TextValue", "Value"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.value." + v + "\")")});
 
-//Used classes
-LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); JOptionPane = Java.type("javax.swing.JOptionPane"); Runnable = Java.type("java.lang.Runnable"); FileUtils = Java.type("org.apache.commons.io.FileUtils"); HttpUtils = Java.type("net.ccbluex.liquidbounce.utils.misc.HttpUtils"); Desktop = Java.type("java.awt.Desktop").getDesktop(); ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui"); Enchantment = Java.type("net.minecraft.enchantment.Enchantment");
-
+//Used variables
+LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); JOptionPane = Java.type("javax.swing.JOptionPane"); Runnable = Java.type("java.lang.Runnable"); FileUtils = Java.type("org.apache.commons.io.FileUtils"); HttpUtils = Java.type("net.ccbluex.liquidbounce.utils.misc.HttpUtils"); Desktop = Java.type("java.awt.Desktop").getDesktop(); ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui"); Enchantment = Java.type("net.minecraft.enchantment.Enchantment"); ClassLoader = Java.type("java.lang.ClassLoader"); Thread = Java.type("java.lang.Thread"); Class = Java.type("java.lang.Class"); PositionedSoundRecord = Java.type("net.minecraft.client.audio.PositionedSoundRecord");
+_classes = Java.from(getField(ClassLoader, "classes").get(Thread.currentThread().getContextClassLoader())); StaticClass = getMethod(_class = Class.forName("jdk.internal.dynalink.beans.StaticClass"), "forClass").invoke(null, _class); _class = undefined;
+_registeredModulesField = getField(Script, "registeredModules"); _callEventMethod = getMethod(ScriptModule, "callEvent");
 _isLatest = true;
+
+/*-------------------*/
+/* Module management */
+/*-------------------*/
 
 script.on("load", function () {
     module = toArray(module || {}); command = toArray(command || {});
@@ -308,29 +323,22 @@ script.on("load", function () {
     script.on("enable", function () {
         moduleManager.modules.forEach(function (m) eval(m.name + "Module=m"));
         [module, command].forEach(function (c) c.forEach(function (v) v.onLoad && v.onLoad()));
-
         if (Object.keys(_updated)[1] == script.scriptName) {
-            _registeredModulesField = getField(Script, "registeredModules"); _callEventMethod = getMethod(ScriptModule, "callEvent");
             LiquidBounce.clickGui = null;
-
-            _interval = interval(1000, function () {
+            _interval = interval(500, function () {
                 if (LiquidBounce.clickGui) {
                     LiquidBounce.clickGui = new (Java.extend(ClickGui)) () {
-                        callEvent: function (name) {
-                            scriptManager.scripts.forEach(function (s) {
-                                Java.from(_registeredModulesField.get(s)).forEach(function (m) _callEventMethod.invoke(m, name, null));
-                            });
-                        },
                         func_73866_w_: function () {
-                            this.callEvent("clickGuiOpen");
+                            callEvent("clickGuiOpen");
                         },
                         func_146281_b: function () {
-                            this.callEvent("clickGuiClosed");
+                            callEvent("clickGuiClosed");
                             LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.clickGuiConfig);
                         }
                     }
                     LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.clickGuiConfig);
-                    _interval.cancel(); _interval = _updated = undefined;
+                    _interval = _updated = _interval.cancel();
+                    callEvent("clickGuiLoaded");
                 }
             });
         } else _updated = undefined;
