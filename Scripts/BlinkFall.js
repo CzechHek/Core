@@ -8,10 +8,10 @@
 module = {
     category: "Movement",
     values: [
-        maxfalltime = value.createInteger("MaxFallTime", 1500, 0, 10000),
-        nofall = value.createBoolean("NoFall", true),
+        maxfalltime = value.createInteger("MaxFallTime", 1000, 0, 10000),
+        nofall = value.createBoolean("NoFall", false),
         simulatedfall = value.createBoolean("SimulatedFall", true),
-        simulatedtimer = value.createFloat("SimulatedTimer", 1, 1, 10),
+        simulatedtimer = value.createFloat("SimulatedTimer", 2, 1, 10),
         fakeplayer = value.createBoolean("FakePlayer", true),
         line = value.createBoolean("Line", true)
     ],
