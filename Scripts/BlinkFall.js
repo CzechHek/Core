@@ -2,7 +2,7 @@
 (script = registerScript({
     name: "BlinkFall",
     authors: ["CzechHek"],
-    version: "5.0"
+    version: "5.1"
 })).import("Core.lib");
 
 module = {
@@ -123,9 +123,8 @@ function ATimer() {
 
 function end() {
     catchPackets = isSending = wasInAir = false;
-    fakeplayer.get() && mc.theWorld.removeEntity(fakePlayer);
+    fakeplayer.get() && fakePlayer && mc.theWorld.removeEntity(fakePlayer);
     packets.clear();
-    rangeValue.set(range);
 }
 
 function canStand(bb) {
@@ -150,4 +149,4 @@ Color = Java.type("java.awt.Color");
 GL11 = Java.type("org.lwjgl.opengl.GL11");
 tailField = getField(LinkedHashMap, "tail");
 
-var packets = new LinkedHashMap(), catchPackets, lastPos = [], timer = new ATimer(), isSending, sentPacket, wasInAir;
+var packets = new LinkedHashMap(), catchPackets, lastPos = [], timer = new ATimer(), isSending, sentPacket, wasInAir, fakePlayer;
