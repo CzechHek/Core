@@ -1,18 +1,22 @@
 ///api_version=2
 (script = registerScript({
     name: "AutoSafeWalk",
-    version: "1.2",
+    version: "1.3",
     authors: ["CzechHek"]
 })).import("Core.lib");
 
 module = {
     category: "Movement",
-    values: maxfalldistance = value.createInteger("MaxFallDistance", 5, 0, 255),
+    description: "SafeWalk that activates if there is a gap exceeding maximal fall distance.",
+    values: [
+        airsafe = value.createBoolean("AirSafe", true),
+        maxfalldistance = value.createInteger("MaxFallDistance", 5, 0, 255)
+    ],
     onMove: function (e) {
-        e.setSafeWalk(!isAboveGround());
+        (mc.thePlayer.onGround || airsafe.get()) && e.setSafeWalk(!isAboveGround());
     }
 }
 
 function isAboveGround() {
-    for (y = mc.thePlayer.posY; y && y-- >= (mc.thePlayer.posY - maxfalldistance.get());) if (!mc.theWorld.isAirBlock(new BlockPos(mc.thePlayer.posX, y, mc.thePlayer.posZ))) return true
+    for (i = 0, bp = new BlockPos(mc.thePlayer); i++ < maxfalldistance.get();) if (!mc.theWorld.isAirBlock(bp.down(i))) return true
 }
