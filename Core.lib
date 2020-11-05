@@ -1,6 +1,6 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.14", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.15", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 function registerModule(m) {
@@ -125,6 +125,18 @@ function showMessage(text, title, alwaysOnTop, type)
 function getMethod(clazz, methodName) ((_method = Java.from((clazz instanceof Class ? clazz : clazz.class).getDeclaredMethods()).find(function (m) m.getName() == methodName)).setAccessible(true), _method);
 
 function getField(clazz, fieldName) ((_field = Java.from((clazz instanceof Class ? clazz : clazz.class).getDeclaredFields()).find(function (f) f.getName() == fieldName)).setAccessible(true), _field);
+
+function getFields(clazz) {
+    _fields = Java.from((clazz = clazz instanceof Class ? clazz : clazz.class).getDeclaredFields());
+    while (clazz = clazz.superclass) Array.prototype.push.apply(_fields, Java.from(clazz.getDeclaredFields()));
+    return _fields;
+}
+
+function getMethods(clazz) {
+    _methods = Java.from((clazz = clazz instanceof Class ? clazz : clazz.class).getDeclaredMethods());
+    while (clazz = clazz.superclass) Array.prototype.push.apply(_methods, Java.from(clazz.getDeclaredMethods()));
+    return _methods;
+}
 
 function getConstructor(clazz, index) ((_constructor = (clazz instanceof Class ? clazz : clazz.class).getDeclaredConstructors()[index]).setAccessible(true), _constructor);
 
@@ -321,11 +333,11 @@ script.on("load", function () {
     [module, command].forEach(function (c, i) c.forEach(function (v) [registerModule, registerCommand][i](v)));
     
     script.on("enable", function () {
-        moduleManager.modules.forEach(function (m) eval(m.name + "Module=m"));
+        moduleManager.modules.forEach(function (m) m.name != "Script" && m.name == m.name.match(/[a-zA-Z_$][0-9a-zA-Z_$]*/) && eval(m.name + "Module=m"));
         [module, command].forEach(function (c) c.forEach(function (v) v.onLoad && v.onLoad()));
         if (Object.keys(_updated)[1] == script.scriptName) {
             LiquidBounce.clickGui = null;
-            _interval = interval(500, function () {
+            _interval = interval(250, function () {
                 if (LiquidBounce.clickGui) {
                     LiquidBounce.clickGui = new (Java.extend(ClickGui)) () {
                         func_73866_w_: function () {
