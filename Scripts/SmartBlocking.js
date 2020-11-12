@@ -2,7 +2,7 @@
 (script = registerScript({
     name: "SmartBlocking",
     authors: ["CzechHek"],
-    version: "1.0"
+    version: "1.1"
 })).import("Core.lib");
 
 list = [
@@ -23,20 +23,20 @@ module = {
     onUpdate: function () {
         if (target = KillAuraModule.target) {
             shouldBlock = false;
-
             if (!helditem.get() || (target.getHeldItem() && (item = target.getHeldItem().getItem()) && (item instanceof ItemSword || item instanceof ItemAxe))) {
                 if (PlayerExtensionKt.getDistanceToEntityBox(target, mc.thePlayer) < maxrange.get()) {
-                    eyesVec = target.getPositionEyes(1);
-                    lookVec = target.getLook(1);
-                    pointingVec = eyesVec.addVector(lookVec.xCoord * maxrange.get(), lookVec.yCoord * maxrange.get(), lookVec.zCoord * maxrange.get())
-                    
-                    border = mc.thePlayer.getCollisionBorderSize() + expand.get();
-                    bb = mc.thePlayer.getEntityBoundingBox().expand(border, border, border);
-    
-                    shouldBlock = !facing.get() || !!bb.calculateIntercept(eyesVec, pointingVec);
+                    if (facing.get()) {
+                        if (target.rayTrace(maxrange.get(), 1).typeOfHit == "MISS") {
+                            eyesVec = target.getPositionEyes(1);
+                            lookVec = target.getLook(1);
+                            pointingVec = eyesVec.addVector(lookVec.xCoord * maxrange.get(), lookVec.yCoord * maxrange.get(), lookVec.zCoord * maxrange.get())
+                            border = mc.thePlayer.getCollisionBorderSize() + expand.get();
+                            bb = mc.thePlayer.getEntityBoundingBox().expand(border, border, border);
+                            shouldBlock = !!bb.calculateIntercept(eyesVec, pointingVec);
+                        }
+                    } else shouldBlock = true;
                 }
             }
-
             autoBlockValue.set(shouldBlock);
         }
     },
