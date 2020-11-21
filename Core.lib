@@ -1,6 +1,6 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.15", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.16", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 function registerModule(m) {
@@ -253,6 +253,12 @@ Object.defineProperty(Array.prototype, "last", {
         return this[this.length - 1];
     }
 });
+
+Math.trunc = function (v) (v= +v, (v - v % 1) || (!isFinite(v) || v === 0 ? v : v < 0 ? -0 : 0));
+
+Math.toRadians = function (degrees) degrees * Math.PI / 180;
+
+Math.toDegrees = function (radians) radians * 180 / Math.PI;
 
 /*----------------*/
 /* Java importing */
