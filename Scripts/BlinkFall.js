@@ -2,7 +2,7 @@
 (script = registerScript({
     name: "BlinkFall",
     authors: ["CzechHek"],
-    version: "5.1"
+    version: "5.2"
 })).import("Core.lib");
 
 module = {
@@ -18,8 +18,7 @@ module = {
     onPacket: function (e) {
         if (mc.thePlayer && catchPackets) {
             if (e.getPacket() instanceof C03PacketPlayer) {
-                p = e.getPacket();
-                (!isSending || p != sentPacket) && e.cancelEvent();
+                p = e.getPacket(); e.cancelEvent();
                 !isSending && p.isMoving() && (nofall.get() && (p.onGround = mc.thePlayer.fallDistance > 3) && (mc.thePlayer.fallDistance = 0), packets.put(timer.getTimePassed() / simulatedtimer.get(), p));
             }
         }
@@ -56,7 +55,7 @@ module = {
                     lastKey = tailField.get(packets).getKey();
                     packets.forEach(function (delay, packet) {
                         timeout(simulatedfall.get() ? delay : 0, function () {
-                            sendPacket(sentPacket = packet);
+                            sendPacket(packet);
                             fakeplayer.get() && (packet.getRotating() ? fakePlayer.setPositionAndRotation(packet.x, packet.y, packet.z, packet.yaw, packet.pitch) : fakePlayer.setPosition(packet.x, packet.y, packet.z));
                             if (delay == lastKey) end();
                         });
@@ -149,4 +148,4 @@ Color = Java.type("java.awt.Color");
 GL11 = Java.type("org.lwjgl.opengl.GL11");
 tailField = getField(LinkedHashMap, "tail");
 
-var packets = new LinkedHashMap(), catchPackets, lastPos = [], timer = new ATimer(), isSending, sentPacket, wasInAir, fakePlayer;
+var packets = new LinkedHashMap(), catchPackets, lastPos = [], timer = new ATimer(), isSending, wasInAir, fakePlayer;
