@@ -1,3 +1,10 @@
+///api_version=2
+(script = registerScript({
+    name: "Subcommands",
+    authors: ["CzechHek"],
+    version: "2.0"
+})).import("Core.lib");
+
 command = {
     commands: ["Manager", "m"],
     subcommands: {
@@ -51,5 +58,3 @@ command = {
         chat.print("cc");
     }
 }
-
-script.import("Core.lib");
