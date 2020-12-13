@@ -26,7 +26,7 @@ module = {
     onUpdate: function () {
         if (changeTicks > 0) changeTicks++;
         if (isChanging && changeTicks > 3) {
-        isChanging = false; changeTicks = 0;
+            isChanging = !!(changeTicks = 0);
             sendPacket(new C08PacketPlayerBlockPlacement(BlockPos.ORIGIN, 255, mc.thePlayer.inventory.mainInventory[gAppleIndex - 36], 0, 0, 0));
             for (i = -1; ++i < 32;) sendPacket(new C03PacketPlayer(mc.thePlayer.onGround));
             if (mc.thePlayer.inventory.currentItem != gAppleIndex) sendPacket(new C09PacketHeldItemChange(mc.thePlayer.inventory.currentItem));
@@ -41,10 +41,7 @@ module = {
                     for (i = -1; ++i < 32;) sendPacket(new C03PacketPlayer(mc.thePlayer.onGround));
                     if (mc.thePlayer.inventory.currentItem != gAppleIndex && !changeonetick.get()) sendPacket(new C09PacketHeldItemChange(mc.thePlayer.inventory.currentItem));
                     if (KillAuraModule.blockingStatus || mc.thePlayer.isBlocking()) sendPacket(new C08PacketPlayerBlockPlacement(BlockPos.ORIGIN, 255, mc.thePlayer.inventory.getCurrentItem(), 0, 0, 0));
-                } else {
-                    isChanging = true;
-                    changeTicks = 1;
-                }
+                } else isChanging = !!(changeTicks = 1);
                 timer.reset();
             } else if ((gAppleIndex - 9 | 35 - gAppleIndex) >= 0 && InventoryUtils.hasSpaceHotbar()) {
                 if (!(mc.currentScreen instanceof GuiInventory)) sendPacket(new C16PacketClientStatus(C16PacketClientStatus.EnumState.OPEN_INVENTORY_ACHIEVEMENT));
