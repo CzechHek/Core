@@ -38,7 +38,7 @@ module = {
                 if (mc.thePlayer.inventory.currentItem != gAppleIndex) sendPacket(new C09PacketHeldItemChange(gAppleIndex - 36));
                 if (!changeonetick.get()) {
                     sendPacket(new C08PacketPlayerBlockPlacement(BlockPos.ORIGIN, 255, mc.thePlayer.inventory.mainInventory[gAppleIndex - 36], 0, 0, 0));
-                    for (i = -1; ++i < 32;) sendPacket(new C03PacketPlayer(mc.thePlayer.onGround)), print(i);
+                    for (i = -1; ++i < 32;) sendPacket(new C03PacketPlayer(mc.thePlayer.onGround));
                     if (mc.thePlayer.inventory.currentItem != gAppleIndex && !changeonetick.get()) sendPacket(new C09PacketHeldItemChange(mc.thePlayer.inventory.currentItem));
                     if (KillAuraModule.blockingStatus || mc.thePlayer.isBlocking()) sendPacket(new C08PacketPlayerBlockPlacement(BlockPos.ORIGIN, 255, mc.thePlayer.inventory.getCurrentItem(), 0, 0, 0));
                 } else {
