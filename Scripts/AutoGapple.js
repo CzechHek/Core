@@ -5,7 +5,7 @@
     version: "2.2"
 })).import("Core.lib");
 
-var timer = new MSTimer(), originalIndex, inventoryIndex, Potion = Java.type('net.minecraft.potion.Potion');
+var timer = new MSTimer(), Potion = Java.type('net.minecraft.potion.Potion');
 
 module = {
     description: "Eats golden apple when your health is low.",
