@@ -33,7 +33,8 @@ module = {
             if (KillAuraModule.blockingStatus || mc.thePlayer.isBlocking()) mc.thePlayer.sendQueue.addToSendQueue(new C08PacketPlayerBlockPlacement(BlockPos.ORIGIN, 255, mc.thePlayer.inventory.getCurrentItem(), 0, 0, 0));
         }
         if (mc.thePlayer.getHealth() > 0 && mc.thePlayer.getHealth() <= health.get()) {
-            gAppleIndex = InventoryUtils.findItem(9, 45, Items.golden_apple);
+            gAppleIndex = InventoryUtils.findItem(36, 45, Items.golden_apple)
+            gAppleIndex = gAppleIndex == -1 ? InventoryUtils.findItem(9, 36, Items.golden_apple) : gAppleIndex
             if (~gAppleIndex && (gAppleIndex - 36 | 44 - gAppleIndex) >= 0 && timer.hasTimePassed(itemswitchdelay.get()) && (!(mc.currentScreen instanceof GuiChest) || !chestcheck.get()) && (!(mc.currentScreen instanceof GuiInventory) || !inventorycheck.get()) && (mc.thePlayer.getAbsorptionAmount() <= 0 || !absorptioncheck.get()) && (!mc.thePlayer.isPotionActive(Potion.regeneration) || !regencheck.get())) {
 				if (mc.thePlayer.inventory.currentItem != gAppleIndex) mc.thePlayer.sendQueue.addToSendQueue(new C09PacketHeldItemChange(gAppleIndex - 36));
                 if (!changeonetick.get()) {
