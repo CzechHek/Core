@@ -1,7 +1,7 @@
 ///api_version=2
 (script = registerScript({
     name: "BlockAnimations",
-    version: "0.91",
+    version: "1.0",
     authors: ["CzechHek"]
 })).import("Core.lib");
 
@@ -48,6 +48,12 @@ module = {
                 equipProgress = new Float(1 - (prevEquippedProgress + (equippedProgress - prevEquippedProgress) * partialTicks));
                 swingProgress = mc.thePlayer.getSwingProgress(partialTicks);
                 partialTicks = new Float(partialTicks);
+                pitch = new Float(mc.thePlayer.prevRotationPitch + (mc.thePlayer.rotationPitch - mc.thePlayer.prevRotationPitch) * partialTicks);
+                yaw = new Float(mc.thePlayer.prevRotationYaw + (mc.thePlayer.rotationYaw - mc.thePlayer.prevRotationYaw) * partialTicks);
+
+                rotateArroundXAndYMethod.invoke(mc.entityRenderer.itemRenderer, pitch, yaw);
+                setLightMapFromPlayerMethod.invoke(mc.entityRenderer.itemRenderer, mc.thePlayer);
+                rotateWithPlayerRotationsMethod.invoke(mc.entityRenderer.itemRenderer, mc.thePlayer, partialTicks);
 
                 GlStateManager.enableRescaleNormal();
                 GlStateManager.pushMatrix();
@@ -96,6 +102,9 @@ prevEquippedProgressField = getField(ItemRenderer, "field_78451_d");
 equippedProgressField = getField(ItemRenderer, "field_78454_c");
 itemToRenderField = getField(ItemRenderer, "field_78453_b");
 
+rotateArroundXAndYMethod = getMethod(ItemRenderer, "func_178101_a");
+setLightMapFromPlayerMethod = getMethod(ItemRenderer, "func_178109_a");
+rotateWithPlayerRotationsMethod = getMethod(ItemRenderer, "func_178110_a");
 renderItemMapMethod = getMethod(ItemRenderer, "func_178097_a");
 transformFirstPersonItemMethod = getMethod(ItemRenderer, "func_178096_b");
 performDrinkingMethod = getMethod(ItemRenderer, "func_178104_a");
@@ -104,4 +113,3 @@ doBowTransformationsMethod = getMethod(ItemRenderer, "func_178098_a");
 doItemUsedTransformationsMethod = getMethod(ItemRenderer, "func_178105_d");
 renderItemMethod = getMethod(ItemRenderer, "func_178099_a");
 renderPlayerArmMethod = getMethod(ItemRenderer, "func_178095_a");
-
