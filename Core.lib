@@ -1,6 +1,6 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.17", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.18", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 /*-------------*/
@@ -17,6 +17,7 @@ function registerModule(m) {
         description: m.description || "",
         settings: _settings
     }, function (module) {
+        m.module = module;
         m.onEnable && module.on("enable", function () m.onEnable());
         m.onDisable && module.on("disable", function () m.onDisable());
         m.onUpdate && module.on("update", function () m.onUpdate());
@@ -120,6 +121,8 @@ function getDurability(stack) stack && stack.getMaxDamage() - stack.getItemDamag
 
 function getAttackDamage(stack) stack && (item = stack.getItem()) && (item instanceof ItemSword || item instanceof ItemTool) ? Java.from(item.getItemAttributeModifiers().get("generic.attackDamage"))[0].getAmount() + 1.25 * ItemUtils.getEnchantment(stack, Enchantment.sharpness) : -1;
 
+function getBreakingSpeed(stack, block) stack && (item = stack.getItem()) && (item instanceof ItemTool) ? item.getStrVsBlock(stack, block) : 1;
+
 print = (Chat = chat = {print: function () {ClientUtils.displayChatMessage(Array.prototype.slice.call(arguments).join(" "))}}).print;
 
 function showMessage(text, title, alwaysOnTop, type)
@@ -201,8 +204,8 @@ function EditableEnum (target) {
     getField(Field, "modifiers").setInt(values = getField(target, "$VALUES"), values.getModifiers() & ~Modifier.FINAL);
     accessor = getMethod(Constructor, "acquireConstructorAccessor").invoke(getConstructor(target, 0));
 
-    this.add = function (name) (!(array = Java.from(values.get(null))).some(function (v) {return v.getDisplayName().toLowerCase() == name.toLowerCase()}) && values.set(null, Java.to(array.concat(accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]")), name);
-    this.remove = function (name) (Java.from(values.get(null)).some(function (v, i, a) {if (v.getDisplayName().contains(name)) {a.splice(i, 1); return !values.set(null, Java.to(a, "net.ccbluex.liquidbounce.features.module.ModuleCategory[]"))}}), name);
+    this.add = function (name) (!(a = this.values()).some(function (v) v.getDisplayName().equalsIgnoreCase(name)) && values.set(null, Java.to(a.concat(accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]")), name);
+    this.remove = function (name) (this.values().some(function (v, i, a) v.getDisplayName().equalsIgnoreCase(name) && (a.splice(i, 1), !values.set(null, Java.to(a, "net.ccbluex.liquidbounce.features.module.ModuleCategory[]")))), name);
     this.get = function () target;
     this.values = function () Java.from(values.get(null));
 }
@@ -304,7 +307,7 @@ Object.defineProperty(Array.prototype, "last", {
     }
 });
 
-Math.trunc = function (v) (v= +v, (v - v % 1) || (!isFinite(v) || v === 0 ? v : v < 0 ? -0 : 0));
+Math.trunc = function (v) (v = +v, (v - v % 1) || (!isFinite(v) || v === 0 ? v : v < 0 ? -0 : 0));
 
 Math.toRadians = function (degrees) degrees * Math.PI / 180;
 
