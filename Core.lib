@@ -372,7 +372,7 @@ script.on("load", function () {
         ["Core", script.scriptName].forEach(function (n, i) {
             if ([coreAutoUpdate, scriptAutoUpdate][i] !== false && !_updated[n]) {
                 if (_response = HttpUtils.get("https://dyskord.cc/check?name=" + n + "&ver=" + [coreVersion, script.scriptVersion][i])) {
-                    HttpUtils.download("https://raw.githubusercontent.com/CzechHek/Core/master/" + ["Core.lib", "Scripts/" + n + ".js"][i], [new File("LiquidBounce-1.8/scripts/Core.lib"), script.getScriptFile()][i]);
+                    HttpUtils.download("https://raw.githubusercontent.com/CzechHek/Core/master/" + ["Core.lib", "Scripts/" + n + ".js"][i], [new File(LiquidBounce.fileManager.dir, "scripts/Core.lib"), script.getScriptFile()][i]);
                     _isLatest = showMessage("Automatically updated " + n + " " + [coreVersion, script.scriptVersion][i] + " to " + _response, "Core Updater");
                 } _updated[n] = true;
             } else _updated[n] = false;
