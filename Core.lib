@@ -1,6 +1,6 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.18", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.19", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 /*-------------*/
@@ -375,11 +375,12 @@ script.on("load", function () {
                     HttpUtils.download("https://raw.githubusercontent.com/CzechHek/Core/master/" + ["Core.lib", "Scripts/" + n + ".js"][i], [new File("LiquidBounce-1.8/scripts/Core.lib"), script.getScriptFile()][i]);
                     _isLatest = showMessage("Automatically updated " + n + " " + [coreVersion, script.scriptVersion][i] + " to " + _response, "Core Updater");
                 } _updated[n] = true;
-            }
+            } else _updated[n] = false;
         }); FileUtils.writeStringToFile(_file, JSON.stringify(_updated));
     } catch (e) {
         print("Couldn't check", script.scriptName, "for updates!", e);
-        _updated[script.scriptName] = !(_isLatest = true);
+        _updated[script.scriptName] = false;
+        _isLatest = true;
     };
 
     if (!_isLatest) {
