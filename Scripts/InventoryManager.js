@@ -1,6 +1,4 @@
 ///api_version=2
-scriptAutoUpdate = false;
-
 (script = registerScript({
     name: "InventoryManager",
     authors: ["CzechHek"],
