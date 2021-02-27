@@ -1,6 +1,6 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.19", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor;
+var coreVersion = "3.20", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor, _isLatest = true;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 /*-------------*/
@@ -87,7 +87,7 @@ function isMoving(entity) isMovingHorizontally(entity) || isMovingVertically(ent
 
 function isInputHorizontally() Keyboard.isKeyDown(mc.gameSettings.keyBindForward.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindLeft.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindBack.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindRight.getKeyCode());
 
-function isInputVertically() Keyboard.isKeyDown(mc.gameSettings.keyBindJump.getKeyCode()) || Keyboard.isKeyDown(mc.gameSettings.keyBindSneak.getKeyCode());
+function isInputVertically(jumpOnly) Keyboard.isKeyDown(mc.gameSettings.keyBindJump.getKeyCode()) || (!jumpOnly && Keyboard.isKeyDown(mc.gameSettings.keyBindSneak.getKeyCode()));
 
 function move(horizontal, vertical, timer, event, ignoreInput) {
     horizontal = ignoreInput ? horizontal : isInputHorizontally() ? horizontal : 0;
@@ -107,6 +107,7 @@ function setValues(module, values) {
     _valuesMap = new LinkedHashMap();
     toArray(values).forEach(function (v, i) _valuesMap.put(i, v instanceof Value ? v : v.getValue()));
     getField(module, "_values").set(module, _valuesMap); _valuesMap = undefined;
+    LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.valuesConfig);
 }
 
 function getValues(module) Java.from(module.values);
@@ -194,6 +195,26 @@ function getSRGName(clazz, name, map) {
         }
     }
     return name;
+}
+
+function _runUpdater() {
+    try {
+        ["Core", script.scriptName].forEach(function (n, i) {
+            if (([coreAutoUpdate, scriptAutoUpdate][i] !== false) && (_log[n] === undefined)) {
+                _updating = n; _log[n] = false;
+                if (_response = HttpUtils.get("https://dyskord.cc/check?name=" + n + "&ver=" + [coreVersion, script.scriptVersion][i])) {
+                    HttpUtils.download("https://raw.githubusercontent.com/CzechHek/Core/master/" + ["Core.lib", "Scripts/" + n + ".js"][i], [new File(LiquidBounce.fileManager.dir, "scripts/Core.lib"), script.getScriptFile()][i]);
+                    showMessage("Automatically updated " + n + " " + [coreVersion, script.scriptVersion][i] + " to " + _response, "Core Updater");
+                    _isLatest = false; _log[n] = true;
+                }
+            } else _log[n] = _log[n] || false;
+        });
+    } catch (e) {
+        print("Couldn't check", _updating, "for updates!", e);
+        _log[_updating] = e.getMessage();
+        if (_log[script.scriptName] === undefined) _runUpdater();
+    };
+
 }
 
 /*-----------------*/
@@ -365,56 +386,53 @@ script.on("load", function () {
         script.scriptVersion = (scriptVersion || module[0].version || command[0].version || "1.0").toString();
     }
 
-    _updated = (_file = new File("logs/coreUpdater.log")).exists() ? JSON.parse(FileUtils.readFileToString(_file)) : {}; FileUtils.forceDeleteOnExit(_file);
-    _isLatest = true;
+    if ((_logFile = new File("logs/core.log")).exists()) _log = JSON.parse(FileUtils.readFileToString(_logFile));
+    else FileUtils.forceDeleteOnExit(_logFile), _log = {};
 
-    try {
-        ["Core", script.scriptName].forEach(function (n, i) {
-            if ([coreAutoUpdate, scriptAutoUpdate][i] !== false && !_updated[n]) {
-                if (_response = HttpUtils.get("https://dyskord.cc/check?name=" + n + "&ver=" + [coreVersion, script.scriptVersion][i])) {
-                    HttpUtils.download("https://raw.githubusercontent.com/CzechHek/Core/master/" + ["Core.lib", "Scripts/" + n + ".js"][i], [new File(LiquidBounce.fileManager.dir, "scripts/Core.lib"), script.getScriptFile()][i]);
-                    _isLatest = showMessage("Automatically updated " + n + " " + [coreVersion, script.scriptVersion][i] + " to " + _response, "Core Updater");
-                } _updated[n] = true;
-            } else _updated[n] = false;
-        }); FileUtils.writeStringToFile(_file, JSON.stringify(_updated));
-    } catch (e) {
-        print("Couldn't check", script.scriptName, "for updates!", e);
-        _updated[script.scriptName] = false;
-        _isLatest = true;
-    };
+    _runUpdater();
+
+    if (_isLatest && !_log.clickGuiHook) {
+        _log.clickGuiHook = script.scriptName;
+        LiquidBounce.clickGui = null;
+        _interval = interval(250, function () {
+            if (LiquidBounce.clickGui) {
+                LiquidBounce.clickGui = new (Java.extend(ClickGui)) () {
+                    func_73866_w_: function () {
+                        callEvent("clickGuiOpen");
+                    },
+                    func_146281_b: function () {
+                        callEvent("clickGuiClosed");
+                        LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.clickGuiConfig);
+                    }
+                }
+                LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.clickGuiConfig);
+                _interval = _interval.cancel();
+                callEvent("clickGuiLoaded");
+            }
+        });
+    }
+
+    FileUtils.writeStringToFile(_logFile, JSON.stringify(_log));
 
     if (!_isLatest) {
         scriptManager.scripts.remove(script);
         scriptManager.scripts.add(new Script(script.getScriptFile()));
         return
-    } else _response = _isLatest = undefined;
+    } else _response = _isLatest = _updating = _runUpdater = undefined;
 
     _categories = new EditableEnum(ModuleCategory);
     [module, command].forEach(function (c, i) c.forEach(function (v) [registerModule, registerCommand][i](v)));
     
     script.on("enable", function () {
-        moduleManager.modules.forEach(function (m) m.name != "Script" && m.name == m.name.match(/[a-zA-Z_$][0-9a-zA-Z_$]*/) && eval(m.name + "Module=m"));
-        [module, command].forEach(function (c) c.forEach(function (v) v.onLoad && v.onLoad()));
-        if (Object.keys(_updated)[1] == script.scriptName) {
-            LiquidBounce.clickGui = null;
-            _interval = interval(250, function () {
-                if (LiquidBounce.clickGui) {
-                    LiquidBounce.clickGui = new (Java.extend(ClickGui)) () {
-                        func_73866_w_: function () {
-                            callEvent("clickGuiOpen");
-                        },
-                        func_146281_b: function () {
-                            callEvent("clickGuiClosed");
-                            LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.clickGuiConfig);
-                        }
-                    }
-                    LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.clickGuiConfig);
-                    _interval = _updated = _interval.cancel();
-                    callEvent("clickGuiLoaded");
-                }
-            });
-        } else _updated = undefined;
+        for each (m in moduleManager.modules) m.name != "Script" && m.name == m.name.match(/[a-zA-Z_$][0-9a-zA-Z_$]*/) && eval(m.name + "Module=m");
+        for each (c in [module, command]) for each (v in c) v.onLoad && v.onLoad();
     });
 
-    script.on("disable", function () [module, command].forEach(function (c) c.forEach(function (v) v.onUnload && v.onUnload())));
+    script.on("disable", function () {
+        for each (c in [module, command]) for each (v in c) v.onUnload && v.onUnload();
+        if (_log.clickGuiHook == script.scriptName) {
+            delete _log.clickGuiHook;
+            FileUtils.writeStringToFile(_logFile, JSON.stringify(_log));
+        }
+    });
 });
