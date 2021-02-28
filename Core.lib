@@ -1,6 +1,6 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.20", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor, _isLatest = true;
+var coreVersion = "3.21", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor, _isLatest = true;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 /*-------------*/
@@ -386,8 +386,8 @@ script.on("load", function () {
         script.scriptVersion = (scriptVersion || module[0].version || command[0].version || "1.0").toString();
     }
 
-    if ((_logFile = new File("logs/core.log")).exists()) _log = JSON.parse(FileUtils.readFileToString(_logFile));
-    else FileUtils.forceDeleteOnExit(_logFile), _log = {};
+    _log = (_logFile = new File("logs/core.log")).exists() ? JSON.parse(FileUtils.readFileToString(_logFile)) : {};
+    FileUtils.forceDeleteOnExit(_logFile);
 
     _runUpdater();
 
