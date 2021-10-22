@@ -1,6 +1,6 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-var coreVersion = "3.22", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor, _isLatest = true;
+var coreVersion = "3.23", coreAutoUpdate, scriptAutoUpdate, module, command, _AdaptedModule, scriptName, scriptVersion, scriptAuthor, _shouldReload = false;
 (API_V2 = !_AdaptedModule) && (_AdaptedModule = undefined);
 
 /*-------------*/
@@ -199,21 +199,32 @@ function getSRGName(clazz, name, map) {
 
 function _runUpdater() {
     try {
-        ["Core", script.scriptName].forEach(function (n, i) {
-            if (([coreAutoUpdate, scriptAutoUpdate][i] !== false) && (_log[n] === undefined)) {
-                _updating = n; _log[n] = false;
-                if ((_response = HttpUtils.get("https://dyskord.cc/check?name=" + n + "&ver=" + [coreVersion, script.scriptVersion][i])) && _response[0] != "{") {
-                    HttpUtils.download("https://raw.githubusercontent.com/CzechHek/Core/master/" + ["Core.lib", "Scripts/" + n + ".js"][i], [new File(LiquidBounce.fileManager.dir, "scripts/Core.lib"), script.getScriptFile()][i]);
-                    showMessage("Automatically updated " + n + " " + [coreVersion, script.scriptVersion][i] + " to " + _response, "Core Updater");
-                    _isLatest = false; _log[n] = true;
-                }
-            } else _log[n] = _log[n] || false;
-        });
+        if (coreAutoUpdate !== false && !_log["Core"]) {
+            if ((_response = (_scriptText = HttpUtils.get("https://raw.githubusercontent.com/CzechHek/Core/master/Core.lib")).match(/coreVersion = "(.+)"/)[1]) != coreVersion) {
+                FileUtils.writeStringToFile(new File(LiquidBounce.fileManager.dir, "scripts/Core.lib"), _scriptText);
+                showMessage("Automatically updated Core " + coreVersion + " to " + _response, "Core Updater");
+                _shouldReload = true;
+            }
+            _log["Core"] = true;
+        }
     } catch (e) {
-        print("Couldn't check", _updating, "for updates!", e);
-        _log[_updating] = e.getMessage();
-        if (_log[script.scriptName] === undefined) _runUpdater();
-    };
+        print("Couldn't check Core for updates! Error:", e);
+        _log["Core"] = e.toString();
+    }
+
+    try {
+        if (scriptAutoUpdate !== false && !_log[script.scriptName]) {
+            if ((_response = (_scriptText = HttpUtils.get("https://raw.githubusercontent.com/CzechHek/Core/master/Scripts/" + script.scriptName + ".js")).match(/version"?\s*:\s*"?([^"]*)"?[\n\s,}]/)[1]) != script.scriptVersion) {
+                FileUtils.writeStringToFile(script.getScriptFile(), _scriptText);
+                showMessage("Automatically updated " + script.scriptName + " " + script.scriptVersion + " to " + _response, "Core Updater");
+                _shouldReload = true;
+            }
+            _log[script.scriptName] = true;
+        }
+    } catch (e) {
+        print("Couldn't check", script.scriptName, "for updates! Error:", e);
+        _log[script.scriptName] = e.toString();
+    }
 
 }
 
@@ -330,9 +341,9 @@ Object.defineProperty(Array.prototype, "last", {
 
 Math.trunc = function (v) (v = +v, (v - v % 1) || (!isFinite(v) || v === 0 ? v : v < 0 ? -0 : 0));
 
-Math.toRadians = function (degrees) degrees * Math.PI / 180;
+Math.toRadians = function (degrees) degrees * 0.01745329252;
 
-Math.toDegrees = function (radians) radians * 180 / Math.PI;
+Math.toDegrees = function (radians) radians * 57.29577951308;
 
 /*----------------*/
 /* Java importing */
@@ -391,7 +402,7 @@ script.on("load", function () {
 
     _runUpdater();
 
-    if (_isLatest && !_log.clickGuiHook) {
+    if (!_shouldReload && !_log.clickGuiHook) {
         _log.clickGuiHook = script.scriptName;
         LiquidBounce.clickGui = null;
         _interval = interval(250, function () {
@@ -414,11 +425,11 @@ script.on("load", function () {
 
     FileUtils.writeStringToFile(_logFile, JSON.stringify(_log));
 
-    if (!_isLatest) {
-        scriptManager.scripts.remove(script);
+    if (_shouldReload) {
+        script.on("enable", function () timeout(0, function () scriptManager.scripts.remove(script))); //somehow avoids ConcurrentModificationException after reloading scripts
         scriptManager.scripts.add(new Script(script.getScriptFile()));
         return
-    } else _response = _isLatest = _updating = _runUpdater = undefined;
+    } else _response = _shouldReload = _runUpdater = _scriptText = undefined;
 
     _categories = new EditableEnum(ModuleCategory);
     [module, command].forEach(function (c, i) c.forEach(function (v) [registerModule, registerCommand][i](v)));
@@ -431,6 +442,7 @@ script.on("load", function () {
     script.on("disable", function () {
         for each (c in [module, command]) for each (v in c) v.onUnload && v.onUnload();
         if (_log.clickGuiHook == script.scriptName) {
+            _log = JSON.parse(FileUtils.readFileToString(_logFile));
             delete _log.clickGuiHook;
             FileUtils.writeStringToFile(_logFile, JSON.stringify(_log));
         }
