@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "3.24",
+    version: "3.24", //coreVersion = "3.24"
     updateURL: "https://raw.githubusercontent.com/CzechHek/Core/master/Scripts/" + script.scriptName + ".js",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
@@ -391,7 +391,7 @@ Core.runUpdater = function () {
 
     try {
         if (!Core.log.Core) {
-            if ((responseCache = (scriptCache = HttpUtils.get("https://raw.githubusercontent.com/CzechHek/Core/master/Core.lib")).match(/version: "(.*)"/)[1]) != Core.version) {
+            if ((responseCache = (scriptCache = HttpUtils.get("https://raw.githubusercontent.com/CzechHek/Core/master/Core.lib")).match(/version: "(.+)"/)[1]) != Core.version) {
                 FileUtils.writeStringToFile(new File(LiquidBounce.fileManager.dir, "scripts/Core.lib"), scriptCache);
                 showMessage("Automatically updated Core " + Core.version + " to " + responseCache, "Core Updater");
                 Core.shouldReload = true;
@@ -405,7 +405,7 @@ Core.runUpdater = function () {
 
     try {
         if (Core.updateURL && !Core.log[script.scriptName]) {
-            if ((responseCache = (scriptCache = HttpUtils.get(Core.updateURL)).match(/version"?\s*:\s*"?([^"]*)"?[\n\s,}]/)[1]) != script.scriptVersion) {
+            if ((responseCache = (scriptCache = HttpUtils.get(Core.updateURL)).match(/version"?\s*:\s*"?([^"]+)"?[\n\s,}]/)[1]) != script.scriptVersion) {
                 FileUtils.writeStringToFile(script.getScriptFile(), scriptCache);
                 showMessage("Automatically updated " + script.scriptName + " " + script.scriptVersion + " to " + responseCache, "Core Updater");
                 Core.shouldReload = true;
