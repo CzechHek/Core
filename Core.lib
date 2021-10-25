@@ -3,7 +3,6 @@
 //coreVersion = "3.24"
 var Core = {
     version: "3.24",
-    updateURL: "https://raw.githubusercontent.com/CzechHek/Core/master/Scripts/" + script.scriptName + ".js",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -405,8 +404,8 @@ Core.runUpdater = function () {
     }
 
     try {
-        if (Core.updateURL && !Core.log[script.scriptName]) {
-            if ((responseCache = (scriptCache = HttpUtils.get(Core.updateURL)).match(/version"?\s*:\s*"?([^"]+)"?[\n\s,}]/)[1]) != script.scriptVersion) {
+        if ((Core.updateURL || typeof Core.updateURL == "undefined") && !Core.log[script.scriptName]) {
+            if ((responseCache = (scriptCache = HttpUtils.get(Core.updateURL || "https://raw.githubusercontent.com/CzechHek/Core/master/Scripts/" + script.scriptName + ".js")).match(/version"?\s*:\s*"?([^"]+)"?[\n\s,}]/)[1]) != script.scriptVersion) {
                 FileUtils.writeStringToFile(script.getScriptFile(), scriptCache);
                 showMessage("Automatically updated " + script.scriptName + " " + script.scriptVersion + " to " + responseCache, "Core Updater");
                 Core.shouldReload = true;
@@ -459,7 +458,7 @@ script.on("load", function () {
     Core.runUpdater();
 
     if (Core.shouldReload) {
-        script.on("enable", function () timeout(250, function () scriptManager.scripts.remove(script))); //Prevents ConcurrentModificationException if a script gets updated after reloading scripts.
+        script.on("enable", function () timeout(1000, function () scriptManager.scripts.remove(script))); //Prevents ConcurrentModificationException if a script gets updated after reloading scripts.
         scriptManager.scripts.add(new Script(script.getScriptFile()));
         return
     }
