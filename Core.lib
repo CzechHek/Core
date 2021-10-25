@@ -1,7 +1,8 @@
 //Core - Simple, yet powerful ScriptAPI base
 
+//coreVersion = "3.24"
 var Core = {
-    version: "3.24", //coreVersion = "3.24"
+    version: "3.24",
     updateURL: "https://raw.githubusercontent.com/CzechHek/Core/master/Scripts/" + script.scriptName + ".js",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
