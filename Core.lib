@@ -1,8 +1,8 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-//coreVersion = "3.24"
+//coreVersion = "3.25"
 var Core = {
-    version: "3.24",
+    version: "3.25",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -117,7 +117,7 @@ function rand(min, max) (Array.isArray(min) && (max = min[1], min = min[0]), Mat
 
 function getDurability(stack) stack && stack.getMaxDamage() - stack.getItemDamage();
 
-function getAttackDamage(stack, _item) stack && (_item = stack.getItem()) && (_item instanceof ItemSword || _item instanceof ItemTool) ? Java.from(item.getItemAttributeModifiers().get("generic.attackDamage"))[0].getAmount() + 1.25 * ItemUtils.getEnchantment(stack, Enchantment.sharpness) : -1;
+function getAttackDamage(stack, _item) stack && (_item = stack.getItem()) && (_item instanceof ItemSword || _item instanceof ItemTool) ? Java.from(_item.getItemAttributeModifiers().get("generic.attackDamage"))[0].getAmount() + 1.25 * ItemUtils.getEnchantment(stack, Enchantment.sharpness) : -1;
 
 function getBreakingSpeed(stack, block, _item) stack && (_item = stack.getItem()) && (_item instanceof ItemTool) ? item.getStrVsBlock(stack, block) : 1;
 
@@ -389,32 +389,32 @@ Core.runUpdater = function () {
     Core.log = Core.logFile.exists() ? JSON.parse(FileUtils.readFileToString(Core.logFile)) : {};
     var scriptCache, responseCache;
 
-    try {
-        if (!Core.log.Core) {
+    if (!Core.log.Core) {
+        try {
             if ((responseCache = (scriptCache = HttpUtils.get("https://raw.githubusercontent.com/CzechHek/Core/master/Core.lib")).match(/version: "(.+)"/)[1]) != Core.version) {
                 FileUtils.writeStringToFile(new File(LiquidBounce.fileManager.dir, "scripts/Core.lib"), scriptCache);
                 showMessage("Automatically updated Core " + Core.version + " to " + responseCache, "Core Updater");
                 Core.shouldReload = true;
             }
             Core.log.Core = true;
+        } catch (e) {
+            print("Couldn't check Core for updates! Error:", e);
+            Core.log.Core = e.toString();
         }
-    } catch (e) {
-        print("Couldn't check Core for updates! Error:", e);
-        Core.log.Core = e.toString();
     }
 
-    try {
-        if ((Core.updateURL || typeof Core.updateURL == "undefined") && !Core.log[script.scriptName]) {
+    if ((Core.updateURL || typeof Core.updateURL == "undefined") && !Core.log[script.scriptName]) {
+        try {
             if ((responseCache = (scriptCache = HttpUtils.get(Core.updateURL || "https://raw.githubusercontent.com/CzechHek/Core/master/Scripts/" + script.scriptName + ".js")).match(/version"?\s*:\s*"?([^"]+)"?[\n\s,}]/)[1]) != script.scriptVersion) {
                 FileUtils.writeStringToFile(script.getScriptFile(), scriptCache);
                 showMessage("Automatically updated " + script.scriptName + " " + script.scriptVersion + " to " + responseCache, "Core Updater");
                 Core.shouldReload = true;
             }
             Core.log[script.scriptName] = true;
+        } catch (e) {
+            print("Couldn't check", script.scriptName, "for updates! Error:", e);
+            Core.log[script.scriptName] = e.toString();
         }
-    } catch (e) {
-        print("Couldn't check", script.scriptName, "for updates! Error:", e);
-        Core.log[script.scriptName] = e.toString();
     }
 
     if (!Core.shouldReload && !Core.log.clickGuiHook) {
