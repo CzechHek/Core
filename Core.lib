@@ -1,8 +1,8 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-//coreVersion = "3.25"
+//coreVersion = "3.26"
 var Core = {
-    version: "3.25",
+    version: "3.26",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -119,7 +119,7 @@ function getDurability(stack) stack && stack.getMaxDamage() - stack.getItemDamag
 
 function getAttackDamage(stack, _item) stack && (_item = stack.getItem()) && (_item instanceof ItemSword || _item instanceof ItemTool) ? Java.from(_item.getItemAttributeModifiers().get("generic.attackDamage"))[0].getAmount() + 1.25 * ItemUtils.getEnchantment(stack, Enchantment.sharpness) : -1;
 
-function getBreakingSpeed(stack, block, _item) stack && (_item = stack.getItem()) && (_item instanceof ItemTool) ? item.getStrVsBlock(stack, block) : 1;
+function getBreakingSpeed(stack, block, _item) stack && (_item = stack.getItem()) && (_item instanceof ItemTool) ? _item.getStrVsBlock(stack, block) : 1;
 
 print = (Chat = chat = { print: function () { ClientUtils.displayChatMessage(Array.prototype.slice.call(arguments).join(" ")) } }).print;
 
@@ -387,12 +387,12 @@ _registeredModulesField = getField(Script, "registeredModules"); _callEventMetho
 Core.runUpdater = function () {
     Core.logFile = new File("logs/core.log");
     Core.log = Core.logFile.exists() ? JSON.parse(FileUtils.readFileToString(Core.logFile)) : {};
-    var scriptCache, responseCache;
+    var scriptCache, responseCache, charset = Java.type("java.nio.charset.Charset").forName("UTF-8");
 
     if (!Core.log.Core) {
         try {
             if ((responseCache = (scriptCache = HttpUtils.get("https://raw.githubusercontent.com/CzechHek/Core/master/Core.lib")).match(/version: "(.+)"/)[1]) != Core.version) {
-                FileUtils.writeStringToFile(new File(LiquidBounce.fileManager.dir, "scripts/Core.lib"), scriptCache);
+                FileUtils.writeStringToFile(new File(LiquidBounce.fileManager.dir, "scripts/Core.lib"), scriptCache, charset);
                 showMessage("Automatically updated Core " + Core.version + " to " + responseCache, "Core Updater");
                 Core.shouldReload = true;
             }
@@ -406,7 +406,7 @@ Core.runUpdater = function () {
     if ((Core.updateURL || typeof Core.updateURL == "undefined") && !Core.log[script.scriptName]) {
         try {
             if ((responseCache = (scriptCache = HttpUtils.get(Core.updateURL || "https://raw.githubusercontent.com/CzechHek/Core/master/Scripts/" + script.scriptName + ".js")).match(/version"?\s*:\s*"?([^"]+)"?[\n\s,}]/)[1]) != script.scriptVersion) {
-                FileUtils.writeStringToFile(script.getScriptFile(), scriptCache);
+                FileUtils.writeStringToFile(script.getScriptFile(), scriptCache, charset);
                 showMessage("Automatically updated " + script.scriptName + " " + script.scriptVersion + " to " + responseCache, "Core Updater");
                 Core.shouldReload = true;
             }
