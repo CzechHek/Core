@@ -1,8 +1,8 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-//coreVersion = "3.26"
+//coreVersion = "3.27"
 var Core = {
-    version: "3.26",
+    version: "3.27",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -153,13 +153,15 @@ function openFolder(folder) Desktop.open(folder);
 
 function toArray(object) (Array.isArray(object) ? object : [object]).filter(Boolean);
 
-function canStep(stepHeight) {
-    var yaw = MovementUtils.getDirection(), bb = mc.thePlayer.getEntityBoundingBox(), possiblePlaces = [], otherBB;
-    for (var i = 0; (i += 0.125) <= stepHeight;) {
-        if (!mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, bb.offset(0, i, 0)).isEmpty()) break
-        if (mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, otherBB = bb.offset(-Math.sin(yaw) * 0.5, i, Math.cos(yaw) * 0.5)).isEmpty() && !mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, otherBB.offset(0, -0.125, 0)).isEmpty()) _possiblePlaces.push(i);
+function canStep(stepHeight, predictDistance) {
+    if (mc.thePlayer.isCollidedHorizontally || predictDistance) {
+        var yaw = MovementUtils.getDirection(), bb = mc.thePlayer.getEntityBoundingBox(), possiblePlaces = [], otherBB, predictDistance = predictDistance || 0.01;
+        for (var i = 0; (i += 0.125) <= stepHeight;) {
+            if (!mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, bb.offset(0, i, 0)).isEmpty()) break
+            if (mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, otherBB = bb.offset(-Math.sin(yaw) * predictDistance, i, Math.cos(yaw) * predictDistance)).isEmpty() && !mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, otherBB.offset(0, -0.125, 0)).isEmpty()) possiblePlaces.push(i);
+        }
+        return possiblePlaces.length && Math.max.apply(null, possiblePlaces);
     }
-    return possiblePlaces.length && Math.max.apply(null, possiblePlaces);
 }
 
 function callEvent(name, args) scriptManager.scripts.forEach(function (s) Java.from(_registeredModulesField.get(s)).forEach(function (m) _callEventMethod.invoke(m, name, args)));
