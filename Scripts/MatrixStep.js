@@ -1,7 +1,7 @@
 ///api_version=2
 (script = registerScript({
     name: "MatrixStep",
-    version: "2.1",
+    version: "2.2",
     authors: ["CzechHek", "Neogardo"]
 })).import("Core.lib");
 
@@ -19,7 +19,7 @@ module = {
         }
     },
     onUpdate: function () {
-        if (canStep(1, predict.get()) && isMovingHorizontally() && !mc.thePlayer.fallDistance) isStepping = mc.timer.timerSpeed = timer.get();
+        if (canStep(1, predict.get()) && isMovingHorizontally() && !(mc.thePlayer.fallDistance || mc.thePlayer.isInWater() || mc.thePlayer.isOnLadder())) isStepping = mc.timer.timerSpeed = timer.get();
         else {
             mc.timer.timerSpeed = 1;
             isStepping = false;
