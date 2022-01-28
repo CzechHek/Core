@@ -34,8 +34,10 @@ module = {
         var screen = e.getGuiScreen();
     },
     onText: function (e) {
-        var text = e.getText();
-        e.setText(text.replace(mc.thePlayer.getName(), "axolotlus"));
+        if (mc.thePlayer) {
+            var text = e.getText();
+            e.setText(text.replace(mc.thePlayer.getName(), "axolotlus"));   
+        }
     },
     onTick: function () {}
 }
