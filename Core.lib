@@ -1,8 +1,8 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-//coreVersion = "3.28"
+//coreVersion = "3.29"
 var Core = {
-    version: "3.28",
+    version: "3.29",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -20,6 +20,7 @@ function registerModule(m) {
         settings: settings
     }, function (module) {
         m.module = module;
+        m.reflectorModule = new Reflector(module);
         m.onEnable && module.on("enable", function () m.onEnable());
         m.onDisable && module.on("disable", function () m.onDisable());
         m.onUpdate && module.on("update", function () m.onUpdate());
@@ -58,6 +59,9 @@ function hookEvent(m, key) {
 
     targets.add(new EventHook(listener, getMethod(listener, "accept"), Core.defaultAnnotation));
     Core.eventManager.registry[eventClass] = targets;
+
+    //Registering event in ScriptModule's events HashMap to make them callable via callEvent() function.
+    m.reflectorModule.events.put(key[2].toLowerCase() + key.substring(3) /*onClientShutdown -> clientShutdown, ...*/, m[key]);
 }
 
 /*--------------*/
@@ -351,6 +355,17 @@ Object.defineProperty(Array.prototype, "last", {
         return this[this.length - 1];
     }
 });
+
+//array.random([from: int], [to: int]) - returns a random element (between optional boundaries)
+//parameters: from - minimal index, optional; to - maximal index, optional
+Object.defineProperty(Array.prototype, "random", {
+    value: function (from, to) {
+        if (this.length > 0) {
+            var index = Math.floor(rand(from || 0, (to + 1) || this.length));
+            return this[index];
+        } else return null;
+    }
+})
 
 Math.trunc = function (v) (v = +v, (v - v % 1) || (!isFinite(v) || v === 0 ? v : v < 0 ? -0 : 0));
 
