@@ -1,8 +1,8 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-//coreVersion = "3.27"
+//coreVersion = "3.28"
 var Core = {
-    version: "3.27",
+    version: "3.28",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -41,7 +41,23 @@ function registerModule(m) {
         m.onClickGuiOpen && module.on("clickGuiOpen", function () m.onClickGuiOpen());
         m.onClickGuiClosed && module.on("clickGuiClosed", function () m.onClickGuiClosed());
         m.onClickGuiLoaded && module.on("clickGuiLoaded", function () m.onClickGuiLoaded());
+
+        for each (var key in Object.keys(Core.artificialEvents)) m[key] && hookEvent(m, key);
     });
+}
+
+function hookEvent(m, key) {
+    var eventClass = Core.artificialEvents[key].class,
+        listener = new (Java.extend(Listenable, Consumer, { 
+            handleEvents: function() { return m.module.state }, 
+            accept: function(e) {
+                m[key](e)
+            }
+        })),
+        targets = Core.eventManager.registry.getOrDefault(eventClass, new ArrayList());
+
+    targets.add(new EventHook(listener, getMethod(listener, "accept"), Core.defaultAnnotation));
+    Core.eventManager.registry[eventClass] = targets;
 }
 
 /*--------------*/
@@ -376,8 +392,11 @@ Math.toDegrees = function (radians) radians * 57.29577951308;
 //net.ccbluex.liquidbounce.value.*
 ["BlockValue", "BoolValue", "FloatValue", "FontValue", "IntegerValue", "ListValue", "TextValue", "Value"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.value." + v + "\")")});
 
+//Additional events from net.ccbluex.liquidbounce.event
+["BlockBBEvent", "ClickWindowEvent", "ClientShutdownEvent", "EntityMovementEvent", "PushOutEvent", "RenderEntityEvent", "ScreenEvent", "TextEvent", "TickEvent", "EventHook", "EventTarget"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.event." + v + "\")")});
+
 //Used variables
-LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); JOptionPane = Java.type("javax.swing.JOptionPane"); FileUtils = Java.type("org.apache.commons.io.FileUtils"); HttpUtils = Java.type("net.ccbluex.liquidbounce.utils.misc.HttpUtils"); Desktop = Java.type("java.awt.Desktop").getDesktop(); ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui"); Enchantment = Java.type("net.minecraft.enchantment.Enchantment"); ClassLoader = Java.type("java.lang.ClassLoader"); Thread = Java.type("java.lang.Thread"); Class = Java.type("java.lang.Class"); PositionedSoundRecord = Java.type("net.minecraft.client.audio.PositionedSoundRecord"); Remapper = Java.type("net.ccbluex.liquidbounce.script.remapper.Remapper");
+LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); JOptionPane = Java.type("javax.swing.JOptionPane"); FileUtils = Java.type("org.apache.commons.io.FileUtils"); HttpUtils = Java.type("net.ccbluex.liquidbounce.utils.misc.HttpUtils"); Desktop = Java.type("java.awt.Desktop").getDesktop(); ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui"); Enchantment = Java.type("net.minecraft.enchantment.Enchantment"); ClassLoader = Java.type("java.lang.ClassLoader"); Thread = Java.type("java.lang.Thread"); Class = Java.type("java.lang.Class"); PositionedSoundRecord = Java.type("net.minecraft.client.audio.PositionedSoundRecord"); Remapper = Java.type("net.ccbluex.liquidbounce.script.remapper.Remapper"); Listenable = Java.type("net.ccbluex.liquidbounce.event.Listenable"); Consumer = Java.type("java.util.function.Consumer"); ArrayList = Java.type("java.util.ArrayList"); Module = Java.type("net.ccbluex.liquidbounce.features.module.Module");
 Core.classes = Java.from(getField(ClassLoader, "classes").get(Thread.currentThread().getContextClassLoader())); StaticClass = getMethod(_class = Class.forName("jdk.internal.dynalink.beans.StaticClass"), "forClass").invoke(null, _class); delete _class;
 _registeredModulesField = getField(Script, "registeredModules"); _callEventMethod = getMethod(ScriptModule, "callEvent"); _flushOutboundQueueMethod = getMethod(NetworkManager, "func_150733_h"); _dispatchPacketMethod = getMethod(NetworkManager, "func_150732_b"); _readWriteLockField = getField(NetworkManager, "field_181680_j"); _outboundPacketsQueueField = getField(NetworkManager, "field_150745_j"); _remapperFields = getField(Remapper, "fields").get(Remapper); _remapperMethods = getField(Remapper, "methods").get(Remapper);
 
@@ -466,6 +485,19 @@ script.on("load", function () {
     }
 
     Core.categories = new EditableEnum(ModuleCategory);
+    Core.eventManager = new Reflector(LiquidBounce.eventManager);
+    Core.defaultAnnotation = getMethod(LiquidBounce.moduleManager, "onKey").getAnnotation(EventTarget.class);
+    Core.artificialEvents = {
+        onBlockBB: BlockBBEvent,
+        onClientShutdown: ClientShutdownEvent,
+        onEntityMovement: EntityMovementEvent,
+        onPushOut: PushOutEvent,
+        onRenderEntity: RenderEntityEvent,
+        onScreen: ScreenEvent,
+        onText: TextEvent,
+        onTick: TickEvent
+    };
+    
     [module, command].forEach(function (c, i) c.forEach(function (v) [registerModule, registerCommand][i](v)));
 
     script.on("enable", function () {
@@ -475,6 +507,19 @@ script.on("load", function () {
 
     script.on("disable", function () {
         for each (var c in [module, command]) for each (var v in c) v.onUnload && v.onUnload();
+
+        //Unregistering artificial event hooks
+        for each (var m in module) {
+            for each (var key in Object.keys(m)) {
+                var event = Core.artificialEvents[key];
+                if (event) {
+                    var hooks = Core.eventManager.registry.getOrDefault(event.class, new ArrayList());
+                    for each (var hook in hooks.clone()) !(hook.getEventClass() instanceof Module) && hooks.remove(hook);
+                    Core.eventManager.registry[event.class] = hooks;
+                }
+            }
+        }
+
         if (Core.log.clickGuiHook == script.scriptName) {
                 Core.log = JSON.parse(FileUtils.readFileToString(Core.logFile));
                 delete Core.log.clickGuiHook;
