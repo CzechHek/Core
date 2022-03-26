@@ -64,26 +64,18 @@ module = {
 
         dynamicrange.get() && changeon.get() == "Update" && updateRange();
     },
-    onAttack: function () {
-        dynamicrange.get() && changeon.get() == "Attack" && updateRange();
-    },
+    onAttack: function () dynamicrange.get() && changeon.get() == "Attack" && updateRange(),
     onLoad: function () {
         autoBlockValue = KillAuraModule.getValue("AutoBlock");
         rangeValue = KillAuraModule.getValue("Range");
     },
-    onEnable: function () {
-        prevValues = [autoBlockValue.get(), rangeValue.get()];
-    },
+    onEnable: function () prevValues = [autoBlockValue.get(), rangeValue.get()],
     onDisable: function () {
         autoBlockValue.set(prevValues[0]);
         rangeValue.set(prevValues[1]);
     },
-    onClickGuiOpen: function () {
-        updateValues();
-    },
-    onClickGuiClosed: function () {
-        updateValues(true);
-    }
+    onClickGuiOpen: function () updateValues(),
+    onClickGuiClosed: function () updateValues(true)
 }
 
 VALUE_FIELD = getField(Value, "value");
