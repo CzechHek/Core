@@ -1,0 +1,116 @@
+[
+  {
+    "Type": "Scoreboard",
+    "X": -164.0,
+    "Y": 280.0,
+    "Scale": 0.8499999,
+    "HorizontalFacing": "Right",
+    "VerticalFacing": "Down",
+    "Text-R": 255,
+    "Text-G": 255,
+    "Text-B": 255,
+    "Background-R": 0,
+    "Background-G": 0,
+    "Background-B": 0,
+    "Background-Alpha": 95,
+    "Rect": false,
+    "Rect-Color": "Custom",
+    "Rect-R": 0,
+    "Rect-G": 111,
+    "Rect-B": 255,
+    "Rect-Alpha": 255,
+    "Shadow": false,
+    "Font": {
+      "fontName": "Stupid Meeting",
+      "fontSize": 40
+    }
+  },
+  {
+    "Type": "Effects",
+    "X": 392.0,
+    "Y": 48.0,
+    "Scale": 1.0,
+    "HorizontalFacing": "Right",
+    "VerticalFacing": "Down",
+    "Font": {
+      "fontName": "Roboto Medium",
+      "fontSize": 35
+    },
+    "Shadow": true
+  },
+  {
+    "Type": "Armor",
+    "X": -92.0,
+    "Y": 441.0,
+    "Scale": 1.0,
+    "HorizontalFacing": "Middle",
+    "VerticalFacing": "Up",
+    "Alignment": "Vertical"
+  },
+  {
+    "Type": "Notifications",
+    "X": 0.0,
+    "Y": 30.0,
+    "Scale": 1.0,
+    "HorizontalFacing": "Right",
+    "VerticalFacing": "Down"
+  },
+  {
+    "Type": "Arraylist",
+    "X": 0.0,
+    "Y": 0.0,
+    "Scale": 0.84999996,
+    "HorizontalFacing": "Left",
+    "VerticalFacing": "Up",
+    "Rainbow-X": -1000.0,
+    "Rainbow-Y": -1000.0,
+    "Text-Color": "Random",
+    "Text-R": 130,
+    "Text-G": 59,
+    "Text-B": 255,
+    "Rect-Color": "Random",
+    "Rect-R": 130,
+    "Rect-G": 59,
+    "Rect-B": 255,
+    "Rect-Alpha": 255,
+    "Random-Saturation": 0.7457627,
+    "Random-Brightness": 1.0,
+    "Tags": true,
+    "ShadowText": true,
+    "Background-Color": "Custom",
+    "Background-R": 255,
+    "Background-G": 255,
+    "Background-B": 255,
+    "Background-Alpha": 51,
+    "Rect": "Left",
+    "UpperCase": false,
+    "Space": 0.0,
+    "TextHeight": 12.2,
+    "TextY": 1.8644068,
+    "TagsArrayColor": false,
+    "Font": {
+      "fontName": "Stupid Meeting",
+      "fontSize": 40
+    }
+  },
+  {
+    "Type": "Text",
+    "X": 959.0,
+    "Y": 498.0,
+    "Scale": 1.0,
+    "HorizontalFacing": "Right",
+    "VerticalFacing": "Up",
+    "DisplayText": "%ping%",
+    "Red": 255,
+    "Green": 255,
+    "Blue": 255,
+    "Rainbow": false,
+    "Rainbow-X": -1000.0,
+    "Rainbow-Y": -1000.0,
+    "Shadow": true,
+    "Font": {
+      "fontName": "Stupid Meeting",
+      "fontSize": 40
+    }
+  }
+]
