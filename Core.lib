@@ -1,8 +1,8 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-//coreVersion = "3.29"
+//coreVersion = "4.0"
 var Core = {
-    version: "3.29",
+    version: "4.0",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -12,6 +12,7 @@ var Core = {
 
 function registerModule(m) {
     if (!Object.keys(m).length) return;
+
     var settings = {}; toArray(m.values).forEach(function (v) { settings[v.getName()] = !Core.API_V2 && v instanceof _AdaptedValue ? v.getValue() : v });
     script.registerModule({
         name: m.name || script.scriptName,
@@ -70,24 +71,64 @@ function hookEvent(m, key) {
 
 function registerCommand(c) {
     if (!Object.keys(c).length) return;
+
+    var aliases = toArray(c.aliases || script.scriptName).toLowerCase();
     script.registerCommand({
-        name: c.name || (c.commands && c.commands.length ? c.commands[0] : script.scriptName),
-        aliases: c.commands || []
+        name: aliases[0],
+        aliases: aliases
     }, function (command) {
-        c.onExecute && command.on("execute", function (a) {
-            var prefix = LiquidBounce.commandManager.prefix, error, lastIndex = -1, lastObject, object = c.subcommands, a = Java.from(a).map(function (a, i) a.toLowerCase().replace(!i ? prefix : "", ""));
-            if (object) a.some(function (arg, i) {
-                if (i) {
-                    if ((object = object[arg]) instanceof Object) lastIndex = i + 1, lastObject = object;
-                    else if (object === undefined && (!~lastIndex || i <= lastIndex)) return error = [arg, a.slice(0, lastIndex), lastObject || c.subcommands];
+        command.on("execute", function (args) {
+            args = Java.from(args);
+            var formattedArgs = args.toLowerCase(), scope = c, scopePos = 0, parameters = [];
+            formattedArgs[0] = "handler";
+
+            for each (var arg in formattedArgs) {
+                var scopeArray = toArray(scope);
+                var found = scopeArray.find(function (e) e.hasOwnProperty(arg));
+
+                if (found) {
+                    scope = found[arg];
+                    scopePos++;
+
+                    var scopeArray = toArray(scope);
+                    var objects = scopeArray.filter(function (e) isObject(e));
+                    var scopeSubcommands = objects.map(function (o) Object.keys(o)).flat();
+
+                    if (scopeSubcommands.includes(formattedArgs[scopePos])) continue
+
+                    var functions = scopeArray.filter(function (e) e instanceof Function).sort(function (a, b) getFunctionParameters(b).length - getFunctionParameters(a).length);
+                    if (functions.length) {
+                        for each (func in functions) {
+                            var parameters = getFunctionParameters(func);
+                            if (scopePos + parameters.length <= args.length) return func.apply(null, args.slice(scopePos));
+                        }
+                        parameters = functions.map(function (func) getFunctionParameters(func));
+                        break
+                    }
+                } else {
+                    args = args.slice(0, formattedArgs.indexOf(arg));
+                    print("§4▏ §c§lInvalid subcommand§4:");
+                    print("§4▏§c", args.join(" "), "„§4§l" + arg + "§c“");
+                    break
                 }
-            });
-            if (object || error) {
-                print("");
-                a.length == 1 && print("§8▏§7§l", command.getCommand(), "§8v§l" + (c.version || script.scriptVersion), "§7by§8§l", toArray(c.author || Java.from(script.scriptAuthors)).join("§7, §8§l"));
-                object ? object instanceof Object ? (print("§8▏ §7Valid subcommands§8: (§7§l" + Object.keys(object).length + "§8)"), print("§8▏§f", prefix + a.join(" "), "§8[§f" + Object.keys(object).join("§7, §f") + "§8]")) : print("§8▏ §7Usage§8:§f", prefix + a.join(" "), "„§7" + object + "§f“") : (print("§4▏ §cInvalid argument§4:§c", prefix + a.join(" ").replace(error[0], "„§4§l" + error[0] + "§c“")), print("§8▏ §7Valid subcommands§8: (§7§l" + Object.keys(error[2]).length + "§8)"), print("§8▏§f", prefix + error[1].join(" "), "§8[§f" + Object.keys(error[2]).join("§7, §f") + "§8]"));
-                a.length == 1 && c.commands.length > 1 && (print("§8▏ §7Available aliases§8: (§7§l" + (c.commands.length - 1) + "§8)"), print("§8▏§f", prefix + c.commands.map(function (e) e.toLowerCase()).filter(function (e) e != a[0]).join("§7, §f" + prefix)));
-            } else c.onExecute(a);
+            }
+            
+            if (args.length == 1) {
+                print("§8▏§7§l", c.name || script.scriptName, "§8v§l" + (c.version || script.scriptVersion), "§7by§8§l", toArray(c.author || Java.from(script.scriptAuthors)).join("§7, §8§l"));
+                if (c.aliases.length > 1) {
+                    print("§8▏ §7§lAvailable aliases§8: (§7§l" + c.aliases.length + "§8)");
+                    print("§8▏ §f" + c.aliases.map(function (alias) LiquidBounce.commandManager.prefix + alias).join("§7, §f"));
+                }
+            }
+            var subcommands = Array.isArray(scope) ? scope.filter(function (e) isObject(e)).map(function (o) Object.keys(o)).flat() : Object.keys(scope);
+            if (subcommands.length && scopePos == args.length) {
+                print("§8▏ §7§lValid subcommand" + (subcommands.length > 1 ? "s" : "") + "§8: (§7§l" + subcommands.length + "§8)");
+                print("§8▏§f", args.join(" "), "§8[§f" + subcommands.join("§7, §f") + "§8]");
+            }
+            if (parameters.length) {
+                print("§8▏ §7§lRequired parameters§8: (§7§l" + parameters.map(function (params) params.length).join("§8/§7§l") + "§8)");
+                for each (params in parameters) print("§8▏§f", args.join(" "), "„§7" + params.slice(args.length - scopePos).map(function (param) param.replaceAll("_", " ")).join("§f“ „§7") + "§f“");
+            }
         });
     });
 }
@@ -173,6 +214,8 @@ function openFolder(folder) Desktop.open(folder);
 
 function toArray(object) (Array.isArray(object) ? object : [object]).filter(Boolean);
 
+function isObject(object) object && object.constructor === Object;
+
 function canStep(stepHeight, predictDistance) {
     if (mc.thePlayer.isCollidedHorizontally || predictDistance) {
         var yaw = MovementUtils.getDirection(), bb = mc.thePlayer.getEntityBoundingBox(), possiblePlaces = [], otherBB, predictDistance = predictDistance || 0.01;
@@ -215,6 +258,36 @@ function getSRGName(clazz, name, map) {
     }
     return name;
 }
+
+function getFunctionParameters(func) {
+    if (func instanceof Function) {
+        var match = func.toString().match(/function.*\((.*)\)/)[1];
+        if (match.length) return match.replaceAll(" ", "").split(",")
+    }
+    return []
+}
+
+//Downloads GitHub directory.
+//Uses GitHub's API URL (for example https://api.github.com/repos/CzechHek/Core/contents/Scripts)
+function downloadDirectory(url, destination, onSuccess, onFailure) {
+    new Thread(function () {
+        try {
+            if (!(url instanceof URL)) url = new URL(url);
+            if (!(destination instanceof File)) destination = new File(destination);
+    
+            var json = JSON.parse(HttpUtils.get(url));
+            for each (var info in json) {
+                if (info.type == "file") HttpUtils.download(info.download_url, new File(destination, info.name));
+                else downloadDirectory(info.url, new File(destination, info.name));
+            }
+
+            onSuccess instanceof Function && onSuccess();
+        } catch (e) {
+            (onFailure instanceof Function ? onFailure : print)(e);
+        }
+    }).start();
+}
+
 
 /*----------------------*/
 /* Class-like functions */
@@ -315,7 +388,7 @@ Object.defineProperty(Array.prototype, "shuffle", {
     }
 });
 
-//array.find(function, [boolean]) - finds first element that fullfills a condition, returns the element or index of the element
+//Array.find(function, [boolean]) - finds first element that fullfills a condition, returns the element or index of the element
 //parameters: function - defines the condition, boolean - optional; true -> returns index
 Object.defineProperty(Array.prototype, "find", {
     value: function (func, returnIndex) {
@@ -324,7 +397,7 @@ Object.defineProperty(Array.prototype, "find", {
     }
 });
 
-//array.includes(element) - checks if array has element, returns boolean
+//Array.includes(element) - checks if array has element, returns boolean
 //parameters: element - element of the array to check for
 Object.defineProperty(Array.prototype, "includes", {
     value: function (element) {
@@ -332,7 +405,7 @@ Object.defineProperty(Array.prototype, "includes", {
     }
 });
 
-//string.includes(string, [boolean]) - checks if string contains other string, case sensitive / insensitive, returns boolean
+//String.includes(string, [boolean]) - checks if string contains other string, case sensitive / insensitive, returns boolean
 //parameters: string - string to check for, boolean - optional; true -> case insensitive search
 Object.defineProperty(String.prototype, "includes", {
     value: function (string, ignoreCase) {
@@ -340,7 +413,7 @@ Object.defineProperty(String.prototype, "includes", {
     }
 });
 
-//array.remove(element) - removes element from array, returns if successful
+//Array.remove(element) - removes element from array, returns if successful
 //parameters: element - element to remove
 Object.defineProperty(Array.prototype, "remove", {
     value: function (element) {
@@ -349,14 +422,14 @@ Object.defineProperty(Array.prototype, "remove", {
     }
 });
 
-//array.last() - returns last element of array
+//Array.last() - returns last element of array
 Object.defineProperty(Array.prototype, "last", {
     value: function () {
         return this[this.length - 1];
     }
 });
 
-//array.random([from: int], [to: int]) - returns a random element (between optional boundaries)
+//Array.random([from: int], [to: int]) - returns a random element (between optional boundaries)
 //parameters: from - minimal index, optional; to - maximal index, optional
 Object.defineProperty(Array.prototype, "random", {
     value: function (from, to) {
@@ -365,7 +438,21 @@ Object.defineProperty(Array.prototype, "random", {
             return this[index];
         } else return null;
     }
-})
+});
+
+//Array.toLowerCase() - clones an array, all it's elements will be lowercase
+Object.defineProperty(Array.prototype, "toLowerCase", {
+    value: function () {
+        return this.map(function (element) element.toLowerCase());
+    }
+});
+
+//Array.flat() - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/flat
+Object.defineProperty(Array.prototype, "flat", {
+    value: function () {
+        return Array.prototype.concat.apply([], this);
+    }
+});
 
 Math.trunc = function (v) (v = +v, (v - v % 1) || (!isFinite(v) || v === 0 ? v : v < 0 ? -0 : 0));
 
@@ -405,13 +492,13 @@ Math.toDegrees = function (radians) radians * 57.29577951308;
 ["CPSCounter","ClassUtils","ClientUtils","EntityUtils","InventoryUtils","MinecraftInstance","MovementUtils","PathUtils","RaycastUtils","RollingArrayLongBuffer","Rotation","RotationUtils","ServerUtils","SettingsUtils","TabUtils","block.BlockUtils","block.PlaceInfo","extensions.BlockExtensionKt","extensions.PlayerExtensionKt","item.ArmorComparator","item.ArmorPiece","item.ItemUtils","login.LoginUtils","login.MinecraftAccount","login.UserUtils","misc.FallingPlayer","misc.HttpUtils","misc.MiscUtils","misc.RandomUtils","misc.StringUtils","render.AnimationUtils","render.ColorUtils","render.IconUtils","render.ParticleUtils","render.RenderUtils","render.shader.FramebufferShader","render.shader.Shader","render.shader.shaders.BackgroundShader","render.shader.shaders.GlowShader","render.shader.shaders.OutlineShader","timer.MSTimer","timer.TickTimer","timer.TimeUtils"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.ccbluex.liquidbounce.utils." + v + "\")")});
 
 //net.ccbluex.liquidbounce.value.*
-["BlockValue", "BoolValue", "FloatValue", "FontValue", "IntegerValue", "ListValue", "TextValue", "Value"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.value." + v + "\")")});
+["BlockValue","BoolValue","FloatValue","FontValue","IntegerValue","ListValue","TextValue","Value"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.value." + v + "\")")});
 
 //Additional events from net.ccbluex.liquidbounce.event
-["BlockBBEvent", "ClickWindowEvent", "ClientShutdownEvent", "EntityMovementEvent", "PushOutEvent", "RenderEntityEvent", "ScreenEvent", "TextEvent", "TickEvent", "EventHook", "EventTarget"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.event." + v + "\")")});
+["BlockBBEvent","ClickWindowEvent","ClientShutdownEvent","EntityMovementEvent","PushOutEvent","RenderEntityEvent","ScreenEvent","TextEvent","TickEvent","EventHook","EventTarget","Listenable"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.event." + v + "\")")});
 
 //Used variables
-LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); JOptionPane = Java.type("javax.swing.JOptionPane"); FileUtils = Java.type("org.apache.commons.io.FileUtils"); HttpUtils = Java.type("net.ccbluex.liquidbounce.utils.misc.HttpUtils"); Desktop = Java.type("java.awt.Desktop").getDesktop(); ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui"); Enchantment = Java.type("net.minecraft.enchantment.Enchantment"); ClassLoader = Java.type("java.lang.ClassLoader"); Thread = Java.type("java.lang.Thread"); Class = Java.type("java.lang.Class"); PositionedSoundRecord = Java.type("net.minecraft.client.audio.PositionedSoundRecord"); Remapper = Java.type("net.ccbluex.liquidbounce.script.remapper.Remapper"); Listenable = Java.type("net.ccbluex.liquidbounce.event.Listenable"); Consumer = Java.type("java.util.function.Consumer"); ArrayList = Java.type("java.util.ArrayList"); Module = Java.type("net.ccbluex.liquidbounce.features.module.Module");
+LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); URL = Java.type("java.net.URL"); JOptionPane = Java.type("javax.swing.JOptionPane"); FileUtils = Java.type("org.apache.commons.io.FileUtils"); Desktop = Java.type("java.awt.Desktop").getDesktop(); ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui"); Enchantment = Java.type("net.minecraft.enchantment.Enchantment"); ClassLoader = Java.type("java.lang.ClassLoader"); Thread = Java.type("java.lang.Thread"); Class = Java.type("java.lang.Class"); PositionedSoundRecord = Java.type("net.minecraft.client.audio.PositionedSoundRecord"); Remapper = Java.type("net.ccbluex.liquidbounce.script.remapper.Remapper"); Consumer = Java.type("java.util.function.Consumer"); ArrayList = Java.type("java.util.ArrayList"); Module = Java.type("net.ccbluex.liquidbounce.features.module.Module");
 Core.classes = Java.from(getField(ClassLoader, "classes").get(Thread.currentThread().getContextClassLoader())); StaticClass = getMethod(_class = Class.forName("jdk.internal.dynalink.beans.StaticClass"), "forClass").invoke(null, _class); delete _class;
 _registeredModulesField = getField(Script, "registeredModules"); _callEventMethod = getMethod(ScriptModule, "callEvent"); _flushOutboundQueueMethod = getMethod(NetworkManager, "func_150733_h"); _dispatchPacketMethod = getMethod(NetworkManager, "func_150732_b"); _readWriteLockField = getField(NetworkManager, "field_181680_j"); _outboundPacketsQueueField = getField(NetworkManager, "field_150745_j"); _remapperFields = getField(Remapper, "fields").get(Remapper); _remapperMethods = getField(Remapper, "methods").get(Remapper);
 
@@ -421,15 +508,31 @@ _registeredModulesField = getField(Script, "registeredModules"); _callEventMetho
 
 
 Core.runUpdater = function () {
-    Core.logFile = new File("logs/core.log");
+    (Core.logFile = new File("logs/core.log")).deleteOnExit();
     Core.log = Core.logFile.exists() ? JSON.parse(FileUtils.readFileToString(Core.logFile)) : {};
+
+    Core.updateClickGui = function () {
+        LiquidBounce.clickGui = new (Java.extend(ClickGui))() {
+            func_73866_w_: function () {
+                callEvent("clickGuiOpen");
+            },
+            func_146281_b: function () {
+                callEvent("clickGuiClosed");
+                LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.clickGuiConfig);
+            }
+        }
+        LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.clickGuiConfig);
+        callEvent("clickGuiLoaded");
+    };
+
     var scriptCache, responseCache, charset = Java.type("java.nio.charset.Charset").forName("UTF-8");
 
     if (!Core.log.Core) {
         try {
             if ((responseCache = (scriptCache = HttpUtils.get("https://raw.githubusercontent.com/CzechHek/Core/master/Core.lib")).match(/version: "(.+)"/)[1]) != Core.version) {
                 FileUtils.writeStringToFile(new File(LiquidBounce.fileManager.dir, "scripts/Core.lib"), scriptCache, charset);
-                showMessage("Automatically updated Core " + Core.version + " to " + responseCache, "Core Updater");
+                var changelog = JSON.parse(HttpUtils.get("https://api.github.com/repos/CzechHek/Core/commits?path=Core.lib"))[0].commit.message;
+                showMessage("Automatically updated Core " + Core.version + " to " + responseCache + (changelog ? "\nChangelog:\n" + changelog : ""), "Core Updater");
                 Core.shouldReload = true;
             }
             Core.log.Core = true;
@@ -439,11 +542,12 @@ Core.runUpdater = function () {
         }
     }
 
-    if ((Core.updateURL || typeof Core.updateURL == "undefined") && !Core.log[script.scriptName]) {
+    if ((Core.updateURL || Core.updateURL === undefined) && !Core.log[script.scriptName]) {
         try {
             if ((responseCache = (scriptCache = HttpUtils.get(Core.updateURL || "https://raw.githubusercontent.com/CzechHek/Core/master/Scripts/" + script.scriptName + ".js")).match(/version"?\s*:\s*"?([^"]+)"?[\n\s,}]/)[1]) != script.scriptVersion) {
                 FileUtils.writeStringToFile(script.getScriptFile(), scriptCache, charset);
-                showMessage("Automatically updated " + script.scriptName + " " + script.scriptVersion + " to " + responseCache, "Core Updater");
+                var changelog = Core.updateURL ? "" : JSON.parse(HttpUtils.get("https://api.github.com/repos/CzechHek/Core/commits?path=Scripts/" + script.scriptName + ".js"))[0].commit.message;
+                showMessage("Automatically updated " + script.scriptName + " " + script.scriptVersion + " to " + responseCache + (changelog ? "\nChangelog:\n" + changelog : ""), "Core Updater");
                 Core.shouldReload = true;
             }
             Core.log[script.scriptName] = true;
@@ -454,23 +558,12 @@ Core.runUpdater = function () {
     }
 
     if (!Core.shouldReload && !Core.log.clickGuiHook) {
-        Core.logFile.deleteOnExit();
         Core.log.clickGuiHook = script.scriptName;
         LiquidBounce.clickGui = null;
         var timer = interval(250, function () {
             if (LiquidBounce.clickGui) {
-                LiquidBounce.clickGui = new (Java.extend(ClickGui))() {
-                    func_73866_w_: function () {
-                        callEvent("clickGuiOpen");
-                    },
-                    func_146281_b: function () {
-                        callEvent("clickGuiClosed");
-                        LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.clickGuiConfig);
-                    }
-                }
-                LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.clickGuiConfig);
+                Core.updateClickGui();
                 timer.cancel();
-                callEvent("clickGuiLoaded");
             }
         });
     }
@@ -486,9 +579,9 @@ script.on("load", function () {
     module = toArray(module || {}); command = toArray(command || {});
 
     if (!Core.API_V2) {
-        script.scriptName = (script.scriptName == "Legacy Script" ? scriptName || module[0].name || (command[0].commands && command[0].commands[0]) || "Script" : script.scriptName).toString();
-        script.scriptAuthors = script.scriptAuthors[0] == "Please Update Script" ? [(scriptAuthor || module[0].author || command[0].author || "Author").toString()] : script.scriptAuthors;
-        script.scriptVersion = (script.scriptVersion == "1.0.0" ? scriptVersion || module[0].version || command[0].version || "1.0.0" : script.scriptVersion).toString();
+        script.scriptName = (script.scriptName === "Legacy Script" ? scriptName || module[0].name || command[0].name || (command[0].aliases && command[0].aliases[0]) || "Script" : script.scriptName).toString();
+        script.scriptAuthors = script.scriptAuthors[0] === "Please Update Script" ? toArray((scriptAuthor || module[0].author || command[0].author || "Author").toString()) : script.scriptAuthors;
+        script.scriptVersion = (script.scriptVersion === "1.0.0" ? scriptVersion || module[0].version || command[0].version || "1.0.0" : script.scriptVersion).toString();
     }
 
     Core.runUpdater();
@@ -501,7 +594,7 @@ script.on("load", function () {
 
     Core.categories = new EditableEnum(ModuleCategory);
     Core.eventManager = new Reflector(LiquidBounce.eventManager);
-    Core.defaultAnnotation = getMethod(LiquidBounce.moduleManager, "onKey").getAnnotation(EventTarget.class);
+    Core.defaultAnnotation = getMethod(moduleManager, "onKey").getAnnotation(EventTarget.class);
     Core.artificialEvents = {
         onBlockBB: BlockBBEvent,
         onClientShutdown: ClientShutdownEvent,
@@ -516,7 +609,8 @@ script.on("load", function () {
     [module, command].forEach(function (c, i) c.forEach(function (v) [registerModule, registerCommand][i](v)));
 
     script.on("enable", function () {
-        for each (var m in LiquidBounce.moduleManager.modules) m.name != "Script" && m.name == m.name.match(/[a-zA-Z_$][0-9a-zA-Z_$]*/) && eval(m.name + "Module=m");
+        var validChars = /[a-zA-Z_$][0-9a-zA-Z_$]*/
+        for each (var m in moduleManager.modules) m.name != "Script" && (!(m instanceof ScriptModule) || validChars.exec(m.name) == m.name) && eval(m.name + "Module=m");
         for each (var c in [module, command]) for each (var v in c) v.onLoad && v.onLoad();
     });
 
