@@ -8,19 +8,13 @@
 module = {
     category: "Movement", 
     description: "A basic glide script.", 
-    onEnable: function () {
-		
-    },
     onUpdate: function () {
         mc.thePlayer.motionY = -0.045;
-		if (mc.gameSettings.keyBindJump.isKeyDown()) {
-			mc.thePlayer.motionY = 0.23;
-		}
-		if (mc.gameSettings.keyBindSneak.isKeyDown()) {
-			mc.thePlayer.motionY = -0.35;
-		}
-    },
-    onDisable: function () {
-		
+	if (mc.gameSettings.keyBindJump.isKeyDown()) {
+		mc.thePlayer.motionY = 0.23;
+	}
+	if (mc.gameSettings.keyBindSneak.isKeyDown()) {
+		mc.thePlayer.motionY = -0.35;
+	}
     }
 }
