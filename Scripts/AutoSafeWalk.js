@@ -1,7 +1,7 @@
 ///api_version=2
 (script = registerScript({
     name: "AutoSafeWalk",
-    version: "1.3",
+    version: "1.4",
     authors: ["CzechHek"]
 })).import("Core.lib");
 
@@ -13,7 +13,7 @@ module = {
         maxfalldistance = value.createInteger("MaxFallDistance", 5, 0, 255)
     ],
     onMove: function (e) {
-        (mc.thePlayer.onGround || airsafe.get()) && e.setSafeWalk(!isAboveGround());
+        !mc.thePlayer.capabilities.isFlying && (mc.thePlayer.onGround || airsafe.get()) && e.setSafeWalk(!isAboveGround());
     }
 }
 
