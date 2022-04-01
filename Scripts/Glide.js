@@ -1,7 +1,7 @@
 ///api_version=2
 (script = registerScript({
     name: "Glide", 
-    authors: ["FartCheese"], 
+    authors: ["Ali00035"], 
     version: "1.0", 
 })).import("Core.lib");
 
