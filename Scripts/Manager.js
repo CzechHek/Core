@@ -2,8 +2,12 @@
 (script = registerScript({
     name: "Manager",
     authors: ["CzechHek"],
-    version: "3.0"
+    version: "3.1"
 })).import("Core.lib");
+
+fileManager = LiquidBounce.fileManager;
+themeDir = new File(fileManager.dir, "themes");
+Fonts = Java.type("net.ccbluex.liquidbounce.ui.font.Fonts");
 
 command = {
     aliases: ["manager", "mngr", "m"],
@@ -22,7 +26,7 @@ command = {
 
                 },
                 local: function () {
-                    var configs = Java.from(LiquidBounce.fileManager.settingsDir.listFiles()).map(function (file) file.name);
+                    var configs = Java.from(fileManager.settingsDir.listFiles()).map(function (file) file.name);
 
                     print("§8▏ §7§lAvailable configs§8: (§7§l" + configs.length + "§8)");
                     print("§8▏ §f" + configs.join("§7, §f"));
@@ -30,7 +34,7 @@ command = {
             },
             download: function (name_or_URL, name_to_save_with) {
                 try {
-                    HttpUtils.download(new URL(name_or_URL.includes("/") ? name_or_URL : "https://raw.githubusercontent.com/CCBlueX/LiquidCloud/master/LiquidBounce/settings/" + name_or_URL.toLowerCase()), new File(LiquidBounce.fileManager.settingsDir, name_to_save_with));
+                    HttpUtils.download(new URL(name_or_URL.includes("/") ? name_or_URL : "https://raw.githubusercontent.com/CCBlueX/LiquidCloud/master/LiquidBounce/settings/" + name_or_URL.toLowerCase()), new File(fileManager.settingsDir, name_to_save_with));
 
                     print("§2▏ §a§lDownloaded§a config§2: §a„§2" + name_to_save_with + "§a“");
                 } catch (e) {
@@ -44,15 +48,15 @@ command = {
                 commandManager.executeCommands(".localconfig save " + name);
             },
             delete: function (name) {
-                var file = new File(LiquidBounce.fileManager.settingsDir, name);
+                var file = new File(fileManager.settingsDir, name);
 
                 if (file.exists()) file.delete(), print("§2▏ §a§lDeleted§a config§2: §a„§2" + name + "§a“");
                 else print("§4▏ §cConfig §c„§4" + name + "§c“ §ldoes not exist");
             },
             folder: function () {
-                openFolder(LiquidBounce.fileManager.settingsDir);
+                openFolder(fileManager.settingsDir);
                 
-                print("§2▏ §a§lOpened§a config folder§2. §8(§7LiquidBounce-1.8\\settings§8)");
+                print("§2▏ §a§lOpened§a config folder§2. §8(§7" + fileManager.settingsDir + "§8)");
             }
         },
         theme: {
@@ -68,14 +72,14 @@ command = {
                     }
                 },
                 local: function () {
-                    var themes = Java.from(new File("LiquidBounce-1.8/themes/").listFiles()).map(function (file) file.isDirectory() ? file.name : null).filter(Boolean);
+                    var themes = Java.from(themeDir.listFiles()).map(function (file) file.isDirectory() ? file.name : null).filter(Boolean);
 
                     print("§8▏ §7§lAvailable local themes§8: (§7§l" + themes.length + "§8)");
                     print("§8▏ §f" + themes.join("§7, §f"));
                 }
             },
             download: function (name) {
-                var directory = new File("LiquidBounce-1.8/themes/" + name);
+                var directory = new File(themeDir, name);
                 if (directory.exists()) return print("§4▏ §cTheme §c„§4" + name + "§c“ §c§lalready exists");
 
                 print("§6▏ §e§lTrying§e to download theme...");
@@ -86,41 +90,41 @@ command = {
             },
             save: function (name) {
                 name = Array.prototype.slice.call(arguments).join(" ");
-                var targetFolder = new File("LiquidBounce-1.8/themes/", name);
-                if (targetFolder.exists()) return print("§4▏ §cTheme §c„§4" + name + "§c“ §c§lalready exists");
+                var directory = new File(themeDir, name);
+                if (directory.exists()) return print("§4▏ §cTheme §c„§4" + name + "§c“ §c§lalready exists");
 
                 var themeFiles = [], fontFiles = [];
-                themeFiles.push(new File("LiquidBounce-1.8/hud.json"), new File("LiquidBounce-1.8/clickgui.json"));
 
-                Array.prototype.push.apply(fontFiles, JSON.parse(FileUtils.readFileToString(new File("LiquidBounce-1.8/fonts/fonts.json"))).map(function (font) new File("LiquidBounce-1.8/fonts", font.fontFile)));
-                fontFiles.push(new File("LiquidBounce-1.8/fonts/fonts.json"));
+                themeFiles.push(new File("LiquidBounce-1.8/hud.json"));
+                Array.prototype.push.apply(fontFiles, JSON.parse(FileUtils.readFileToString(new File(fileManager.fontsDir, "fonts.json"))).map(function (font) new File(fileManager.fontsDir, font.fontFile)));
+                fontFiles.push(new File(fileManager.fontsDir, "fonts.json"));
 
-                for each (var file in themeFiles) FileUtils.copyFile(file, new File(targetFolder, file.name));
-                for each (var file in fontFiles) FileUtils.copyFile(file, new File(targetFolder, "fonts/" + file.name));
+                for each (var file in themeFiles) FileUtils.copyFile(file, new File(directory, file.name));
+                for each (var file in fontFiles) FileUtils.copyFile(file, new File(directory, "fonts/" + file.name));
 
-                print("§2▏ §a§lSaved§a theme§2: §a„§2" + name + "§a“ §8(§7" + targetFolder + "§8)");
+                print("§2▏ §a§lSaved§a theme§2: §a„§2" + name + "§a“ §8(§7" + directory + "§8)");
             },
             load: function (name) {
                 name = Array.prototype.slice.call(arguments).join(" ");
-                var directory = new File("LiquidBounce-1.8/themes", name);
+                var directory = new File(themeDir, name);
                 if (!directory.exists()) return print("§4▏ §cTheme §c„§4" + name + "§c“ §ldoes not exist");
 
-                FileUtils.copyDirectory(directory, new File("LiquidBounce-1.8"));
+                FileUtils.copyDirectory(directory, fileManager.dir);
+                Fonts.loadFonts();
 
-                LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.hudConfig);
-                Core.updateClickGui();
+                fileManager.loadConfig(fileManager.hudConfig);
 
                 print("§2▏ §a§lLoaded§a theme§2: §a„§2" + name + "§a“");
             },
             delete: function (name) {
-                var file = new File("LiquidBounce-1.8/themes", name);
-                if (file.exists()) FileUtils.deleteDirectory(file), print("§2▏ §aDeleted theme§2: §a„§2" + name + "§a“");
+                var file = new File(themeDir, name);
+                if (file.exists()) FileUtils.deleteDirectory(file), print("§2▏ §a§lDeleted§a theme§2: §a„§2" + name + "§a“");
                 else print("§4▏ §cTheme §c„§4" + name + "§c“ §ldoes not exist");
             },
             folder: function () {
-                openFolder("LiquidBounce-1.8/themes");
+                openFolder(themeDir);
 
-                print("§2▏ §a§lOpened§a theme folder§2. §8(§7LiquidBounce-1.8\\themes§8)");
+                print("§2▏ §a§lOpened§a theme folder§2. §8(§7" + themeDir + "§8)");
             }
         },
         script: {
@@ -150,7 +154,7 @@ command = {
 
                     scriptManager.loadScript(file);
                     Core.updateClickGui();
-                    LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.hudConfig);
+                    fileManager.loadConfig(fileManager.hudConfig);
                     print("§2▏ §a§lDownloaded§a script§2: §a„§2" + name_to_save_with + "§a“");
                 } catch (e) {
                     print("§4▏ §c§lFailed§c to download script§4: §c„§4" + name + "§c“ §8(§7" + e.toString().split(":")[0] + "§8)")
@@ -163,13 +167,13 @@ command = {
                 if (script) {
                     scriptManager.deleteScript(script);
                     Core.updateClickGui();
-                    LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.hudConfig);
+                    fileManager.loadConfig(fileManager.hudConfig);
                     print("§2▏ §a§lDeleted§a script§2: §a„§2" + name + "§a“");
                 } else print("§4▏ §cScript §c„§4" + name + "§c“ §ldoes not exist");
             },
             folder: function () {
                 openFolder(scriptManager.scriptsFolder);
-                print("§2▏ §a§lOpened§a script folder§2. §8(§7LiquidBounce-1.8\\scripts§8)");
+                print("§2▏ §a§lOpened§a script folder§2. §8(§7" + scriptManager.scriptsFolder + "§8)");
             },
             reload: function () {
                 scriptManager.reloadScripts();
