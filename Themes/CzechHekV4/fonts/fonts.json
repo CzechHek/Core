@@ -1,10 +1,6 @@
 [
-	{
-	 "fontFile":"FiraSans-Ultra.ttf",
-	 "fontSize": 35
-	},
-	{
-	    "fontFile": "StupidMeeting.otf",
-	    "fontSize": "40"
-	}
+  {
+    "fontFile": "StupidMeeting.otf",
+    "fontSize": 40
+  }
 ]
