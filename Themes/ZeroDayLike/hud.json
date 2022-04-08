@@ -42,7 +42,7 @@
     "HorizontalFacing": "Right",
     "VerticalFacing": "Down",
     "Font": {
-      "fontName": "Roboto Medium",
+      "fontName": "Minecraft Font",
       "fontSize": 35
     },
     "Shadow": true
