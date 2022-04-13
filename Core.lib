@@ -1,8 +1,8 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-//coreVersion = "4.0"
+//coreVersion = "4.1"
 var Core = {
-    version: "4.0",
+    version: "4.1",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -13,7 +13,7 @@ var Core = {
 function registerModule(m) {
     if (!Object.keys(m).length) return;
 
-    var settings = {}; toArray(m.values).forEach(function (v) { settings[v.getName()] = !Core.API_V2 && v instanceof _AdaptedValue ? v.getValue() : v });
+    var settings = {}; toArray(m.values).forEach(function (v) settings[v.getName()] = v instanceof Value ? v : v.getValue());
     script.registerModule({
         name: m.name || script.scriptName,
         category: Core.categories.add(m.category || "Core"),
@@ -51,10 +51,8 @@ function registerModule(m) {
 function hookEvent(m, key) {
     var eventClass = Core.artificialEvents[key].class,
         listener = new (Java.extend(Listenable, Consumer, { 
-            handleEvents: function() { return m.module.state }, 
-            accept: function(e) {
-                m[key](e)
-            }
+            handleEvents: function () m.module.state, 
+            accept: function (e) m[key](e)
         })),
         targets = Core.eventManager.registry.getOrDefault(eventClass, new ArrayList());
 
@@ -72,7 +70,7 @@ function hookEvent(m, key) {
 function registerCommand(c) {
     if (!Object.keys(c).length) return;
 
-    var aliases = toArray(c.aliases || script.scriptName).toLowerCase();
+    var aliases = toArray(c.aliases || c.name || script.scriptName).toLowerCase();
     script.registerCommand({
         name: aliases[0],
         aliases: aliases
@@ -161,16 +159,33 @@ function interval(ms, func, _timer) (_timer = new Timer("setInterval", true), _t
 function timeout(ms, func, _timer) (_timer = new Timer("setTimeout", true), _timer.schedule(func, ms), _timer);
 
 function setValues(module, values) {
-    if (!(module instanceof ScriptModule)) return
-    var valuesMap = new LinkedHashMap();
-    toArray(values).forEach(function (v, i) valuesMap.put(i, v instanceof Value ? v : v.getValue()));
-    getField(module, "_values").set(module, valuesMap);
+    values = toArray(values);
+
+    if (module instanceof ScriptModule) {
+        var valuesMap = new LinkedHashMap();
+        values.forEach(function (v, i) valuesMap.put(i, v instanceof Value ? v : v.getValue()));
+        getField(module, "_values").set(module, valuesMap);
+    } else if (module instanceof Module) {
+        getFields(module).forEach(function (field, i) {
+            field.setAccessible(true);
+            getField(Field, "modifiers").setInt(field, field.getModifiers() & ~Modifier.FINAL);
+            var instance = field.get(module);
+            if (instance instanceof Value) {
+                var suitable = values.find(function (value) instance.class.isAssignableFrom(value.class));
+                field.set(module, suitable);
+                values.remove(suitable);
+            }
+        });
+    } else return
+
     LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.valuesConfig);
 }
 
 function getValues(module) Java.from(module.values);
 
 function getNearestTarget(entityType, fromEntity, _entity) Java.from(mc.theWorld.loadedEntityList).filter(function (e) e != mc.thePlayer && entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)).sort(function (a, b) (_entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - _entity.getDistanceToEntity(b))[0];
+
+function getTargetsInRange(range, entityType) Java.from(mc.theWorld.loadedEntityList).filter(function (e) e != mc.thePlayer && (entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)) && (!range || PlayerExtensionKt.getDistanceToEntityBox(e, mc.thePlayer) <= range));
 
 function getPlayer(nick) Java.from(mc.theWorld.playerEntities).find(function (e) StringUtils.stripControlCodes(e.getName()).equals(nick));
 
@@ -212,7 +227,7 @@ function importPackage() Array.prototype.slice.call(arguments).forEach(function 
 
 function openFolder(folder) Desktop.open(folder);
 
-function toArray(object) (Array.isArray(object) ? object : [object]).filter(Boolean);
+function toArray(object, notFlat) (Array.isArray(object) ? object : [object]).flat(!notFlat).filter(Boolean);
 
 function isObject(object) object && object.constructor === Object;
 
@@ -224,6 +239,16 @@ function canStep(stepHeight, predictDistance) {
             if (mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, otherBB = bb.offset(-Math.sin(yaw) * predictDistance, i, Math.cos(yaw) * predictDistance)).isEmpty() && !mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, otherBB.offset(0, -0.125, 0)).isEmpty()) possiblePlaces.push(i);
         }
         return possiblePlaces.length && Math.max.apply(null, possiblePlaces);
+    }
+}
+
+function getStepHeight() {
+    var yaw = MovementUtils.getDirection(), bb = mc.thePlayer.getEntityBoundingBox();
+    for (var i = 0; (i += 0.125) <= 255 - mc.thePlayer.posY;) {
+        if (!mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, bb.offset(0, i, 0)).isEmpty()) break
+        var offsetBB = bb.offset(-Math.sin(yaw) * 0.01, i, Math.cos(yaw) * 0.01);
+
+        if (mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, offsetBB).isEmpty()) return i;
     }
 }
 
@@ -294,13 +319,14 @@ function downloadDirectory(url, destination, onSuccess, onFailure) {
 /*----------------------*/
 
 function EditableEnum(target) {
-    getField(Field, "modifiers").setInt(values = getField(target, "$VALUES"), values.getModifiers() & ~Modifier.FINAL);
+    var valuesField = getField(target, "$VALUES")
+    getField(Field, "modifiers").setInt(valuesField, valuesField.getModifiers() & ~Modifier.FINAL);
     var accessor = getMethod(Constructor, "acquireConstructorAccessor").invoke(getConstructor(target, 0)), a;
 
-    this.add = function (name) (!(a = this.values()).some(function (v) v.getDisplayName().equalsIgnoreCase(name)) && values.set(null, Java.to(a.concat(accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]")), name);
-    this.remove = function (name) (this.values().some(function (v, i, a) v.getDisplayName().equalsIgnoreCase(name) && (a.splice(i, 1), !values.set(null, Java.to(a, "net.ccbluex.liquidbounce.features.module.ModuleCategory[]")))), name);
+    this.add = function (name) (!(a = this.values()).some(function (v) v.getDisplayName().equalsIgnoreCase(name)) && valuesField.set(null, Java.to(a.concat(accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]")), name);
+    this.remove = function (name) (this.values().some(function (v, i, a) v.getDisplayName().equalsIgnoreCase(name) && (a.splice(i, 1), !valuesField.set(null, Java.to(a, "net.ccbluex.liquidbounce.features.module.ModuleCategory[]")))), name);
     this.get = function () target;
-    this.values = function () Java.from(values.get(null));
+    this.values = function () Java.from(valuesField.get(null));
 }
 
 function Reflector(object) object instanceof java.lang.Object ? 
@@ -400,58 +426,40 @@ Object.defineProperty(Array.prototype, "find", {
 //Array.includes(element) - checks if array has element, returns boolean
 //parameters: element - element of the array to check for
 Object.defineProperty(Array.prototype, "includes", {
-    value: function (element) {
-        return this.indexOf(element) != -1;
-    }
+    value: function (element) this.indexOf(element) !== -1
 });
 
 //String.includes(string, [boolean]) - checks if string contains other string, case sensitive / insensitive, returns boolean
 //parameters: string - string to check for, boolean - optional; true -> case insensitive search
 Object.defineProperty(String.prototype, "includes", {
-    value: function (string, ignoreCase) {
-        return ignoreCase ? this.toString().toLowerCase().contains(string.toLowerCase()) : this.toString().contains(string);
-    }
+    value: function (string, ignoreCase) ignoreCase ? this.toString().toLowerCase().contains(string.toLowerCase()) : this.toString().contains(string)
 });
 
 //Array.remove(element) - removes element from array, returns if successful
 //parameters: element - element to remove
 Object.defineProperty(Array.prototype, "remove", {
-    value: function (element) {
-        var index;
-        return !!(~(index = this.indexOf(element)) && this.splice(index, 1));
-    }
+    value: function (element, _index) !!(~(_index = this.indexOf(element)) && this.splice(_index, 1))
 });
 
 //Array.last() - returns last element of array
 Object.defineProperty(Array.prototype, "last", {
-    value: function () {
-        return this[this.length - 1];
-    }
+    value: function () this[this.length - 1]
 });
 
 //Array.random([from: int], [to: int]) - returns a random element (between optional boundaries)
 //parameters: from - minimal index, optional; to - maximal index, optional
 Object.defineProperty(Array.prototype, "random", {
-    value: function (from, to) {
-        if (this.length > 0) {
-            var index = Math.floor(rand(from || 0, (to + 1) || this.length));
-            return this[index];
-        } else return null;
-    }
+    value: function (from, to) this.length > 0 ? this[Math.floor(rand(from || 0, (to + 1) || this.length))] : null
 });
 
 //Array.toLowerCase() - clones an array, all it's elements will be lowercase
 Object.defineProperty(Array.prototype, "toLowerCase", {
-    value: function () {
-        return this.map(function (element) element.toLowerCase());
-    }
+    value: function () this.map(function (element) element.toLowerCase())
 });
 
 //Array.flat() - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/flat
 Object.defineProperty(Array.prototype, "flat", {
-    value: function () {
-        return Array.prototype.concat.apply([], this);
-    }
+    value: function (bool) bool === false ? this : Array.prototype.concat.apply([], this)
 });
 
 Math.trunc = function (v) (v = +v, (v - v % 1) || (!isFinite(v) || v === 0 ? v : v < 0 ? -0 : 0));
