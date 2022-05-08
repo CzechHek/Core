@@ -1,8 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
-//coreVersion = "4.1"
 var Core = {
-    version: "4.1",
+    version: "4.2",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -13,7 +12,15 @@ var Core = {
 function registerModule(m) {
     if (!Object.keys(m).length) return;
 
-    var settings = {}; toArray(m.values).forEach(function (v) settings[v.getName()] = v instanceof Value ? v : v.getValue());
+    var settings = {}, dynamicValues = false;
+    for each (var v in toArray(m.values)) {
+        if (isObject(v)) {
+            dynamicValues = true;
+            v = v.value;
+        }
+        settings[v.getName()] = v instanceof Value ? v : v.getValue();
+    }
+
     script.registerModule({
         name: m.name || script.scriptName,
         category: Core.categories.add(m.category || "Core"),
@@ -22,45 +29,59 @@ function registerModule(m) {
     }, function (module) {
         m.module = module;
         m.reflectorModule = new Reflector(module);
-        m.onEnable && module.on("enable", function () m.onEnable());
-        m.onDisable && module.on("disable", function () m.onDisable());
-        m.onUpdate && module.on("update", function () m.onUpdate());
-        m.onMotion && module.on("motion", function (e) m.onMotion(e));
-        m.onRender2D && module.on("render2D", function (e) m.onRender2D(e));
-        m.onRender3D && module.on("render3D", function (e) m.onRender3D(e));
-        m.onAttack && module.on("attack", function (e) m.onAttack(e));
-        m.onJump && module.on("jump", function (e) m.onJump(e));
-        m.onPacket && module.on("packet", function (e) m.onPacket(e));
-        m.onKey && module.on("key", function (e) m.onKey(e));
-        m.onMove && module.on("move", function (e) m.onMove(e));
-        m.onStep && module.on("step", function (e) m.onStep(e));
-        m.onStepConfirm && module.on("stepConfirm", function () m.onStepConfirm());
-        m.onWorld && module.on("world", function (e) m.onWorld(e));
-        m.onSession && module.on("session", function () m.onSession());
-        m.onClickBlock && module.on("clickBlock", function (e) m.onClickBlock(e));
-        m.onStrafe && module.on("strafe", function (e) m.onStrafe(e));
-        m.onSlowDown && module.on("slowDown", function (e) m.onSlowDown(e));
-        m.onClickGuiOpen && module.on("clickGuiOpen", function () m.onClickGuiOpen());
-        m.onClickGuiClosed && module.on("clickGuiClosed", function () m.onClickGuiClosed());
-        m.onClickGuiLoaded && module.on("clickGuiLoaded", function () m.onClickGuiLoaded());
 
-        for each (var key in Object.keys(Core.artificialEvents)) m[key] && hookEvent(m, key);
+        m.onEnable && module.on("enable", m.onEnable.bind(m));
+        m.onDisable && module.on("disable", m.onDisable.bind(m));
+        m.onUpdate && module.on("update", m.onUpdate.bind(m));
+        m.onMotion && module.on("motion", m.onMotion.bind(m));
+        m.onRender2D && module.on("render2D", m.onRender2D.bind(m));
+        m.onRender3D && module.on("render3D", m.onRender3D.bind(m));
+        m.onAttack && module.on("attack", m.onAttack.bind(m));
+        m.onJump && module.on("jump", m.onJump.bind(m));
+        m.onPacket && module.on("packet", m.onPacket.bind(m));
+        m.onKey && module.on("key", m.onKey.bind(m));
+        m.onMove && module.on("move", m.onMove.bind(m));
+        m.onStep && module.on("step", m.onStep.bind(m));
+        m.onStepConfirm && module.on("stepConfirm", m.onStepConfirm.bind(m));
+        m.onWorld && module.on("world", m.onWorld.bind(m));
+        m.onSession && module.on("session", m.onSession.bind(m));
+        m.onClickBlock && module.on("clickBlock", m.onClickBlock.bind(m));
+        m.onStrafe && module.on("strafe", m.onStrafe.bind(m));
+        m.onSlowDown && module.on("slowDown", m.onSlowDown.bind(m));
+        m.onClickGuiLoaded && module.on("clickGuiLoaded", m.onClickGuiLoaded.bind(m));
+
+        /*----------------------*/
+        /* Dynamic Values™ core */
+        /*----------------------*/
+
+        ["shutdown", "clickGuiClosed", "clickGuiOpen", "valueChanged"].forEach(function (event, i) {
+            var eventTarget = m["on" + event[0].toUpperCase() + event.slice(1)];
+            (eventTarget || dynamicValues) && module.on(event, function () {
+                eventTarget && eventTarget.call(m);
+                dynamicValues && setValues(module, toArray(m.values).map(function (v) isObject(v) ? (v.isShown() || i < 2) && v.value : v).filter(Boolean));
+            });
+        });
+
+        for each (var key in Object.keys(Core.artificialEvents)) m[key] && hookEvent(Core.artificialEvents[key], m[key].bind(m), function () m.module.state, m);
     });
 }
 
-function hookEvent(m, key) {
-    var eventClass = Core.artificialEvents[key].class,
-        listener = new (Java.extend(Listenable, Consumer, { 
-            handleEvents: function () m.module.state, 
-            accept: function (e) m[key](e)
-        })),
-        targets = Core.eventManager.registry.getOrDefault(eventClass, new ArrayList());
+Core.hookedEvents = new java.util.HashMap();
 
-    targets.add(new EventHook(listener, getMethod(listener, "accept"), Core.defaultAnnotation));
+function hookEvent(eventClass, func, handleEventsCallback, coreModule) {
+    var listener = new (Java.extend(Listenable, java.util.function.Consumer, {
+            handleEvents: handleEventsCallback,
+            accept: func
+        })),
+        targets = Core.eventManager.registry.getOrDefault(eventClass, new ArrayList()),
+        hook = new EventHook(listener, getMethod(listener, "accept"), Core.defaultAnnotation);
+
+    targets.add(hook);
+    Core.hookedEvents[eventClass] = toArray(Core.hookedEvents[eventClass]).concat(hook);
     Core.eventManager.registry[eventClass] = targets;
 
     //Registering event in ScriptModule's events HashMap to make them callable via callEvent() function.
-    m.reflectorModule.events.put(key[2].toLowerCase() + key.substring(3) /*onClientShutdown -> clientShutdown, ...*/, m[key]);
+    coreModule && coreModule.reflectorModule.events.put(eventClass.simpleName[0].toLowerCase() + eventClass.simpleName.slice(1, -5) /*BlockBBEvent -> blockBB, ...*/, func);
 }
 
 /*--------------*/
@@ -163,7 +184,8 @@ function setValues(module, values) {
 
     if (module instanceof ScriptModule) {
         var valuesMap = new LinkedHashMap();
-        values.forEach(function (v, i) valuesMap.put(i, v instanceof Value ? v : v.getValue()));
+        for each (var v in values) valuesMap[v.getName()] = v instanceof Value ? v : v.getValue();
+        Core.ignoreValueChange = true;
         getField(module, "_values").set(module, valuesMap);
     } else if (module instanceof Module) {
         getFields(module).forEach(function (field, i) {
@@ -183,7 +205,7 @@ function setValues(module, values) {
 
 function getValues(module) Java.from(module.values);
 
-function getNearestTarget(entityType, fromEntity, _entity) Java.from(mc.theWorld.loadedEntityList).filter(function (e) e != mc.thePlayer && entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)).sort(function (a, b) (_entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - _entity.getDistanceToEntity(b))[0];
+function getNearestTarget(entityType, fromEntity, _entity) mc.theWorld.loadedEntityList.stream().filter(function (e) e != mc.thePlayer && entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)).min(function (a, b) (_entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - _entity.getDistanceToEntity(b)).orElse(null);
 
 function getTargetsInRange(range, entityType) Java.from(mc.theWorld.loadedEntityList).filter(function (e) e != mc.thePlayer && (entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)) && (!range || PlayerExtensionKt.getDistanceToEntityBox(e, mc.thePlayer) <= range));
 
@@ -223,8 +245,6 @@ function getMethods(clazz) {
 
 function getConstructor(clazz, index, _constructor) ((_constructor = (clazz instanceof Class ? clazz : clazz.class).getDeclaredConstructors()[index]).setAccessible(true), _constructor);
 
-function importPackage() Array.prototype.slice.call(arguments).forEach(function (e) Core.classes.filter(function (c) c.name.startsWith(e) && !c.name.contains("$")).forEach(function (c) eval(c.simpleName + "=StaticClass.forClass(c)")));
-
 function openFolder(folder) Desktop.open(folder);
 
 function toArray(object, notFlat) (Array.isArray(object) ? object : [object]).flat(!notFlat).filter(Boolean);
@@ -252,7 +272,7 @@ function getStepHeight() {
     }
 }
 
-function callEvent(name, args) scriptManager.scripts.forEach(function (s) Java.from(_registeredModulesField.get(s)).forEach(function (m) _callEventMethod.invoke(m, name, args)));
+function callEvent(name, args) scriptManager.scripts.forEach(function (s) Core.registeredModulesField.get(s).forEach(function (m) Core.callEventMethod.invoke(m, name, args)));
 
 function playSound(name, pitch) mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation(name), pitch || 1));
 
@@ -260,16 +280,16 @@ function sendPacket(packet, triggerEvent) {
     var networkManager = mc.getNetHandler().getNetworkManager();
     if (triggerEvent) networkManager.sendPacket(packet);
     else if (networkManager.isChannelOpen()) {
-        _flushOutboundQueueMethod.invoke(networkManager);
-        _dispatchPacketMethod.invoke(networkManager, packet, null);
+        Core.flushOutboundQueueMethod.invoke(networkManager);
+        Core.dispatchPacketMethod.invoke(networkManager, packet, null);
     } else {
-        _readWriteLockField.get(networkManager).writeLock().lock();
+        Core.readWriteLockField.get(networkManager).writeLock().lock();
         try {
-            _outboundPackets = _outboundPacketsQueueField.get(networkManager);
-            _outboundPackets.add(new NetworkManager.InboundHandlerTuplePacketListener(packet, null));
-            _outboundPacketsQueueField.set(networkManager, _outboundPackets);
+            var outboundPackets = Core.outboundPacketsQueueField.get(networkManager);
+            outboundPackets.add(new NetworkManager.InboundHandlerTuplePacketListener(packet, null));
+            Core.outboundPacketsQueueField.set(networkManager, outboundPackets);
         } finally {
-            _readWriteLockField.get(networkManager).writeLock().unlock();
+            Core.readWriteLockField.get(networkManager).writeLock().unlock();
         }
     }
 }
@@ -321,7 +341,7 @@ function downloadDirectory(url, destination, onSuccess, onFailure) {
 function EditableEnum(target) {
     var valuesField = getField(target, "$VALUES")
     getField(Field, "modifiers").setInt(valuesField, valuesField.getModifiers() & ~Modifier.FINAL);
-    var accessor = getMethod(Constructor, "acquireConstructorAccessor").invoke(getConstructor(target, 0)), a;
+    var accessor = getMethod(java.lang.reflect.Constructor, "acquireConstructorAccessor").invoke(getConstructor(target, 0)), a;
 
     this.add = function (name) (!(a = this.values()).some(function (v) v.getDisplayName().equalsIgnoreCase(name)) && valuesField.set(null, Java.to(a.concat(accessor.newInstance([name.toUpperCase(), 0, name])), "net.ccbluex.liquidbounce.features.module.ModuleCategory[]")), name);
     this.remove = function (name) (this.values().some(function (v, i, a) v.getDisplayName().equalsIgnoreCase(name) && (a.splice(i, 1), !valuesField.set(null, Java.to(a, "net.ccbluex.liquidbounce.features.module.ModuleCategory[]")))), name);
@@ -332,17 +352,24 @@ function EditableEnum(target) {
 function Reflector(object) object instanceof java.lang.Object ? 
     new JSAdapter() {
         __get__: function (name) {
-            return (_field = getField(object, getSRGName(object, name, _remapperFields))) ? new Reflector(_field.get(object)) : object[name];
+            var field = getField(object, getSRGName(object, name, Core.remapperFields));
+            return field ? new Reflector(field.get(object)) : object[name];
         },
         __put__: function (name, value) {
-            return (_field = getField(object, getSRGName(object, name, _remapperFields))) && _field.set(object, value);
+            var field = getField(object, getSRGName(object, name, Core.remapperFields));
+            field ? field.set(object, value) : object[name] = value;
         },
         __call__: function (name) {
-            return name == "toString" ? object.toString() : name == "valueOf" ? object : (_method = getMethod(object, getSRGName(object, name, _remapperMethods))) && _method.invoke(object, Java.to(Array.prototype.slice.call(arguments, 1), "java.lang.Object[]"));
+            switch (name) {
+                case "toString": return object.toString();
+                case "valueOf": return object;
+                default: return getMethod(object, getSRGName(object, name, Core.remapperMethods)).invoke(object, Java.to(Array.prototype.slice.call(arguments, 1), "java.lang.Object[]"));
+            }
         }
     } : object;
 
-function TextEditor(file) file instanceof File && (file.createNewFile(), 
+function TextEditor(file) file instanceof File && (
+    file.createNewFile(), 
     new JSAdapter() {
         __get__: function (name) {
             switch (name) {
@@ -368,30 +395,17 @@ function TextEditor(file) file instanceof File && (file.createNewFile(),
                 case "setFile": return file = value
             }
         }
-    })
+    }
+);
 
 value = {
-    createBlock: function (name, value) {
-        return new BlockValue(name, value)
-    },
-    createBoolean: function (name, value) {
-        return new BoolValue(name, value)
-    },
-    createFloat: function (name, value, min, max) {
-        return new FloatValue(name, value, min, max)
-    },
-    createFont: function (name, value) {
-        return new FontValue(name, value)
-    },
-    createInteger: function (name, value, min, max) {
-        return new IntegerValue(name, value, min, max)
-    },
-    createList: function (name, values, value) {
-        return new ListValue(name, values, value)
-    },
-    createText: function (name, value) {
-        return new TextValue(name, value)
-    }
+    createBlock: function (name, value) new BlockValue(name, value),
+    createBoolean: function (name, value) new BoolValue(name, value),
+    createFloat: function (name, value, min, max) new FloatValue(name, value, min, max),
+    createFont: function (name, value) new FontValue(name, value),
+    createInteger: function (name, value, min, max) new IntegerValue(name, value, min, max),
+    createList: function (name, values, value) new ListValue(name, values, value),
+    createText: function (name, value) new TextValue(name, value)
 }
 
 /*-------------------*/
@@ -457,7 +471,8 @@ Object.defineProperty(Array.prototype, "toLowerCase", {
     value: function () this.map(function (element) element.toLowerCase())
 });
 
-//Array.flat() - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/flat
+//Array.flat(boolean) - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/flat
+//parameters: false -> doesn't flatten
 Object.defineProperty(Array.prototype, "flat", {
     value: function (bool) bool === false ? this : Array.prototype.concat.apply([], this)
 });
@@ -472,68 +487,122 @@ Math.toDegrees = function (radians) radians * 57.29577951308;
 /* Java importing */
 /*----------------*/
 
-//net.minecraft.block.*
-["Block","BlockAir","BlockAnvil","BlockBanner","BlockBarrier","BlockBasePressurePlate","BlockBeacon","BlockBed","BlockBookshelf","BlockBreakable","BlockBrewingStand","BlockBush","BlockButton","BlockButtonStone","BlockButtonWood","BlockCactus","BlockCake","BlockCarpet","BlockCarrot","BlockCauldron","BlockChest","BlockClay","BlockCocoa","BlockColored","BlockCommandBlock","BlockCompressedPowered","BlockContainer","BlockCrops","BlockDaylightDetector","BlockDeadBush","BlockDirectional","BlockDirt","BlockDispenser","BlockDoor","BlockDoublePlant","BlockDoubleStoneSlab","BlockDoubleStoneSlabNew","BlockDoubleWoodSlab","BlockDragonEgg","BlockDropper","BlockDynamicLiquid","BlockEnchantmentTable","BlockEnderChest","BlockEndPortal","BlockEndPortalFrame","BlockEventData","BlockFalling","BlockFarmland","BlockFence","BlockFenceGate","BlockFire","BlockFlower","BlockFlowerPot","BlockFurnace","BlockGlass","BlockGlowstone","BlockGrass","BlockGravel","BlockHalfStoneSlab","BlockHalfStoneSlabNew","BlockHalfWoodSlab","BlockHardenedClay","BlockHay","BlockHopper","BlockHugeMushroom","BlockIce","BlockJukebox","BlockLadder","BlockLeaves","BlockLeavesBase","BlockLever","BlockLilyPad","BlockLiquid","BlockLog","BlockMelon","BlockMobSpawner","BlockMushroom","BlockMycelium","BlockNetherBrick","BlockNetherrack","BlockNetherWart","BlockNewLeaf","BlockNewLog","BlockNote","BlockObsidian","BlockOldLeaf","BlockOldLog","BlockOre","BlockPackedIce","BlockPane","BlockPistonBase","BlockPistonExtension","BlockPistonMoving","BlockPlanks","BlockPortal","BlockPotato","BlockPressurePlate","BlockPressurePlateWeighted","BlockPrismarine","BlockPumpkin","BlockQuartz","BlockRail","BlockRailBase","BlockRailDetector","BlockRailPowered","BlockRedFlower","BlockRedSandstone","BlockRedstoneComparator","BlockRedstoneDiode","BlockRedstoneLight","BlockRedstoneOre","BlockRedstoneRepeater","BlockRedstoneTorch","BlockRedstoneWire","BlockReed","BlockRotatedPillar","BlockSand","BlockSandStone","BlockSapling","BlockSeaLantern","BlockSign","BlockSilverfish","BlockSkull","BlockSlab","BlockSlime","BlockSnow","BlockSnowBlock","BlockSoulSand","BlockSourceImpl","BlockSponge","BlockStainedGlass","BlockStainedGlassPane","BlockStairs","BlockStandingSign","BlockStaticLiquid","BlockStem","BlockStone","BlockStoneBrick","BlockStoneSlab","BlockStoneSlabNew","BlockTallGrass","BlockTNT","BlockTorch","BlockTrapDoor","BlockTripWire","BlockTripWireHook","BlockVine","BlockWall","BlockWallSign","BlockWeb","BlockWoodSlab","BlockWorkbench","BlockYellowFlower","IGrowable","ITileEntityProvider","material.MapColor","material.Material","material.MaterialLiquid","material.MaterialLogic","material.MaterialPortal","material.MaterialTransparent","properties.IProperty","properties.PropertyBool","properties.PropertyDirection","properties.PropertyEnum","properties.PropertyHelper","properties.PropertyInteger","state.BlockPistonStructureHelper","state.BlockState","state.BlockStateBase","state.BlockWorldState","state.IBlockState","state.pattern.BlockHelper","state.pattern.BlockPattern","state.pattern.BlockStateHelper","state.pattern.FactoryBlockPattern"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.block." + v + "\")")});
+Core.importedPackages = [];
 
-//net.minecraft.client.gui.*
-["achievement.GuiAchievement","achievement.GuiAchievements","achievement.GuiStats","inventory.CreativeCrafting","inventory.GuiBeacon","inventory.GuiBrewingStand","inventory.GuiChest","inventory.GuiContainer","inventory.GuiContainerCreative","inventory.GuiCrafting","inventory.GuiDispenser","inventory.GuiEditSign","inventory.GuiFurnace","inventory.GuiInventory","inventory.GuiScreenHorseInventory","spectator.BaseSpectatorGroup","spectator.ISpectatorMenuObject","spectator.ISpectatorMenuRecipient","spectator.ISpectatorMenuView","spectator.PlayerMenuObject","spectator.SpectatorMenu","spectator.categories.SpectatorDetails","spectator.categories.TeleportToPlayer","spectator.categories.TeleportToTeam","stream.GuiIngestServers","stream.GuiStreamOptions","stream.GuiStreamUnavailable","stream.GuiTwitchUserMode","ChatLine","FontRenderer","Gui","GuiButton","GuiButtonLanguage","GuiButtonRealmsProxy","GuiChat","GuiClickableScrolledSelectionListProxy","GuiCommandBlock","GuiConfirmOpenLink","GuiControls","GuiCreateFlatWorld","GuiCreateWorld","GuiCustomizeSkin","GuiCustomizeWorldScreen","GuiDisconnected","GuiDownloadTerrain","GuiEnchantment","GuiErrorScreen","GuiFlatPresets","GuiGameOver","GuiHopper","GuiIngame","GuiIngameMenu","GuiKeyBindingList","GuiLabel","GuiLanguage","GuiListButton","GuiListExtended","GuiLockIconButton","GuiMainMenu","GuiMemoryErrorScreen","GuiMerchant","GuiMultiplayer","GuiNewChat","GuiOptionButton","GuiOptions","GuiOptionSlider","GuiOptionsRowList","GuiOverlayDebug","GuiPageButtonList","GuiPlayerTabOverlay","GuiRenameWorld","GuiRepair","GuiResourcePackAvailable","GuiResourcePackList","GuiResourcePackSelected","GuiScreen","GuiScreenAddServer","GuiScreenBook","GuiScreenCustomizePresets","GuiScreenDemo","GuiScreenOptionsSounds","GuiScreenRealmsProxy","GuiScreenResourcePacks","GuiScreenServerList","GuiScreenWorking","GuiSelectWorld","GuiShareToLan","GuiSimpleScrolledSelectionListProxy","GuiSleepMP","GuiSlider","GuiSlot","GuiSlotRealmsProxy","GuiSnooper","GuiSpectator","GuiStreamIndicator","GuiTextField","GuiUtilRenderComponents","GuiVideoSettings","GuiWinGame","GuiYesNo","MapItemRenderer","ScaledResolution","ScreenChatOptions","ServerListEntryLanDetected","ServerListEntryLanScan","ServerListEntryNormal","ServerSelectionList"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.client.gui." + v + "\")")});
+function importPackage() {
+    var packages = Array.prototype.slice.call(arguments);
 
-//net.minecraft.client.renderer.*
-["ActiveRenderInfo","BlockFluidRenderer","BlockModelRenderer","BlockModelShapes","BlockRendererDispatcher","ChestRenderer","ChunkRenderContainer","DestroyBlockProgress","EntityRenderer","EnumFaceDirection","GLAllocation","GlStateManager","IImageBuffer","ImageBufferDownload","InventoryEffectRenderer","ItemMeshDefinition","ItemModelMesher","ItemRenderer","OpenGlHelper","RegionRenderCache","RegionRenderCacheBuilder","RenderGlobal","RenderHelper","RenderList","StitcherException","Tessellator","ThreadDownloadImageData","VboRenderList","VertexBufferUploader","ViewFrustum","WorldRenderer","WorldVertexBufferUploader","block.model.BakedQuad","block.model.BlockFaceUV","block.model.BlockPart","block.model.BlockPartFace","block.model.BlockPartRotation","block.model.BreakingFour","block.model.FaceBakery","block.model.ItemCameraTransforms","block.model.ItemModelGenerator","block.model.ItemTransformVec3f","block.model.ModelBlock","block.model.ModelBlockDefinition","block.statemap.BlockStateMapper","block.statemap.DefaultStateMapper","block.statemap.IStateMapper","block.statemap.StateMap","block.statemap.StateMapperBase","chunk.ChunkCompileTaskGenerator","chunk.ChunkRenderDispatcher","chunk.ChunkRenderWorker","chunk.CompiledChunk","chunk.IRenderChunkFactory","chunk.ListChunkFactory","chunk.ListedRenderChunk","chunk.RenderChunk","chunk.SetVisibility","chunk.VboChunkFactory","chunk.VisGraph","culling.ClippingHelper","culling.ClippingHelperImpl","culling.Frustum","culling.ICamera","entity.ArmorStandRenderer","entity.Render","entity.RenderArrow","entity.RenderBat","entity.RenderBiped","entity.RenderBlaze","entity.RenderBoat","entity.RenderCaveSpider","entity.RenderChicken","entity.RenderCow","entity.RenderCreeper","entity.RenderDragon","entity.RenderEnderman","entity.RenderEndermite","entity.RenderEntity","entity.RenderEntityItem","entity.RendererLivingEntity","entity.RenderFallingBlock","entity.RenderFireball","entity.RenderFish","entity.RenderGhast","entity.RenderGiantZombie","entity.RenderGuardian","entity.RenderHorse","entity.RenderIronGolem","entity.RenderItem","entity.RenderLeashKnot","entity.RenderLightningBolt","entity.RenderLiving","entity.RenderMagmaCube","entity.RenderManager","entity.RenderMinecart","entity.RenderMinecartMobSpawner","entity.RenderMooshroom","entity.RenderOcelot","entity.RenderPainting","entity.RenderPig","entity.RenderPigZombie","entity.RenderPlayer","entity.RenderPotion","entity.RenderRabbit","entity.RenderSheep","entity.RenderSilverfish","entity.RenderSkeleton","entity.RenderSlime","entity.RenderSnowball","entity.RenderSnowMan","entity.RenderSpider","entity.RenderSquid","entity.RenderTntMinecart","entity.RenderTNTPrimed","entity.RenderVillager","entity.RenderWitch","entity.RenderWither","entity.RenderWolf","entity.RenderXPOrb","entity.RenderZombie","entity.layers.LayerArmorBase","entity.layers.LayerArrow","entity.layers.LayerBipedArmor","entity.layers.LayerCape","entity.layers.LayerCreeperCharge","entity.layers.LayerCustomHead","entity.layers.LayerDeadmau5Head","entity.layers.LayerEnderDragonDeath","entity.layers.LayerEnderDragonEyes","entity.layers.LayerEndermanEyes","entity.layers.LayerHeldBlock","entity.layers.LayerHeldItem","entity.layers.LayerHeldItemWitch","entity.layers.LayerIronGolemFlower","entity.layers.LayerMooshroomMushroom","entity.layers.LayerRenderer","entity.layers.LayerSaddle","entity.layers.LayerSheepWool","entity.layers.LayerSlimeGel","entity.layers.LayerSnowmanHead","entity.layers.LayerSpiderEyes","entity.layers.LayerVillagerArmor","entity.layers.LayerWitherAura","entity.layers.LayerWolfCollar","texture.AbstractTexture","texture.DynamicTexture","texture.IIconCreator","texture.ITextureObject","texture.ITickable","texture.ITickableTextureObject","texture.LayeredColorMaskTexture","texture.LayeredTexture","texture.SimpleTexture","texture.Stitcher","texture.TextureAtlasSprite","texture.TextureClock","texture.TextureCompass","texture.TextureManager","texture.TextureMap","texture.TextureUtil","tileentity.RenderEnderCrystal","tileentity.RenderItemFrame","tileentity.RenderWitherSkull","tileentity.TileEntityBannerRenderer","tileentity.TileEntityBeaconRenderer","tileentity.TileEntityChestRenderer","tileentity.TileEntityEnchantmentTableRenderer","tileentity.TileEntityEnderChestRenderer","tileentity.TileEntityEndPortalRenderer","tileentity.TileEntityItemStackRenderer","tileentity.TileEntityMobSpawnerRenderer","tileentity.TileEntityPistonRenderer","tileentity.TileEntityRendererDispatcher","tileentity.TileEntitySignRenderer","tileentity.TileEntitySkullRenderer","tileentity.TileEntitySpecialRenderer","vertex.DefaultVertexFormats","vertex.VertexBuffer","vertex.VertexFormat","vertex.VertexFormatElement"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.client.renderer." + v + "\")")}); 
+    Core.importedPackages = Core.importedPackages.concat(packages);
+}
 
-//net.minecraft.entity.*
-["DataWatcher","Entity","EntityAgeable","EntityBodyHelper","EntityCreature","EntityFlying","EntityHanging","EntityLeashKnot","EntityList","EntityLiving","EntityLivingBase","EntityMinecartCommandBlock","EntitySpawnPlacementRegistry","EntityTracker","EntityTrackerEntry","EnumCreatureAttribute","EnumCreatureType","IEntityLivingData","IEntityMultiPart","IEntityOwnable","IMerchant","INpc","IProjectile","IRangedAttackMob","NpcMerchant","SharedMonsterAttributes","ai.EntityAIArrowAttack","ai.EntityAIAttackOnCollide","ai.EntityAIAvoidEntity","ai.EntityAIBase","ai.EntityAIBeg","ai.EntityAIBreakDoor","ai.EntityAIControlledByPlayer","ai.EntityAICreeperSwell","ai.EntityAIDefendVillage","ai.EntityAIDoorInteract","ai.EntityAIEatGrass","ai.EntityAIFindEntityNearest","ai.EntityAIFindEntityNearestPlayer","ai.EntityAIFleeSun","ai.EntityAIFollowGolem","ai.EntityAIFollowOwner","ai.EntityAIFollowParent","ai.EntityAIHarvestFarmland","ai.EntityAIHurtByTarget","ai.EntityAILeapAtTarget","ai.EntityAILookAtTradePlayer","ai.EntityAILookAtVillager","ai.EntityAILookIdle","ai.EntityAIMate","ai.EntityAIMoveIndoors","ai.EntityAIMoveThroughVillage","ai.EntityAIMoveToBlock","ai.EntityAIMoveTowardsRestriction","ai.EntityAIMoveTowardsTarget","ai.EntityAINearestAttackableTarget","ai.EntityAIOcelotAttack","ai.EntityAIOcelotSit","ai.EntityAIOpenDoor","ai.EntityAIOwnerHurtByTarget","ai.EntityAIOwnerHurtTarget","ai.EntityAIPanic","ai.EntityAIPlay","ai.EntityAIRestrictOpenDoor","ai.EntityAIRestrictSun","ai.EntityAIRunAroundLikeCrazy","ai.EntityAISit","ai.EntityAISwimming","ai.EntityAITarget","ai.EntityAITargetNonTamed","ai.EntityAITasks","ai.EntityAITempt","ai.EntityAITradePlayer","ai.EntityAIVillagerInteract","ai.EntityAIVillagerMate","ai.EntityAIWander","ai.EntityAIWatchClosest","ai.EntityAIWatchClosest2","ai.EntityJumpHelper","ai.EntityLookHelper","ai.EntityMinecartMobSpawner","ai.EntityMoveHelper","ai.EntitySenses","ai.RandomPositionGenerator","ai.attributes.AttributeModifier","ai.attributes.BaseAttribute","ai.attributes.BaseAttributeMap","ai.attributes.IAttribute","ai.attributes.IAttributeInstance","ai.attributes.ModifiableAttributeInstance","ai.attributes.RangedAttribute","ai.attributes.ServersideAttributeMap","boss.BossStatus","boss.EntityDragon","boss.EntityDragonPart","boss.EntityWither","boss.IBossDisplayData","effect.EntityLightningBolt","effect.EntityWeatherEffect","item.EntityArmorStand","item.EntityBoat","item.EntityEnderCrystal","item.EntityEnderEye","item.EntityEnderPearl","item.EntityExpBottle","item.EntityFallingBlock","item.EntityFireworkRocket","item.EntityItem","item.EntityItemFrame","item.EntityMinecart","item.EntityMinecartChest","item.EntityMinecartContainer","item.EntityMinecartEmpty","item.EntityMinecartFurnace","item.EntityMinecartHopper","item.EntityMinecartTNT","item.EntityPainting","item.EntityTNTPrimed","item.EntityXPOrb","monster.EntityBlaze","monster.EntityCaveSpider","monster.EntityCreeper","monster.EntityEnderman","monster.EntityEndermite","monster.EntityGhast","monster.EntityGiantZombie","monster.EntityGolem","monster.EntityGuardian","monster.EntityIronGolem","monster.EntityMagmaCube","monster.EntityMob","monster.EntityPigZombie","monster.EntitySilverfish","monster.EntitySkeleton","monster.EntitySlime","monster.EntitySnowman","monster.EntitySpider","monster.EntityWitch","monster.EntityZombie","monster.IMob","passive.EntityAmbientCreature","passive.EntityAnimal","passive.EntityBat","passive.EntityChicken","passive.EntityCow","passive.EntityHorse","passive.EntityMooshroom","passive.EntityOcelot","passive.EntityPig","passive.EntityRabbit","passive.EntitySheep","passive.EntitySquid","passive.EntityTameable","passive.EntityVillager","passive.EntityWaterMob","passive.EntityWolf","passive.IAnimals","player.EntityPlayer","player.EntityPlayerMP","player.EnumPlayerModelParts","player.InventoryPlayer","player.PlayerCapabilities","projectile.EntityArrow","projectile.EntityEgg","projectile.EntityFireball","projectile.EntityFishHook","projectile.EntityLargeFireball","projectile.EntityPotion","projectile.EntitySmallFireball","projectile.EntitySnowball","projectile.EntityThrowable","projectile.EntityWitherSkull"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.entity." + v + "\")")});
+__noSuchProperty__ = function (name) {
+    if (name.endsWith("Module")) {
+        var module = moduleManager.getModule(name.slice(0, -6));
+        if (module) return this[name] = module;
+    }
 
-//net.minecraft.init.*
-["Blocks","Bootstrap","Items"].forEach(function (v) {eval(v + "=Java.type(\"net.minecraft.init." + v + "\")")});
+    for each (var package in Core.importedPackages) {
+        try {
+            var type = Java.type(package + "." + name);
+            return this[name] = type;
+        } catch (e) {}
+    }
 
-//net.minecraft.item.*
-["EnumAction","EnumDyeColor","EnumRarity","Item","ItemAnvilBlock","ItemAppleGold","ItemArmor","ItemArmorStand","ItemAxe","ItemBanner","ItemBed","ItemBlock","ItemBoat","ItemBook","ItemBow","ItemBucket","ItemBucketMilk","ItemCarrotOnAStick","ItemCloth","ItemCoal","ItemColored","ItemDoor","ItemDoublePlant","ItemDye","ItemEditableBook","ItemEgg","ItemEmptyMap","ItemEnchantedBook","ItemEnderEye","ItemEnderPearl","ItemExpBottle","ItemFireball","ItemFirework","ItemFireworkCharge","ItemFishFood","ItemFishingRod","ItemFlintAndSteel","ItemFood","ItemGlassBottle","ItemHangingEntity","ItemHoe","ItemLead","ItemLeaves","ItemLilyPad","ItemMap","ItemMapBase","ItemMinecart","ItemMonsterPlacer","ItemMultiTexture","ItemNameTag","ItemPickaxe","ItemPiston","ItemPotion","ItemRecord","ItemRedstone","ItemReed","ItemSaddle","ItemSeedFood","ItemSeeds","ItemShears","ItemSign","ItemSimpleFoiled","ItemSkull","ItemSlab","ItemSnow","ItemSnowball","ItemSoup","ItemSpade","ItemStack","ItemSword","ItemTool","ItemWritableBook","crafting.CraftingManager","crafting.FurnaceRecipes","crafting.IRecipe","crafting.RecipeBookCloning","crafting.RecipeFireworks","crafting.RecipeRepairItem","crafting.RecipesArmor","crafting.RecipesArmorDyes","crafting.RecipesBanners","crafting.RecipesCrafting","crafting.RecipesDyes","crafting.RecipesFood","crafting.RecipesIngots","crafting.RecipesMapCloning","crafting.RecipesMapExtending","crafting.RecipesTools","crafting.RecipesWeapons","crafting.ShapedRecipes","crafting.ShapelessRecipes"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.item." + v + "\")")});
+    throw new ReferenceError(name + " is not defined");
+}
 
-//net.minecraft.network.*
-["EnumConnectionState","EnumPacketDirection","INetHandler","NetHandlerPlayServer","NettyCompressionDecoder","NettyCompressionEncoder","NettyEncryptingDecoder","NettyEncryptingEncoder","NettyEncryptionTranslator","NetworkManager","NetworkSystem","Packet","PacketBuffer","PacketThreadUtil","PingResponseHandler","ServerStatusResponse","ThreadQuickExitException","handshake.INetHandlerHandshakeServer","handshake.client.C00Handshake","login.INetHandlerLoginClient","login.INetHandlerLoginServer","login.client.C00PacketLoginStart","login.client.C01PacketEncryptionResponse","login.server.S00PacketDisconnect","login.server.S01PacketEncryptionRequest","login.server.S02PacketLoginSuccess","login.server.S03PacketEnableCompression","play.INetHandlerPlayClient","play.INetHandlerPlayServer","play.client.C00PacketKeepAlive","play.client.C01PacketChatMessage","play.client.C02PacketUseEntity","play.client.C03PacketPlayer","play.client.C03PacketPlayer.C04PacketPlayerPosition","play.client.C03PacketPlayer.C05PacketPlayerLook","play.client.C03PacketPlayer.C06PacketPlayerPosLook","play.client.C07PacketPlayerDigging","play.client.C08PacketPlayerBlockPlacement","play.client.C09PacketHeldItemChange","play.client.C0APacketAnimation","play.client.C0BPacketEntityAction","play.client.C0CPacketInput","play.client.C0DPacketCloseWindow","play.client.C0EPacketClickWindow","play.client.C0FPacketConfirmTransaction","play.client.C10PacketCreativeInventoryAction","play.client.C11PacketEnchantItem","play.client.C12PacketUpdateSign","play.client.C13PacketPlayerAbilities","play.client.C14PacketTabComplete","play.client.C15PacketClientSettings","play.client.C16PacketClientStatus","play.client.C17PacketCustomPayload","play.client.C18PacketSpectate","play.client.C19PacketResourcePackStatus","play.server.S00PacketKeepAlive","play.server.S01PacketJoinGame","play.server.S02PacketChat","play.server.S03PacketTimeUpdate","play.server.S04PacketEntityEquipment","play.server.S05PacketSpawnPosition","play.server.S06PacketUpdateHealth","play.server.S07PacketRespawn","play.server.S08PacketPlayerPosLook","play.server.S09PacketHeldItemChange","play.server.S0APacketUseBed","play.server.S0BPacketAnimation","play.server.S0CPacketSpawnPlayer","play.server.S0DPacketCollectItem","play.server.S0EPacketSpawnObject","play.server.S0FPacketSpawnMob","play.server.S10PacketSpawnPainting","play.server.S11PacketSpawnExperienceOrb","play.server.S12PacketEntityVelocity","play.server.S13PacketDestroyEntities","play.server.S14PacketEntity","play.server.S18PacketEntityTeleport","play.server.S19PacketEntityHeadLook","play.server.S19PacketEntityStatus","play.server.S1BPacketEntityAttach","play.server.S1CPacketEntityMetadata","play.server.S1DPacketEntityEffect","play.server.S1EPacketRemoveEntityEffect","play.server.S1FPacketSetExperience","play.server.S20PacketEntityProperties","play.server.S21PacketChunkData","play.server.S22PacketMultiBlockChange","play.server.S23PacketBlockChange","play.server.S24PacketBlockAction","play.server.S25PacketBlockBreakAnim","play.server.S26PacketMapChunkBulk","play.server.S27PacketExplosion","play.server.S28PacketEffect","play.server.S29PacketSoundEffect","play.server.S2APacketParticles","play.server.S2BPacketChangeGameState","play.server.S2CPacketSpawnGlobalEntity","play.server.S2DPacketOpenWindow","play.server.S2EPacketCloseWindow","play.server.S2FPacketSetSlot","play.server.S30PacketWindowItems","play.server.S31PacketWindowProperty","play.server.S32PacketConfirmTransaction","play.server.S33PacketUpdateSign","play.server.S34PacketMaps","play.server.S35PacketUpdateTileEntity","play.server.S36PacketSignEditorOpen","play.server.S37PacketStatistics","play.server.S38PacketPlayerListItem","play.server.S39PacketPlayerAbilities","play.server.S3APacketTabComplete","play.server.S3BPacketScoreboardObjective","play.server.S3CPacketUpdateScore","play.server.S3DPacketDisplayScoreboard","play.server.S3EPacketTeams","play.server.S3FPacketCustomPayload","play.server.S40PacketDisconnect","play.server.S41PacketServerDifficulty","play.server.S42PacketCombatEvent","play.server.S43PacketCamera","play.server.S44PacketWorldBorder","play.server.S45PacketTitle","play.server.S46PacketSetCompressionLevel","play.server.S47PacketPlayerListHeaderFooter","play.server.S48PacketResourcePackSend","play.server.S49PacketUpdateEntityNBT","rcon.RConConsoleSource","status.INetHandlerStatusClient","status.INetHandlerStatusServer","status.client.C00PacketServerQuery","status.client.C01PacketPing","status.server.S00PacketServerInfo","status.server.S01PacketPong"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.minecraft.network." + v + "\")")});
 
-//net.minecraft.util.*
-["AxisAlignedBB","BlockPos","Cartesian","ChatAllowedCharacters","ChatComponentProcessor","ChatComponentScore","ChatComponentSelector","ChatComponentStyle","ChatComponentText","ChatComponentTranslation","ChatComponentTranslationFormatException","ChatStyle","ClassInheritanceMultiMap","CombatEntry","CombatTracker","CryptManager","DamageSource","EnchantmentNameParts","EntityDamageSource","EntityDamageSourceIndirect","EntitySelectors","EnumChatFormatting","EnumFacing","EnumParticleTypes","EnumTypeAdapterFactory","EnumWorldBlockLayer","FoodStats","FrameTimer","HttpUtil","IChatComponent","IJsonSerializable","IntegerCache","IntHashMap","IObjectIntIterable","IProgressUpdate","IRegistry","IStringSerializable","IThreadListener","ITickable","JsonSerializableSet","JsonUtils","LazyLoadBase","LoggingPrintStream","LongHashMap","MapPopulator","MathHelper","Matrix4f","MessageDeserializer","MessageDeserializer2","MessageSerializer","MessageSerializer2","MinecraftError","MouseFilter","MouseHelper","MovementInput","MovementInputFromOptions","MovingObjectPosition","ObjectIntIdentityMap","RegistryDefaulted","RegistryNamespaced","RegistryNamespacedDefaultedByKey","RegistrySimple","ReportedException","ResourceLocation","Rotations","ScreenShotHelper","Session","StatCollector","StringTranslate","StringUtils","ThreadSafeBoundList","Timer","Tuple","TupleIntJsonSerializable","Util","Vec3","Vec3i","Vec4b","Vector3d","WeightedRandom","WeightedRandomChestContent","WeightedRandomFishable"].forEach(function (v) {eval(v + "=Java.type(\"net.minecraft.util." + v + "\")")});
-
-//net.ccbluex.liquidbounce.utils.*
-["CPSCounter","ClassUtils","ClientUtils","EntityUtils","InventoryUtils","MinecraftInstance","MovementUtils","PathUtils","RaycastUtils","RollingArrayLongBuffer","Rotation","RotationUtils","ServerUtils","SettingsUtils","TabUtils","block.BlockUtils","block.PlaceInfo","extensions.BlockExtensionKt","extensions.PlayerExtensionKt","item.ArmorComparator","item.ArmorPiece","item.ItemUtils","login.LoginUtils","login.MinecraftAccount","login.UserUtils","misc.FallingPlayer","misc.HttpUtils","misc.MiscUtils","misc.RandomUtils","misc.StringUtils","render.AnimationUtils","render.ColorUtils","render.IconUtils","render.ParticleUtils","render.RenderUtils","render.shader.FramebufferShader","render.shader.Shader","render.shader.shaders.BackgroundShader","render.shader.shaders.GlowShader","render.shader.shaders.OutlineShader","timer.MSTimer","timer.TickTimer","timer.TimeUtils"].forEach(function (v) {eval(v.split(".").pop() + "=Java.type(\"net.ccbluex.liquidbounce.utils." + v + "\")")});
-
-//net.ccbluex.liquidbounce.value.*
-["BlockValue","BoolValue","FloatValue","FontValue","IntegerValue","ListValue","TextValue","Value"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.value." + v + "\")")});
-
-//Additional events from net.ccbluex.liquidbounce.event
-["BlockBBEvent","ClickWindowEvent","ClientShutdownEvent","EntityMovementEvent","PushOutEvent","RenderEntityEvent","ScreenEvent","TextEvent","TickEvent","EventHook","EventTarget","Listenable"].forEach(function (v) {eval(v + "=Java.type(\"net.ccbluex.liquidbounce.event." + v + "\")")});
+importPackage(
+    "net.minecraft.block", "net.minecraft.block.material", "net.minecraft.block.properties", "net.minecraft.block.state",
+    "net.minecraft.client.gui", "net.minecraft.client.gui.inventory",
+    "net.minecraft.client.renderer", "net.minecraft.client.renderer.block.model",
+    "net.minecraft.entity", "net.minecraft.entity.boss", "net.minecraft.entity.effect", "net.minecraft.entity.item", "net.minecraft.entity.monster", "net.minecraft.entity.passive", "net.minecraft.entity.player", "net.minecraft.entity.projectile",
+    "net.minecraft.init",
+    "net.minecraft.item",
+    "net.minecraft.network", "net.minecraft.network.handshake.client", "net.minecraft.network.login.client", "net.minecraft.network.login.server", "net.minecraft.network.play.client", "net.minecraft.network.play.server", "net.minecraft.network.status.client", "net.minecraft.network.status.server",
+    "net.minecraft.util",
+    "net.ccbluex.liquidbounce.utils", "net.ccbluex.liquidbounce.utils.block", "net.ccbluex.liquidbounce.utils.extensions", "net.ccbluex.liquidbounce.utils.item", "net.ccbluex.liquidbounce.utils.login", "net.ccbluex.liquidbounce.utils.misc", "net.ccbluex.liquidbounce.utils.render", "net.ccbluex.liquidbounce.utils.render.shader", "net.ccbluex.liquidbounce.utils.render.shader.shaders", "net.ccbluex.liquidbounce.utils.timer",
+    "net.ccbluex.liquidbounce.value",
+    "net.ccbluex.liquidbounce.event"
+);
 
 //Used variables
-LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce"); Keyboard = Java.type("org.lwjgl.input.Keyboard"); Timer = Java.type("java.util.Timer"); List = Java.type("java.util.List"); ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule"); LinkedHashMap = Java.type("java.util.LinkedHashMap"); Constructor = Java.type("java.lang.reflect.Constructor"); Modifier = Java.type("java.lang.reflect.Modifier"); Field = Java.type("java.lang.reflect.Field"); ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory"); Script = Java.type("net.ccbluex.liquidbounce.script.Script"); File = Java.type("java.io.File"); URL = Java.type("java.net.URL"); JOptionPane = Java.type("javax.swing.JOptionPane"); FileUtils = Java.type("org.apache.commons.io.FileUtils"); Desktop = Java.type("java.awt.Desktop").getDesktop(); ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui"); Enchantment = Java.type("net.minecraft.enchantment.Enchantment"); ClassLoader = Java.type("java.lang.ClassLoader"); Thread = Java.type("java.lang.Thread"); Class = Java.type("java.lang.Class"); PositionedSoundRecord = Java.type("net.minecraft.client.audio.PositionedSoundRecord"); Remapper = Java.type("net.ccbluex.liquidbounce.script.remapper.Remapper"); Consumer = Java.type("java.util.function.Consumer"); ArrayList = Java.type("java.util.ArrayList"); Module = Java.type("net.ccbluex.liquidbounce.features.module.Module");
-Core.classes = Java.from(getField(ClassLoader, "classes").get(Thread.currentThread().getContextClassLoader())); StaticClass = getMethod(_class = Class.forName("jdk.internal.dynalink.beans.StaticClass"), "forClass").invoke(null, _class); delete _class;
-_registeredModulesField = getField(Script, "registeredModules"); _callEventMethod = getMethod(ScriptModule, "callEvent"); _flushOutboundQueueMethod = getMethod(NetworkManager, "func_150733_h"); _dispatchPacketMethod = getMethod(NetworkManager, "func_150732_b"); _readWriteLockField = getField(NetworkManager, "field_181680_j"); _outboundPacketsQueueField = getField(NetworkManager, "field_150745_j"); _remapperFields = getField(Remapper, "fields").get(Remapper); _remapperMethods = getField(Remapper, "methods").get(Remapper);
+URL = Java.type("java.net.URL");
+File = Java.type("java.io.File");
+List = Java.type("java.util.List");
+Timer = Java.type("java.util.Timer");
+Class = Java.type("java.lang.Class");
+Thread = Java.type("java.lang.Thread");
+Desktop = java.awt.Desktop.getDesktop();
+ArrayList = Java.type("java.util.ArrayList");
+Field = Java.type("java.lang.reflect.Field");
+Keyboard = Java.type("org.lwjgl.input.Keyboard");
+Modifier = Java.type("java.lang.reflect.Modifier");
+JOptionPane = Java.type("javax.swing.JOptionPane");
+LinkedHashMap = Java.type("java.util.LinkedHashMap");
+FileUtils = Java.type("org.apache.commons.io.FileUtils");
+Script = Java.type("net.ccbluex.liquidbounce.script.Script");
+Enchantment = Java.type("net.minecraft.enchantment.Enchantment");
+LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce");
+FileManager = Java.type("net.ccbluex.liquidbounce.file.FileManager");
+Module = Java.type("net.ccbluex.liquidbounce.features.module.Module");
+Remapper = Java.type("net.ccbluex.liquidbounce.script.remapper.Remapper");
+ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule");
+ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui");
+ValuesConfig = Java.type("net.ccbluex.liquidbounce.file.configs.ValuesConfig");
+ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory");
+PositionedSoundRecord = Java.type("net.minecraft.client.audio.PositionedSoundRecord");
+
+Core.outboundPacketsQueueField = getField(NetworkManager, "field_150745_j");
+Core.flushOutboundQueueMethod = getMethod(NetworkManager, "func_150733_h");
+Core.dispatchPacketMethod = getMethod(NetworkManager, "func_150732_b");
+Core.readWriteLockField = getField(NetworkManager, "field_181680_j");
+Core.registeredModulesField = getField(Script, "registeredModules");
+Core.remapperMethods = getField(Remapper, "methods").get(Remapper);
+Core.remapperFields = getField(Remapper, "fields").get(Remapper);
+Core.callEventMethod = getMethod(ScriptModule, "callEvent");
+
+/*-------------*/
+/* Event hooks */
+/*-------------*/
+
+Core.hookClickGui = function () {
+    LiquidBounce.clickGui = new (Java.extend(ClickGui))() {
+        func_73866_w_: function () {
+            callEvent("clickGuiOpen");
+        },
+        func_146281_b: function () {
+            callEvent("clickGuiClosed");
+            LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.clickGuiConfig);
+        }
+    }
+    LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.clickGuiConfig);
+    callEvent("clickGuiLoaded");
+};
+
+Core.hookFileManager = function () {
+    Core.ignoreValueChange = false;
+    LiquidBounce.fileManager = new (Java.extend(FileManager)) () {
+        saveConfig: function (config) {
+            if (config instanceof ValuesConfig) {
+                if (Core.ignoreValueChange) Core.ignoreValueChange = false;
+                else callEvent("valueChanged");
+            }
+            Java.super(LiquidBounce.fileManager).saveConfig(config);
+        }
+    }
+}
+
 
 /*---------------*/
 /* Updating core */
 /*---------------*/
 
-
 Core.runUpdater = function () {
     (Core.logFile = new File("logs/core.log")).deleteOnExit();
     Core.log = Core.logFile.exists() ? JSON.parse(FileUtils.readFileToString(Core.logFile)) : {};
 
-    Core.updateClickGui = function () {
-        LiquidBounce.clickGui = new (Java.extend(ClickGui))() {
-            func_73866_w_: function () {
-                callEvent("clickGuiOpen");
-            },
-            func_146281_b: function () {
-                callEvent("clickGuiClosed");
-                LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.clickGuiConfig);
-            }
-        }
-        LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.clickGuiConfig);
-        callEvent("clickGuiLoaded");
-    };
-
-    var scriptCache, responseCache, charset = Java.type("java.nio.charset.Charset").forName("UTF-8");
+    var scriptCache, responseCache, charset = java.nio.charset.Charset.forName("UTF-8");
 
     if (!Core.log.Core) {
         try {
@@ -565,12 +634,13 @@ Core.runUpdater = function () {
         }
     }
 
-    if (!Core.shouldReload && !Core.log.clickGuiHook) {
-        Core.log.clickGuiHook = script.scriptName;
+    if (!Core.shouldReload && (!Core.log.eventHooks || Core.log.eventHooks == script.scriptName)) {
+        Core.log.eventHooks = script.scriptName;
         LiquidBounce.clickGui = null;
         var timer = interval(250, function () {
             if (LiquidBounce.clickGui) {
-                Core.updateClickGui();
+                Core.hookClickGui();
+                Core.hookFileManager();
                 timer.cancel();
             }
         });
@@ -604,43 +674,39 @@ script.on("load", function () {
     Core.eventManager = new Reflector(LiquidBounce.eventManager);
     Core.defaultAnnotation = getMethod(moduleManager, "onKey").getAnnotation(EventTarget.class);
     Core.artificialEvents = {
-        onBlockBB: BlockBBEvent,
-        onClientShutdown: ClientShutdownEvent,
-        onEntityMovement: EntityMovementEvent,
-        onPushOut: PushOutEvent,
-        onRenderEntity: RenderEntityEvent,
-        onScreen: ScreenEvent,
-        onText: TextEvent,
-        onTick: TickEvent
+        onBlockBB: BlockBBEvent.class,
+        onClickWindow: ClickWindowEvent.class,
+        onEntityMovement: EntityMovementEvent.class,
+        onPushOut: PushOutEvent.class,
+        onRenderEntity: RenderEntityEvent.class,
+        onScreen: ScreenEvent.class,
+        onText: TextEvent.class,
+        onTick: TickEvent.class
     };
     
     [module, command].forEach(function (c, i) c.forEach(function (v) [registerModule, registerCommand][i](v)));
 
     script.on("enable", function () {
-        var validChars = /[a-zA-Z_$][0-9a-zA-Z_$]*/
-        for each (var m in moduleManager.modules) m.name != "Script" && (!(m instanceof ScriptModule) || validChars.exec(m.name) == m.name) && eval(m.name + "Module=m");
         for each (var c in [module, command]) for each (var v in c) v.onLoad && v.onLoad();
+        
+        Core.onLoad && Core.onLoad();
     });
 
     script.on("disable", function () {
         for each (var c in [module, command]) for each (var v in c) v.onUnload && v.onUnload();
 
         //Unregistering artificial event hooks
-        for each (var m in module) {
-            for each (var key in Object.keys(m)) {
-                var event = Core.artificialEvents[key];
-                if (event) {
-                    var hooks = Core.eventManager.registry.getOrDefault(event.class, new ArrayList());
-                    for each (var hook in hooks.clone()) !(hook.getEventClass() instanceof Module) && hooks.remove(hook);
-                    Core.eventManager.registry[event.class] = hooks;
-                }
-            }
+        for each (var entry in Core.hookedEvents.entrySet()) {
+            var key = entry.getKey(), targets = entry.getValue();
+            for each (var target in targets) Core.eventManager.registry[key].remove(target);
         }
 
-        if (Core.log.clickGuiHook == script.scriptName) {
-                Core.log = JSON.parse(FileUtils.readFileToString(Core.logFile));
-                delete Core.log.clickGuiHook;
-                FileUtils.writeStringToFile(Core.logFile, JSON.stringify(Core.log));
-            }
+        if (Core.log.eventHooks == script.scriptName) {
+            Core.log = JSON.parse(FileUtils.readFileToString(Core.logFile));
+            delete Core.log.eventHooks;
+            FileUtils.writeStringToFile(Core.logFile, JSON.stringify(Core.log));
+        }
+
+        Core.onUnload && Core.onUnload();
     });
 });
