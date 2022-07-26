@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.2",
+    version: "4.3",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -519,7 +519,7 @@ importPackage(
     "net.minecraft.entity", "net.minecraft.entity.boss", "net.minecraft.entity.effect", "net.minecraft.entity.item", "net.minecraft.entity.monster", "net.minecraft.entity.passive", "net.minecraft.entity.player", "net.minecraft.entity.projectile",
     "net.minecraft.init",
     "net.minecraft.item",
-    "net.minecraft.network", "net.minecraft.network.handshake.client", "net.minecraft.network.login.client", "net.minecraft.network.login.server", "net.minecraft.network.play.client", "net.minecraft.network.play.server", "net.minecraft.network.status.client", "net.minecraft.network.status.server",
+    "net.minecraft.network", "net.minecraft.network.handshake.client", "net.minecraft.network.login.client", "net.minecraft.network.login.server", "net.minecraft.network.play.client", "net.minecraft.network.play.client.C03PacketPlayer", "net.minecraft.network.play.server", "net.minecraft.network.status.client", "net.minecraft.network.status.server",
     "net.minecraft.util",
     "net.ccbluex.liquidbounce.utils", "net.ccbluex.liquidbounce.utils.block", "net.ccbluex.liquidbounce.utils.extensions", "net.ccbluex.liquidbounce.utils.item", "net.ccbluex.liquidbounce.utils.login", "net.ccbluex.liquidbounce.utils.misc", "net.ccbluex.liquidbounce.utils.render", "net.ccbluex.liquidbounce.utils.render.shader", "net.ccbluex.liquidbounce.utils.render.shader.shaders", "net.ccbluex.liquidbounce.utils.timer",
     "net.ccbluex.liquidbounce.value",
