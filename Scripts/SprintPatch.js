@@ -2,7 +2,7 @@
 (script = registerScript({
     name: "SprintPatch",
     authors: ["CzechHek", "yorik100"],
-    version: "1.0"
+    version: "1.1"
 })).import("Core.lib");
 
 module = {
@@ -10,7 +10,8 @@ module = {
     category: "Patches",
     values: [
         nopacketspatch = value.createBoolean("NoPacketsPatch", true),
-        jumpdirectionpatch = value.createBoolean("JumpDirectionPatch", true)
+        jumpdirectionpatch = value.createBoolean("JumpDirectionPatch", true),
+        strafepatch = value.createBoolean("OnGroundStrafePatch", true)
     ],
     onPacket: function (e) {
         if (nopacketspatch.get() && e.getPacket() instanceof C0BPacketEntityAction && (e.getPacket().getAction() == "START_SPRINTING" || e.getPacket().getAction() == "STOP_SPRINTING")) e.cancelEvent();
@@ -25,6 +26,9 @@ module = {
             mc.thePlayer.rotationYaw = prevYaw;
             modified = false;
         }
+    },
+    onMotion: function (e) {
+        if (strafepatch.get() && e.getEventState() == "PRE" && mc.thePlayer.onGround) MovementUtils.strafe();
     }
 }
 
