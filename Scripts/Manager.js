@@ -2,7 +2,7 @@
 (script = registerScript({
     name: "Manager",
     authors: ["CzechHek"],
-    version: "3.1"
+    version: "3.2"
 })).import("Core.lib");
 
 fileManager = LiquidBounce.fileManager;
@@ -153,8 +153,7 @@ command = {
                     HttpUtils.download(new URL(name_or_URL.includes("/") ? name_or_URL : "https://raw.githubusercontent.com/CzechHek/Core/master/Scripts/" + name_or_URL + ".js"), file);
 
                     scriptManager.loadScript(file);
-                    Core.updateClickGui();
-                    fileManager.loadConfig(fileManager.hudConfig);
+                    Core.hookClickGui();
                     print("§2▏ §a§lDownloaded§a script§2: §a„§2" + name_to_save_with + "§a“");
                 } catch (e) {
                     print("§4▏ §c§lFailed§c to download script§4: §c„§4" + name + "§c“ §8(§7" + e.toString().split(":")[0] + "§8)")
@@ -166,8 +165,7 @@ command = {
 
                 if (script) {
                     scriptManager.deleteScript(script);
-                    Core.updateClickGui();
-                    fileManager.loadConfig(fileManager.hudConfig);
+                    Core.hookClickGui();
                     print("§2▏ §a§lDeleted§a script§2: §a„§2" + name + "§a“");
                 } else print("§4▏ §cScript §c„§4" + name + "§c“ §ldoes not exist");
             },
