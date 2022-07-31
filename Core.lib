@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.3",
+    version: "4.4",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -405,7 +405,8 @@ value = {
     createFont: function (name, value) new FontValue(name, value),
     createInteger: function (name, value, min, max) new IntegerValue(name, value, min, max),
     createList: function (name, values, value) new ListValue(name, values, value),
-    createText: function (name, value) new TextValue(name, value)
+    createText: function (name, value) new TextValue(name, value),
+    createSpacer: function () new BoolValue("", false)
 }
 
 /*-------------------*/
@@ -577,6 +578,8 @@ Core.hookClickGui = function () {
         }
     }
     LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.clickGuiConfig);
+    new Reflector(ClickGUIModule).updateStyle();
+    if (mc.currentScreen instanceof ClickGui) mc.displayGuiScreen(LiquidBounce.clickGui);
     callEvent("clickGuiLoaded");
 };
 
@@ -642,6 +645,7 @@ Core.runUpdater = function () {
                 Core.hookClickGui();
                 Core.hookFileManager();
                 timer.cancel();
+                timer.purge();
             }
         });
     }
