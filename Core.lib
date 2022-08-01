@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.4",
+    version: "4.5",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -18,7 +18,8 @@ function registerModule(m) {
             dynamicValues = true;
             v = v.value;
         }
-        settings[v.getName()] = v instanceof Value ? v : v.getValue();
+        //Makes multiple "spacer" values possible
+        settings[v.getName() ? v.getName() : ("spacer" + Object.keys(settings).length)] = v instanceof Value ? v : v.getValue();
     }
 
     script.registerModule({
@@ -205,9 +206,9 @@ function setValues(module, values) {
 
 function getValues(module) Java.from(module.values);
 
-function getNearestTarget(entityType, fromEntity, _entity) mc.theWorld.loadedEntityList.stream().filter(function (e) e != mc.thePlayer && entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)).min(function (a, b) (_entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - _entity.getDistanceToEntity(b)).orElse(null);
+function getNearestTarget(entityType, fromEntity, _entity) mc.theWorld.loadedEntityList.stream().filter(function (e) e != mc.thePlayer && (!entityType || e instanceof entityType) && EntityUtils.isSelected(e, true)).min(function (a, b) (_entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - _entity.getDistanceToEntity(b)).orElse(null);
 
-function getTargetsInRange(range, entityType) Java.from(mc.theWorld.loadedEntityList).filter(function (e) e != mc.thePlayer && (entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)) && (!range || PlayerExtensionKt.getDistanceToEntityBox(e, mc.thePlayer) <= range));
+function getTargetsInRange(range, entityType) Java.from(mc.theWorld.loadedEntityList).filter(function (e) e != mc.thePlayer && (!entityType || e instanceof entityType) && EntityUtils.isSelected(e, true) && (!range || PlayerExtensionKt.getDistanceToEntityBox(e, mc.thePlayer) <= range));
 
 function getPlayer(nick) Java.from(mc.theWorld.playerEntities).find(function (e) StringUtils.stripControlCodes(e.getName()).equals(nick));
 
@@ -406,7 +407,18 @@ value = {
     createInteger: function (name, value, min, max) new IntegerValue(name, value, min, max),
     createList: function (name, values, value) new ListValue(name, values, value),
     createText: function (name, value) new TextValue(name, value),
-    createSpacer: function () new BoolValue("", false)
+    createSpacer: function () new BoolValue("", false),
+    createHeader: function (title) {
+        if (!title) return this.createSpacer();
+
+        title = title.replace(":", "");
+        var Adapter = Java.extend(TextValue);
+        return (Core.headers = Core.headers || {})[Adapter] = new Adapter(title, "") {
+            onChanged: function () {
+                Core.headers[Adapter].set("");
+            }
+        }
+    }
 }
 
 /*-------------------*/
