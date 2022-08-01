@@ -1,7 +1,7 @@
 ///api_version=2
 (script = registerScript({
 	name: "AvoidHazards",
-	version: "1.0",
+	version: "1.1",
 	authors: ["CzechHek"]
 })).import("Core.lib");
 
@@ -16,6 +16,8 @@ module = {
 		pressureplate = value.createBoolean("PressurePlate", false)
 	],
 	onBlockBB: function (e) {
+		if (!mc.thePlayer) return
+
 		switch (e.getBlock()) {
 			case Blocks.fire:
 				if (fire.get()) break
