@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.5",
+    version: "4.6",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -12,20 +12,19 @@ var Core = {
 function registerModule(m) {
     if (!Object.keys(m).length) return;
 
-    var settings = {}, dynamicValues = false;
-    for each (var v in toArray(m.values)) {
-        if (isObject(v)) {
-            dynamicValues = true;
-            v = v.value;
-        }
+    var settings = {};
+    (m.values = toArray(m.values)).forEach(function (v, i) {
+        if (Core.dynamicValues[v]) m.values[i] = v = Core.dynamicValues[v];
+
         //Makes multiple "spacer" values possible
-        settings[v.getName() ? v.getName() : ("spacer" + Object.keys(settings).length)] = v instanceof Value ? v : v.getValue();
-    }
+        for each (v in toArray(v)) settings[v.getName() || ("spacer" + Object.keys(settings).length)] = v instanceof Value ? v : v.getValue();
+    });
 
     script.registerModule({
         name: m.name || script.scriptName,
         category: Core.categories.add(m.category || "Core"),
         description: m.description || "",
+        tag: m.tag || "",
         settings: settings
     }, function (module) {
         m.module = module;
@@ -49,21 +48,24 @@ function registerModule(m) {
         m.onClickBlock && module.on("clickBlock", m.onClickBlock.bind(m));
         m.onStrafe && module.on("strafe", m.onStrafe.bind(m));
         m.onSlowDown && module.on("slowDown", m.onSlowDown.bind(m));
+        m.onShutdown && module.on("shutdown", m.onShutdown.bind(m));
         m.onClickGuiLoaded && module.on("clickGuiLoaded", m.onClickGuiLoaded.bind(m));
+        m.onClickGuiOpen && module.on("clickGuiOpen", m.onClickGuiOpen.bind(m));
+        m.onClickGuiClosed && module.on("clickGuiClosed", m.onClickGuiClosed.bind(m));
+        m.onValueChanged && module.on("valueChanged", m.onValueChanged.bind(m))
+
+        /*-------------------------*/
+        /* Artificial Events™ core */
+        /*-------------------------*/
+
+        for each (var key in Object.keys(Core.artificialEvents)) m[key] && hookEvent(Core.artificialEvents[key], m[key].bind(m), function () m.module.state, m);
 
         /*----------------------*/
         /* Dynamic Values™ core */
         /*----------------------*/
 
-        ["shutdown", "clickGuiClosed", "clickGuiOpen", "valueChanged"].forEach(function (event, i) {
-            var eventTarget = m["on" + event[0].toUpperCase() + event.slice(1)];
-            (eventTarget || dynamicValues) && module.on(event, function () {
-                eventTarget && eventTarget.call(m);
-                dynamicValues && setValues(module, toArray(m.values).map(function (v) isObject(v) ? (v.isShown() || i < 2) && v.value : v).filter(Boolean));
-            });
-        });
-
-        for each (var key in Object.keys(Core.artificialEvents)) m[key] && hookEvent(Core.artificialEvents[key], m[key].bind(m), function () m.module.state, m);
+        if (m.values.some(function (v) Array.isArray(v))) //Detects if module values contain a dynamic value
+            ["shutdown", "clickGuiClosed", "clickGuiOpen"].forEach(function (event, i) module.on(event, function () Core.dynamicValues.update(m, i < 2)));
     });
 }
 
@@ -185,7 +187,7 @@ function setValues(module, values) {
 
     if (module instanceof ScriptModule) {
         var valuesMap = new LinkedHashMap();
-        for each (var v in values) valuesMap[v.getName()] = v instanceof Value ? v : v.getValue();
+        for each (var v in values) valuesMap[v.getName() || ("spacer" + valuesMap.size())] = v instanceof Value ? v : v.getValue();
         Core.ignoreValueChange = true;
         getField(module, "_values").set(module, valuesMap);
     } else if (module instanceof Module) {
@@ -399,9 +401,27 @@ function TextEditor(file) file instanceof File && (
     }
 );
 
+Core.dynamicValues = {
+    update: function (coreModule, forceAll) {
+        if (forceAll || mc.currentScreen instanceof ClickGui)
+            setValues(coreModule.module, coreModule.values.map(function (v) forceAll || !Array.isArray(v) || v[0].get() ? v : v[0]).flat())
+    }
+};
+
 value = {
     createBlock: function (name, value) new BlockValue(name, value),
-    createBoolean: function (name, value) new BoolValue(name, value),
+    createBoolean: function (name, value, dynamicValues) {
+        if (!dynamicValues) return new BoolValue(name, value);
+
+        var instance = new (Java.extend(BoolValue)) (name, value) {
+            onChanged: function () {
+                for each (var coreModule in toArray(module)) Core.dynamicValues.update(coreModule);
+            }
+        }
+
+        Core.dynamicValues[instance] = [instance, dynamicValues].flat();
+        return instance
+    },
     createFloat: function (name, value, min, max) new FloatValue(name, value, min, max),
     createFont: function (name, value) new FontValue(name, value),
     createInteger: function (name, value, min, max) new IntegerValue(name, value, min, max),
@@ -699,7 +719,7 @@ script.on("load", function () {
         onText: TextEvent.class,
         onTick: TickEvent.class
     };
-    
+
     [module, command].forEach(function (c, i) c.forEach(function (v) [registerModule, registerCommand][i](v)));
 
     script.on("enable", function () {
