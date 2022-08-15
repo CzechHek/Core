@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.7",
+    version: "4.8",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -98,12 +98,12 @@ Core.registerCommand = function (c) {
     var command = new (Java.extend(Command)) (aliases[0], Java.to(aliases, "java.lang.String[]")) {
         execute: function (args) {
             args = Java.from(args);
-            var formattedArgs = args.toLowerCase(), scope = c, scopePos = 0, parameters = [];
+            var formattedArgs = args.toLowerCase(), scope = c, scopePos = 0, parameters = [], found;
             formattedArgs[0] = "handler";
 
             for each (var arg in formattedArgs) {
                 var scopeArray = toArray(scope);
-                var found = scopeArray.find(function (e) e.hasOwnProperty(arg));
+                found = scopeArray.find(function (e) e.hasOwnProperty(arg));
 
                 if (found) {
                     scope = found[arg];
@@ -119,13 +119,14 @@ Core.registerCommand = function (c) {
                     if (functions.length) {
                         for each (func in functions) {
                             var parameters = getFunctionParameters(func);
-                            if (scopePos + parameters.length <= args.length) return func.apply(null, args.slice(scopePos));
+                            if (scopePos + parameters.length <= args.length) return func.apply(command, args.slice(scopePos));
                         }
                         parameters = functions.map(function (func) getFunctionParameters(func));
                         break
                     }
                 } else {
                     args = args.slice(0, formattedArgs.indexOf(arg));
+                    clearChat();
                     print("§4▏ §c§lInvalid subcommand§4:");
                     print("§4▏§c", args.join(" "), "„§4§l" + arg + "§c“");
                     break
@@ -133,6 +134,7 @@ Core.registerCommand = function (c) {
             }
             
             if (args.length == 1) {
+                found !== null && clearChat();
                 print("§8▏§7§l", c.name || script.scriptName, "§8v§l" + (c.version || script.scriptVersion), "§7by§8§l", toArray(c.author || Java.from(script.scriptAuthors)).join("§7, §8§l"));
                 if (c.aliases.length > 1) {
                     print("§8▏ §7§lAvailable aliases§8: (§7§l" + c.aliases.length + "§8)");
@@ -156,7 +158,8 @@ Core.registerCommand = function (c) {
     }
 
     LiquidBounce.commandManager.registerCommand(command);
-    Core.scriptReflector.registeredCommands.add(0, command);
+    Core.registeredCommandsField.get(script).add(command);
+    return command;
 }
 
 /*-------------------*/
@@ -342,6 +345,12 @@ function downloadDirectory(url, destination, onSuccess, onFailure) {
     }).start();
 }
 
+//mc.ingameGUI.getChatGUI().clearChatMessages() also clears message history cache that's accessible by pressing arrow up
+function clearChat() {
+    var chatGui = new Reflector(mc.ingameGUI.getChatGUI());
+    chatGui.drawnChatLines.clear();
+    chatGui.chatLines.clear();
+}
 
 /*----------------------*/
 /* Class-like functions */
@@ -451,7 +460,7 @@ value = {
 /* Object extensions */
 /*-------------------*/
 
-//array.shuffle([boolean]) - randomizes elements order, overwrites and returns the array
+//Array.shuffle([boolean]) - randomizes elements order, overwrites and returns the array
 //parameters: boolean - optional; false -> doesn't shuffle
 Object.defineProperty(Array.prototype, "shuffle", {
     writable: true,
@@ -467,7 +476,7 @@ Object.defineProperty(Array.prototype, "shuffle", {
     }
 });
 
-//Array.find(function, [boolean]) - finds first element that fullfills a condition, returns the element or index of the element
+//Array.find(function, [boolean]) - finds the first element that fulfills a condition, returns the element or index of the element
 //parameters: function - defines the condition, boolean - optional; true -> returns index
 Object.defineProperty(Array.prototype, "find", {
     value: function (func, returnIndex) {
@@ -476,13 +485,13 @@ Object.defineProperty(Array.prototype, "find", {
     }
 });
 
-//Array.includes(element) - checks if array has element, returns boolean
+//Array.includes(element) - checks if array has an element, returns boolean
 //parameters: element - element of the array to check for
 Object.defineProperty(Array.prototype, "includes", {
     value: function (element) this.indexOf(element) !== -1
 });
 
-//String.includes(string, [boolean]) - checks if string contains other string, case sensitive / insensitive, returns boolean
+//String.includes(string, [boolean]) - checks if a string contains other string, case sensitive / insensitive, returns boolean
 //parameters: string - string to check for, boolean - optional; true -> case insensitive search
 Object.defineProperty(String.prototype, "includes", {
     value: function (string, ignoreCase) ignoreCase ? this.toString().toLowerCase().contains(string.toLowerCase()) : this.toString().contains(string)
@@ -526,7 +535,19 @@ Math.toDegrees = function (radians) radians * 57.29577951308;
 /* Java importing */
 /*----------------*/
 
-Core.importedPackages = [];
+Core.importedPackages = [
+    "net.minecraft.block", "net.minecraft.block.material", "net.minecraft.block.properties", "net.minecraft.block.state",
+    "net.minecraft.client.gui", "net.minecraft.client.gui.inventory",
+    "net.minecraft.client.renderer", "net.minecraft.client.renderer.block.model",
+    "net.minecraft.entity", "net.minecraft.entity.boss", "net.minecraft.entity.effect", "net.minecraft.entity.item", "net.minecraft.entity.monster", "net.minecraft.entity.passive", "net.minecraft.entity.player", "net.minecraft.entity.projectile",
+    "net.minecraft.init",
+    "net.minecraft.item",
+    "net.minecraft.network", "net.minecraft.network.handshake.client", "net.minecraft.network.login.client", "net.minecraft.network.login.server", "net.minecraft.network.play.client", "net.minecraft.network.play.client.C03PacketPlayer", "net.minecraft.network.play.server", "net.minecraft.network.status.client", "net.minecraft.network.status.server",
+    "net.minecraft.util",
+    "net.ccbluex.liquidbounce.utils", "net.ccbluex.liquidbounce.utils.block", "net.ccbluex.liquidbounce.utils.extensions", "net.ccbluex.liquidbounce.utils.item", "net.ccbluex.liquidbounce.utils.login", "net.ccbluex.liquidbounce.utils.misc", "net.ccbluex.liquidbounce.utils.render", "net.ccbluex.liquidbounce.utils.render.shader", "net.ccbluex.liquidbounce.utils.render.shader.shaders", "net.ccbluex.liquidbounce.utils.timer",
+    "net.ccbluex.liquidbounce.value",
+    "net.ccbluex.liquidbounce.event"
+];
 
 function importPackage() {
     var packages = Array.prototype.slice.call(arguments);
@@ -549,21 +570,6 @@ __noSuchProperty__ = function (name) {
 
     throw new ReferenceError(name + " is not defined");
 }
-
-
-importPackage(
-    "net.minecraft.block", "net.minecraft.block.material", "net.minecraft.block.properties", "net.minecraft.block.state",
-    "net.minecraft.client.gui", "net.minecraft.client.gui.inventory",
-    "net.minecraft.client.renderer", "net.minecraft.client.renderer.block.model",
-    "net.minecraft.entity", "net.minecraft.entity.boss", "net.minecraft.entity.effect", "net.minecraft.entity.item", "net.minecraft.entity.monster", "net.minecraft.entity.passive", "net.minecraft.entity.player", "net.minecraft.entity.projectile",
-    "net.minecraft.init",
-    "net.minecraft.item",
-    "net.minecraft.network", "net.minecraft.network.handshake.client", "net.minecraft.network.login.client", "net.minecraft.network.login.server", "net.minecraft.network.play.client", "net.minecraft.network.play.client.C03PacketPlayer", "net.minecraft.network.play.server", "net.minecraft.network.status.client", "net.minecraft.network.status.server",
-    "net.minecraft.util",
-    "net.ccbluex.liquidbounce.utils", "net.ccbluex.liquidbounce.utils.block", "net.ccbluex.liquidbounce.utils.extensions", "net.ccbluex.liquidbounce.utils.item", "net.ccbluex.liquidbounce.utils.login", "net.ccbluex.liquidbounce.utils.misc", "net.ccbluex.liquidbounce.utils.render", "net.ccbluex.liquidbounce.utils.render.shader", "net.ccbluex.liquidbounce.utils.render.shader.shaders", "net.ccbluex.liquidbounce.utils.timer",
-    "net.ccbluex.liquidbounce.value",
-    "net.ccbluex.liquidbounce.event"
-);
 
 //Used variables
 URL = Java.type("java.net.URL");
@@ -596,6 +602,7 @@ PositionedSoundRecord = Java.type("net.minecraft.client.audio.PositionedSoundRec
 Core.outboundPacketsQueueField = getField(NetworkManager, "field_150745_j");
 Core.flushOutboundQueueMethod = getMethod(NetworkManager, "func_150733_h");
 Core.dispatchPacketMethod = getMethod(NetworkManager, "func_150732_b");
+Core.registeredCommandsField = getField(Script, "registeredCommands");
 Core.readWriteLockField = getField(NetworkManager, "field_181680_j");
 Core.registeredModulesField = getField(Script, "registeredModules");
 Core.remapperMethods = getField(Remapper, "methods").get(Remapper);
@@ -623,7 +630,7 @@ Core.hookClickGui = function () {
 
 Core.hookFileManager = function () {
     Core.ignoreValueChange = false;
-    LiquidBounce.fileManager = new (Java.extend(FileManager)) () {
+    LiquidBounce.fileManager = new (Java.extend(FileManager))() {
         saveConfig: function (config) {
             if (config instanceof ValuesConfig) {
                 if (Core.ignoreValueChange) Core.ignoreValueChange = false;
@@ -632,6 +639,96 @@ Core.hookFileManager = function () {
             Java.super(LiquidBounce.fileManager).saveConfig(config);
         }
     }
+}
+
+Core.hookReloader = function () {
+    var ReloadCommand = Java.type("net.ccbluex.liquidbounce.features.command.commands.ReloadCommand"),
+        ModuleCommand = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCommand");
+    for each (var command in commandManager.commands.clone()) {
+        if (command instanceof ReloadCommand) {
+            commandManager.commands.remove(command);
+            break
+        }
+    }
+
+    Core.registerCommand({
+        name: "Reloader",
+        aliases: ["reload", "r"],
+        author: "CzechHek",
+        version: "4.0",
+        handler: function (type) {
+            switch (type.toLowerCase()) {
+                case "scripts":
+                    LiquidBounce.INSTANCE.setStarting(true);
+    
+                    scriptManager.disableScripts();
+                    scriptManager.unloadScripts();
+    
+                    for each (var command in commandManager.commands.clone())
+                        command instanceof ModuleCommand && command.getModule() instanceof ScriptModule && commandManager.unregisterCommand(command);
+    
+                    scriptManager.loadScripts();
+                    scriptManager.enableScripts();
+    
+                    LiquidBounce.fileManager.loadConfigs(LiquidBounce.fileManager.modulesConfig, LiquidBounce.fileManager.valuesConfig);
+                    Core.hookClickGui();
+                    LiquidBounce.INSTANCE.setStarting(false);
+    
+                    print("§2▏ §a§lReloaded§a all scripts§2!");
+                    break
+                case "clickgui":
+                    Core.hookClickGui();
+                    print("§2▏ §a§lReloaded§a ClickGUI§2!");
+                    break
+                case "fonts":
+                    Fonts.loadFonts();
+                    print("§2▏ §a§lReloaded§a all fonts§2!");
+                    break
+                case "configs":
+                    LiquidBounce.fileManager.loadAllConfigs();
+                    print("§2▏ §a§lReloaded§a all configs§2!");
+                    break
+                default:
+                    var targetScript = Java.from(scriptManager.scripts).find(function (script) script.scriptName.equalsIgnoreCase(type));
+                    if (!targetScript) return print("§4▏ §cScript „§4" + type + "§c“ §lnot found§4!");
+    
+                    LiquidBounce.INSTANCE.setStarting(true);
+    
+                    targetScript.onDisable();
+                    scriptManager.scripts.remove(targetScript);
+    
+                    var registeredModules = Core.registeredModulesField.get(targetScript);
+                    if (registeredModules.length) {
+                        for each (var command in commandManager.commands.clone()) {
+                            if (!(command instanceof ModuleCommand)) continue
+                            for each (var module in registeredModules) {
+                                if (command.getModule() == module) {
+                                    commandManager.unregisterCommand(command);
+                                    registeredModules.remove(module);
+                                    break
+                                }
+                            }
+                        }
+                    }
+    
+                    var newScript = new Script(targetScript.scriptFile);
+                    newScript.initScript();
+                    scriptManager.scripts.add(newScript);
+                    newScript.onEnable();
+    
+                    LiquidBounce.fileManager.loadConfigs(LiquidBounce.fileManager.modulesConfig, LiquidBounce.fileManager.valuesConfig);
+                    Core.hookClickGui();
+                    LiquidBounce.INSTANCE.setStarting(false);
+
+                    print("§2▏ §aScript „§2" + type + "§a“ §lreloaded§2!");
+            }
+        },
+        onTabComplete: function (args) {
+            var options = Java.from(scriptManager.scripts).map(function (script) script.scriptName);
+            options.push("Fonts", "ClickGUI", "Scripts", "Configs");
+            return options.filter(function (name) name.toLowerCase().startsWith(args[0].toLowerCase()));
+        }
+    });
 }
 
 
@@ -682,6 +779,8 @@ Core.runUpdater = function () {
             if (LiquidBounce.clickGui) {
                 Core.hookClickGui();
                 Core.hookFileManager();
+                Core.hookReloader();
+                
                 timer.cancel();
                 timer.purge();
             }
