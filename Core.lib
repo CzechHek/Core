@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.6",
+    version: "4.7",
     API_V2: typeof _AdaptedModule == "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -9,7 +9,7 @@ var Core = {
 /* Module core */
 /*-------------*/
 
-function registerModule(m) {
+Core.registerModule = function (m) {
     if (!Object.keys(m).length) return;
 
     var settings = {};
@@ -17,7 +17,7 @@ function registerModule(m) {
         if (Core.dynamicValues[v]) m.values[i] = v = Core.dynamicValues[v];
 
         //Makes multiple "spacer" values possible
-        for each (v in toArray(v)) settings[v.getName() || ("spacer" + Object.keys(settings).length)] = v instanceof Value ? v : v.getValue();
+        for each (var v in toArray(v)) settings[v.getName() || ("spacer" + Object.keys(settings).length)] = v instanceof Value ? v : v.getValue();
     });
 
     script.registerModule({
@@ -28,7 +28,7 @@ function registerModule(m) {
         settings: settings
     }, function (module) {
         m.module = module;
-        m.reflectorModule = new Reflector(module);
+        m.moduleReflector = new Reflector(module);
 
         m.onEnable && module.on("enable", m.onEnable.bind(m));
         m.onDisable && module.on("disable", m.onDisable.bind(m));
@@ -84,22 +84,19 @@ function hookEvent(eventClass, func, handleEventsCallback, coreModule) {
     Core.eventManager.registry[eventClass] = targets;
 
     //Registering event in ScriptModule's events HashMap to make them callable via callEvent() function.
-    coreModule && coreModule.reflectorModule.events.put(eventClass.simpleName[0].toLowerCase() + eventClass.simpleName.slice(1, -5) /*BlockBBEvent -> blockBB, ...*/, func);
+    coreModule && coreModule.moduleReflector.events.put(eventClass.simpleName[0].toLowerCase() + eventClass.simpleName.slice(1, -5) /*BlockBBEvent -> blockBB, ...*/, func);
 }
 
 /*--------------*/
 /* Command core */
 /*--------------*/
 
-function registerCommand(c) {
+Core.registerCommand = function (c) {
     if (!Object.keys(c).length) return;
 
     var aliases = toArray(c.aliases || c.name || script.scriptName).toLowerCase();
-    script.registerCommand({
-        name: aliases[0],
-        aliases: aliases
-    }, function (command) {
-        command.on("execute", function (args) {
+    var command = new (Java.extend(Command)) (aliases[0], Java.to(aliases, "java.lang.String[]")) {
+        execute: function (args) {
             args = Java.from(args);
             var formattedArgs = args.toLowerCase(), scope = c, scopePos = 0, parameters = [];
             formattedArgs[0] = "handler";
@@ -112,9 +109,9 @@ function registerCommand(c) {
                     scope = found[arg];
                     scopePos++;
 
-                    var scopeArray = toArray(scope);
-                    var objects = scopeArray.filter(function (e) isObject(e));
-                    var scopeSubcommands = objects.map(function (o) Object.keys(o)).flat();
+                    var scopeArray = toArray(scope),
+                        objects = scopeArray.filter(function (e) isObject(e)),
+                        scopeSubcommands = objects.map(function (o) Object.keys(o)).flat();
 
                     if (scopeSubcommands.includes(formattedArgs[scopePos])) continue
 
@@ -151,8 +148,15 @@ function registerCommand(c) {
                 print("§8▏ §7§lRequired parameters§8: (§7§l" + parameters.map(function (params) params.length).join("§8/§7§l") + "§8)");
                 for each (params in parameters) print("§8▏§f", args.join(" "), "„§7" + params.slice(args.length - scopePos).map(function (param) param.replaceAll("_", " ")).join("§f“ „§7") + "§f“");
             }
-        });
-    });
+        },
+        tabComplete: function (args) {
+            args = Java.from(args);
+            return Java.to(c.onTabComplete ? c.onTabComplete(args)/*.filter(function (string) string.toLowerCase().startsWith(args.last().toLowerCase()))*/ : [], "java.util.List");
+        }
+    }
+
+    LiquidBounce.commandManager.registerCommand(command);
+    Core.scriptReflector.registeredCommands.add(0, command);
 }
 
 /*-------------------*/
@@ -208,9 +212,9 @@ function setValues(module, values) {
 
 function getValues(module) Java.from(module.values);
 
-function getNearestTarget(entityType, fromEntity, _entity) mc.theWorld.loadedEntityList.stream().filter(function (e) e != mc.thePlayer && (!entityType || e instanceof entityType) && EntityUtils.isSelected(e, true)).min(function (a, b) (_entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - _entity.getDistanceToEntity(b)).orElse(null);
+function getNearestTarget(entityType, fromEntity, _entity) mc.theWorld.loadedEntityList.stream().filter(function (e) e != mc.thePlayer && (e instanceof entityType || (!entityType && EntityUtils.isSelected(e, true)))).min(function (a, b) (_entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - _entity.getDistanceToEntity(b)).orElse(null);
 
-function getTargetsInRange(range, entityType) Java.from(mc.theWorld.loadedEntityList).filter(function (e) e != mc.thePlayer && (!entityType || e instanceof entityType) && EntityUtils.isSelected(e, true) && (!range || PlayerExtensionKt.getDistanceToEntityBox(e, mc.thePlayer) <= range));
+function getTargetsInRange(range, entityType) Java.from(mc.theWorld.loadedEntityList).filter(function (e) e != mc.thePlayer && (e instanceof entityType || (!entityType && EntityUtils.isSelected(e, true))) && (!range || PlayerExtensionKt.getDistanceToEntityBox(e, mc.thePlayer) <= range));
 
 function getPlayer(nick) Java.from(mc.theWorld.playerEntities).find(function (e) StringUtils.stripControlCodes(e.getName()).equals(nick));
 
@@ -221,6 +225,8 @@ function getDurability(stack) stack && stack.getMaxDamage() - stack.getItemDamag
 function getAttackDamage(stack, _item) stack && (_item = stack.getItem()) && (_item instanceof ItemSword || _item instanceof ItemTool) ? Java.from(_item.getItemAttributeModifiers().get("generic.attackDamage"))[0].getAmount() + 1.25 * ItemUtils.getEnchantment(stack, Enchantment.sharpness) : -1;
 
 function getBreakingSpeed(stack, block, _item) stack && (_item = stack.getItem()) && (_item instanceof ItemTool) ? _item.getStrVsBlock(stack, block) : 1;
+
+function getFacing(blockData) blockData && (blockData instanceof BlockPos ? mc.theWorld.getBlockState(blockData) : blockData).getProperties().get(BlockDirectional.FACING);
 
 print = (Chat = chat = { print: function () { ClientUtils.displayChatMessage(Array.prototype.slice.call(arguments).join(" ")) } }).print;
 
@@ -315,7 +321,7 @@ function getFunctionParameters(func) {
     return []
 }
 
-//Downloads GitHub directory.
+//Downloads a GitHub directory.
 //Uses GitHub's API URL (for example https://api.github.com/repos/CzechHek/Core/contents/Scripts)
 function downloadDirectory(url, destination, onSuccess, onFailure) {
     new Thread(function () {
@@ -579,6 +585,7 @@ Enchantment = Java.type("net.minecraft.enchantment.Enchantment");
 LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce");
 FileManager = Java.type("net.ccbluex.liquidbounce.file.FileManager");
 Module = Java.type("net.ccbluex.liquidbounce.features.module.Module");
+Command = Java.type("net.ccbluex.liquidbounce.features.command.Command");
 Remapper = Java.type("net.ccbluex.liquidbounce.script.remapper.Remapper");
 ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule");
 ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui");
@@ -610,8 +617,7 @@ Core.hookClickGui = function () {
         }
     }
     LiquidBounce.fileManager.loadConfig(LiquidBounce.fileManager.clickGuiConfig);
-    new Reflector(ClickGUIModule).updateStyle();
-    if (mc.currentScreen instanceof ClickGui) mc.displayGuiScreen(LiquidBounce.clickGui);
+    if (mc.currentScreen instanceof ClickGui) ClickGUIModule.onEnable();
     callEvent("clickGuiLoaded");
 };
 
@@ -708,6 +714,7 @@ script.on("load", function () {
 
     Core.categories = new EditableEnum(ModuleCategory);
     Core.eventManager = new Reflector(LiquidBounce.eventManager);
+    Core.scriptReflector = new Reflector(script);
     Core.defaultAnnotation = getMethod(moduleManager, "onKey").getAnnotation(EventTarget.class);
     Core.artificialEvents = {
         onBlockBB: BlockBBEvent.class,
@@ -720,7 +727,7 @@ script.on("load", function () {
         onTick: TickEvent.class
     };
 
-    [module, command].forEach(function (c, i) c.forEach(function (v) [registerModule, registerCommand][i](v)));
+    [module, command].forEach(function (c, i) c.forEach(function (v) Core[["registerModule", "registerCommand"][i]](v)));
 
     script.on("enable", function () {
         for each (var c in [module, command]) for each (var v in c) v.onLoad && v.onLoad();
