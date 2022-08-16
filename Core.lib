@@ -1,8 +1,8 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.8",
-    API_V2: typeof _AdaptedModule == "undefined"
+    version: "4.9",
+    API_V2: typeof _AdaptedModule === "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
 /*-------------*/
@@ -91,7 +91,7 @@ function hookEvent(eventClass, func, handleEventsCallback, coreModule) {
 /* Command core */
 /*--------------*/
 
-Core.registerCommand = function (c) {
+Core.registerCommand = function (c, stale) {
     if (!Object.keys(c).length) return;
 
     var aliases = toArray(c.aliases || c.name || script.scriptName).toLowerCase();
@@ -158,7 +158,7 @@ Core.registerCommand = function (c) {
     }
 
     LiquidBounce.commandManager.registerCommand(command);
-    Core.registeredCommandsField.get(script).add(command);
+    !stale && Core.registeredCommandsField.get(script).add(command);
     return command;
 }
 
@@ -557,7 +557,7 @@ function importPackage() {
 
 __noSuchProperty__ = function (name) {
     if (name.endsWith("Module")) {
-        var module = moduleManager.getModule(name.slice(0, -6));
+        var module = LiquidBounce.moduleManager.getModule(name.slice(0, -6));
         if (module) return this[name] = module;
     }
 
@@ -643,92 +643,114 @@ Core.hookFileManager = function () {
 
 Core.hookReloader = function () {
     var ReloadCommand = Java.type("net.ccbluex.liquidbounce.features.command.commands.ReloadCommand"),
-        ModuleCommand = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCommand");
-    for each (var command in commandManager.commands.clone()) {
+        ModuleCommand = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCommand"),
+        Fonts = Java.type("net.ccbluex.liquidbounce.ui.font.Fonts"),
+        FileConfigClass = Java.type("net.ccbluex.liquidbounce.file.FileConfig").class;
+    for each (var command in LiquidBounce.commandManager.commands.clone()) {
         if (command instanceof ReloadCommand) {
-            commandManager.commands.remove(command);
-            break
-        }
-    }
-
-    Core.registerCommand({
-        name: "Reloader",
-        aliases: ["reload", "r"],
-        author: "CzechHek",
-        version: "4.0",
-        handler: function (type) {
-            switch (type.toLowerCase()) {
-                case "scripts":
-                    LiquidBounce.INSTANCE.setStarting(true);
-    
-                    scriptManager.disableScripts();
-                    scriptManager.unloadScripts();
-    
-                    for each (var command in commandManager.commands.clone())
-                        command instanceof ModuleCommand && command.getModule() instanceof ScriptModule && commandManager.unregisterCommand(command);
-    
-                    scriptManager.loadScripts();
-                    scriptManager.enableScripts();
-    
-                    LiquidBounce.fileManager.loadConfigs(LiquidBounce.fileManager.modulesConfig, LiquidBounce.fileManager.valuesConfig);
-                    Core.hookClickGui();
-                    LiquidBounce.INSTANCE.setStarting(false);
-    
-                    print("§2▏ §a§lReloaded§a all scripts§2!");
-                    break
-                case "clickgui":
-                    Core.hookClickGui();
-                    print("§2▏ §a§lReloaded§a ClickGUI§2!");
-                    break
-                case "fonts":
-                    Fonts.loadFonts();
-                    print("§2▏ §a§lReloaded§a all fonts§2!");
-                    break
-                case "configs":
-                    LiquidBounce.fileManager.loadAllConfigs();
-                    print("§2▏ §a§lReloaded§a all configs§2!");
-                    break
-                default:
-                    var targetScript = Java.from(scriptManager.scripts).find(function (script) script.scriptName.equalsIgnoreCase(type));
-                    if (!targetScript) return print("§4▏ §cScript „§4" + type + "§c“ §lnot found§4!");
-    
-                    LiquidBounce.INSTANCE.setStarting(true);
-    
-                    targetScript.onDisable();
-                    scriptManager.scripts.remove(targetScript);
-    
-                    var registeredModules = Core.registeredModulesField.get(targetScript);
-                    if (registeredModules.length) {
-                        for each (var command in commandManager.commands.clone()) {
-                            if (!(command instanceof ModuleCommand)) continue
-                            for each (var module in registeredModules) {
-                                if (command.getModule() == module) {
-                                    commandManager.unregisterCommand(command);
-                                    registeredModules.remove(module);
-                                    break
+            LiquidBounce.commandManager.commands.remove(command);
+            
+            return Core.registerCommand({
+                name: "Reloader",
+                aliases: ["reload", "r"],
+                author: "CzechHek",
+                version: "4.1",
+                handler: function (type) {
+                    clearChat();
+                    switch (type.toLowerCase()) {
+                        case "scripts":
+                            LiquidBounce.INSTANCE.setStarting(true);
+            
+                            scriptManager.disableScripts();
+                            scriptManager.unloadScripts();
+            
+                            for each (var command in LiquidBounce.commandManager.commands.clone())
+                                command instanceof ModuleCommand && command.getModule() instanceof ScriptModule && LiquidBounce.commandManager.unregisterCommand(command);
+            
+                            for each (var file in scriptManager.scriptsFolder.listFiles()) {
+                                if (file.getName().endsWith(".js")) {
+                                    var newScript = new Script(file);
+                                    try {
+                                        newScript.initScript();
+                                    } catch (e) {
+                                        print("§4▏ §c§lFailed§c to reload script „§4" + file.getName().slice(0, -3) + "§c“§4!");
+                                        print(e);
+                                        continue
+                                    }
+                                    scriptManager.scripts.add(newScript);
                                 }
                             }
-                        }
+                            scriptManager.enableScripts();
+            
+                            LiquidBounce.fileManager.loadConfigs(LiquidBounce.fileManager.modulesConfig, LiquidBounce.fileManager.valuesConfig);
+                            Core.hookClickGui();
+                            LiquidBounce.INSTANCE.setStarting(false);
+            
+                            scriptManager.scripts.length && print("§2▏ §a§lReloaded§a scripts§2! §8(§7§l" + scriptManager.scripts.length + "§8)");
+                            break
+                        case "clickgui":
+                            Core.hookClickGui();
+                            print("§2▏ §a§lReloaded§a ClickGUI§2!");
+                            break
+                        case "fonts":
+                            Fonts.loadFonts();
+                            print("§2▏ §a§lReloaded§a all fonts§2! §8(§7§l" + Fonts.getFonts().length + "§8)");
+                            break
+                        case "configs":
+                            LiquidBounce.fileManager.loadAllConfigs();
+                            print("§2▏ §a§lReloaded§a all configs§2! §8(§7§l" + Java.from(LiquidBounce.fileManager.class.superclass.getDeclaredFields()).filter(function (field) field.getType() == FileConfigClass).length + "§8)");
+                            break
+                        default:
+                            var targetScript = Java.from(scriptManager.scripts).find(function (script) script.scriptName.equalsIgnoreCase(type));
+                            if (!targetScript) return print("§4▏ §cScript „§4" + type + "§c“ §lnot found§4!");
+            
+                            LiquidBounce.INSTANCE.setStarting(true);
+            
+                            targetScript.onDisable();
+                            scriptManager.scripts.remove(targetScript);
+            
+                            var registeredModules = Core.registeredModulesField.get(targetScript);
+                            if (registeredModules.length) {
+                                for each (var command in LiquidBounce.commandManager.commands.clone()) {
+                                    if (!(command instanceof ModuleCommand)) continue
+                                    for each (var module in registeredModules) {
+                                        if (command.getModule() == module) {
+                                            LiquidBounce.commandManager.unregisterCommand(command);
+                                            registeredModules.remove(module);
+                                            break
+                                        }
+                                    }
+                                }
+                            }
+            
+                            var newScript = new Script(targetScript.scriptFile);
+                            try {
+                                newScript.initScript();
+                            } catch (e) {
+                                print("§4▏ §c§lFailed§c to reload script „§4" + type + "§c“§4!");
+                                print(e);
+                                LiquidBounce.INSTANCE.setStarting(false);
+                                return
+                            }
+                            
+                            scriptManager.scripts.add(newScript);
+                            newScript.onEnable();
+            
+                            LiquidBounce.fileManager.loadConfigs(LiquidBounce.fileManager.modulesConfig, LiquidBounce.fileManager.valuesConfig);
+                            Core.hookClickGui();
+                            LiquidBounce.INSTANCE.setStarting(false);
+        
+                            print("§2▏ §aScript „§2" + type + "§a“ §lreloaded§2!");
                     }
-    
-                    var newScript = new Script(targetScript.scriptFile);
-                    newScript.initScript();
-                    scriptManager.scripts.add(newScript);
-                    newScript.onEnable();
-    
-                    LiquidBounce.fileManager.loadConfigs(LiquidBounce.fileManager.modulesConfig, LiquidBounce.fileManager.valuesConfig);
-                    Core.hookClickGui();
-                    LiquidBounce.INSTANCE.setStarting(false);
-
-                    print("§2▏ §aScript „§2" + type + "§a“ §lreloaded§2!");
-            }
-        },
-        onTabComplete: function (args) {
-            var options = Java.from(scriptManager.scripts).map(function (script) script.scriptName);
-            options.push("Fonts", "ClickGUI", "Scripts", "Configs");
-            return options.filter(function (name) name.toLowerCase().startsWith(args[0].toLowerCase()));
+                },
+                onTabComplete: function (args) {
+                    var options = Java.from(scriptManager.scripts).map(function (script) script.scriptName);
+                    options.push("Fonts", "ClickGUI", "Scripts", "Configs");
+                    return options.filter(function (name) name.toLowerCase().startsWith(args[0].toLowerCase()));
+                }
+            }, true);
         }
-    });
+    }
 }
 
 
@@ -798,7 +820,7 @@ script.on("load", function () {
     module = toArray(module || {}); command = toArray(command || {});
 
     if (!Core.API_V2) {
-        script.scriptName = (script.scriptName === "Legacy Script" ? scriptName || module[0].name || command[0].name || (command[0].aliases && command[0].aliases[0]) || "Script" : script.scriptName).toString();
+        script.scriptName = (script.scriptName === "Legacy Script" ? scriptName || module[0].name || command[0].name || (command[0].aliases && command[0].aliases[0]) || script.getScriptFile().getName().slice(0, -3) : script.scriptName).toString();
         script.scriptAuthors = script.scriptAuthors[0] === "Please Update Script" ? toArray((scriptAuthor || module[0].author || command[0].author || "Author").toString()) : script.scriptAuthors;
         script.scriptVersion = (script.scriptVersion === "1.0.0" ? scriptVersion || module[0].version || command[0].version || "1.0.0" : script.scriptVersion).toString();
     }
@@ -814,7 +836,7 @@ script.on("load", function () {
     Core.categories = new EditableEnum(ModuleCategory);
     Core.eventManager = new Reflector(LiquidBounce.eventManager);
     Core.scriptReflector = new Reflector(script);
-    Core.defaultAnnotation = getMethod(moduleManager, "onKey").getAnnotation(EventTarget.class);
+    Core.defaultAnnotation = getMethod(LiquidBounce.moduleManager, "onKey").getAnnotation(EventTarget.class);
     Core.artificialEvents = {
         onBlockBB: BlockBBEvent.class,
         onClickWindow: ClickWindowEvent.class,
