@@ -15,7 +15,6 @@ module = {
         
         e.setBoundingBox(bb.expand(0, 0.5, 0));
     },
-    onClientShutdown: function () {},
     onEntityMovement: function (e) {
         var entity = e.getMovedEntity();
     },
