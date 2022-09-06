@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.9",
+    version: "4.10",
     API_V2: typeof _AdaptedModule === "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -72,8 +72,10 @@ Core.registerModule = function (m) {
 Core.hookedEvents = new java.util.HashMap();
 
 function hookEvent(eventClass, func, handleEventsCallback, coreModule) {
+    if (!(eventClass instanceof Class)) eventClass = eventClass.class;
+
     var listener = new (Java.extend(Listenable, java.util.function.Consumer, {
-            handleEvents: handleEventsCallback,
+            handleEvents: handleEventsCallback ? handleEventsCallback : coreModule ? function () coreModule.module.state : function () true,
             accept: func
         })),
         targets = Core.eventManager.registry.getOrDefault(eventClass, new ArrayList()),
@@ -239,9 +241,9 @@ function showMessage(text, title, alwaysOnTop, type, _dialog)
         _dialog.setVisible(true);
     }).start();
 
-function getMethod(clazz, name, _method) ((_method = Java.from((clazz instanceof Class ? clazz : clazz.class).getDeclaredMethods()).find(function (m) m.getName() == name)) && _method.setAccessible(true), _method);
+function getMethod(clazz, name, _method) ((_method = getMethods(clazz).find(function (m) m.getName() == name)) && _method.setAccessible(true), _method);
 
-function getField(clazz, name, _field) ((_field = getFields(clazz instanceof Class ? clazz : clazz.class).find(function (f) f.getName() == name)) && _field.setAccessible(true), _field);
+function getField(clazz, name, _field) ((_field = getFields(clazz).find(function (f) f.getName() == name)) && _field.setAccessible(true), _field);
 
 function getFields(clazz) {
     var _fields = Java.from((clazz = clazz instanceof Class ? clazz : clazz.class).getDeclaredFields());
@@ -289,6 +291,8 @@ function callEvent(name, args) scriptManager.scripts.forEach(function (s) Core.r
 function playSound(name, pitch) mc.getSoundHandler().playSound(PositionedSoundRecord.create(new ResourceLocation(name), pitch || 1));
 
 function sendPacket(packet, triggerEvent) {
+    if (!mc.getNetHandler()) return
+
     var networkManager = mc.getNetHandler().getNetworkManager();
     if (triggerEvent) networkManager.sendPacket(packet);
     else if (networkManager.isChannelOpen()) {
@@ -367,11 +371,11 @@ function EditableEnum(target) {
     this.values = function () Java.from(valuesField.get(null));
 }
 
-function Reflector(object) object instanceof java.lang.Object ? 
+function Reflector(object) object && object instanceof java.lang.Object ? 
     new JSAdapter() {
         __get__: function (name) {
             var field = getField(object, getSRGName(object, name, Core.remapperFields));
-            return field ? new Reflector(field.get(object)) : object[name];
+            return field ? field.get(object) : object[name];
         },
         __put__: function (name, value) {
             var field = getField(object, getSRGName(object, name, Core.remapperFields));
@@ -379,7 +383,7 @@ function Reflector(object) object instanceof java.lang.Object ?
         },
         __call__: function (name) {
             switch (name) {
-                case "toString": return object.toString();
+                case "toString": return object + ""//.toString() doesn't work for beans
                 case "valueOf": return object;
                 default: return getMethod(object, getSRGName(object, name, Core.remapperMethods)).invoke(object, Java.to(Array.prototype.slice.call(arguments, 1), "java.lang.Object[]"));
             }
@@ -531,6 +535,8 @@ Math.toRadians = function (degrees) degrees * 0.01745329252;
 
 Math.toDegrees = function (radians) radians * 57.29577951308;
 
+Math.sign = function (num) num ? num < 0 ? -1 : 1 : 0;
+
 /*----------------*/
 /* Java importing */
 /*----------------*/
@@ -669,8 +675,8 @@ Core.hookReloader = function () {
             
                             for each (var file in scriptManager.scriptsFolder.listFiles()) {
                                 if (file.getName().endsWith(".js")) {
-                                    var newScript = new Script(file);
                                     try {
+                                        var newScript = new Script(file);
                                         newScript.initScript();
                                     } catch (e) {
                                         print("§4▏ §c§lFailed§c to reload script „§4" + file.getName().slice(0, -3) + "§c“§4!");
@@ -722,9 +728,8 @@ Core.hookReloader = function () {
                                     }
                                 }
                             }
-            
-                            var newScript = new Script(targetScript.scriptFile);
                             try {
+                                var newScript = new Script(targetScript.scriptFile);
                                 newScript.initScript();
                             } catch (e) {
                                 print("§4▏ §c§lFailed§c to reload script „§4" + type + "§c“§4!");
