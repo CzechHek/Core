@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.10",
+    version: "4.10+",
     API_V2: typeof _AdaptedModule === "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -375,7 +375,12 @@ function Reflector(object) object && object instanceof java.lang.Object ?
     new JSAdapter() {
         __get__: function (name) {
             var field = getField(object, getSRGName(object, name, Core.remapperFields));
-            return field ? field.get(object) : object[name];
+            if (field) return field.get(object);
+
+            var method = getMethod(object, getSRGName(object, name, Core.remapperMethods));
+            if (method) return method;
+
+            return object[name];
         },
         __put__: function (name, value) {
             var field = getField(object, getSRGName(object, name, Core.remapperFields));
