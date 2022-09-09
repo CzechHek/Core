@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.10+",
+    version: "4.11",
     API_V2: typeof _AdaptedModule === "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -12,9 +12,13 @@ var Core = {
 Core.registerModule = function (m) {
     if (!Object.keys(m).length) return;
 
-    var settings = {};
+    var settings = {}, dynamicValues;
     (m.values = toArray(m.values)).forEach(function (v, i) {
-        if (Core.dynamicValues[v]) m.values[i] = v = Core.dynamicValues[v];
+        var handler = Core.dynamicValues[v];
+        if (handler) {
+            v = handler.getActive(true);
+            if (!dynamicValues) dynamicValues = true;
+        }
 
         //Makes multiple "spacer" values possible
         for each (var v in toArray(v)) settings[v.getName() || ("spacer" + Object.keys(settings).length)] = v instanceof Value ? v : v.getValue();
@@ -30,42 +34,48 @@ Core.registerModule = function (m) {
         m.module = module;
         m.moduleReflector = new Reflector(module);
 
-        m.onEnable && module.on("enable", m.onEnable.bind(m));
-        m.onDisable && module.on("disable", m.onDisable.bind(m));
-        m.onUpdate && module.on("update", m.onUpdate.bind(m));
-        m.onMotion && module.on("motion", m.onMotion.bind(m));
-        m.onRender2D && module.on("render2D", m.onRender2D.bind(m));
-        m.onRender3D && module.on("render3D", m.onRender3D.bind(m));
-        m.onAttack && module.on("attack", m.onAttack.bind(m));
-        m.onJump && module.on("jump", m.onJump.bind(m));
-        m.onPacket && module.on("packet", m.onPacket.bind(m));
         m.onKey && module.on("key", m.onKey.bind(m));
+        m.onJump && module.on("jump", m.onJump.bind(m));
         m.onMove && module.on("move", m.onMove.bind(m));
         m.onStep && module.on("step", m.onStep.bind(m));
-        m.onStepConfirm && module.on("stepConfirm", m.onStepConfirm.bind(m));
         m.onWorld && module.on("world", m.onWorld.bind(m));
-        m.onSession && module.on("session", m.onSession.bind(m));
-        m.onClickBlock && module.on("clickBlock", m.onClickBlock.bind(m));
+        m.onAttack && module.on("attack", m.onAttack.bind(m));
+        m.onEnable && module.on("enable", m.onEnable.bind(m));
+        m.onMotion && module.on("motion", m.onMotion.bind(m));
+        m.onPacket && module.on("packet", m.onPacket.bind(m));
         m.onStrafe && module.on("strafe", m.onStrafe.bind(m));
-        m.onSlowDown && module.on("slowDown", m.onSlowDown.bind(m));
+        m.onUpdate && module.on("update", m.onUpdate.bind(m));
+        m.onDisable && module.on("disable", m.onDisable.bind(m));
+        m.onSession && module.on("session", m.onSession.bind(m));
+        m.onRender2D && module.on("render2D", m.onRender2D.bind(m));
+        m.onRender3D && module.on("render3D", m.onRender3D.bind(m));
         m.onShutdown && module.on("shutdown", m.onShutdown.bind(m));
+        m.onSlowDown && module.on("slowDown", m.onSlowDown.bind(m));
+        m.onClickBlock && module.on("clickBlock", m.onClickBlock.bind(m));
+        m.onStepConfirm && module.on("stepConfirm", m.onStepConfirm.bind(m));
+        m.onValueChanged && module.on("valueChanged", m.onValueChanged.bind(m));
         m.onClickGuiLoaded && module.on("clickGuiLoaded", m.onClickGuiLoaded.bind(m));
-        m.onClickGuiOpen && module.on("clickGuiOpen", m.onClickGuiOpen.bind(m));
-        m.onClickGuiClosed && module.on("clickGuiClosed", m.onClickGuiClosed.bind(m));
-        m.onValueChanged && module.on("valueChanged", m.onValueChanged.bind(m))
-
-        /*-------------------------*/
-        /* Artificial Events™ core */
-        /*-------------------------*/
-
-        for each (var key in Object.keys(Core.artificialEvents)) m[key] && hookEvent(Core.artificialEvents[key], m[key].bind(m), function () m.module.state, m);
 
         /*----------------------*/
         /* Dynamic Values™ core */
         /*----------------------*/
 
-        if (m.values.some(function (v) Array.isArray(v))) //Detects if module values contain a dynamic value
-            ["shutdown", "clickGuiClosed", "clickGuiOpen"].forEach(function (event, i) module.on(event, function () Core.dynamicValues.update(m, i < 2)));
+        ["clickGuiOpen", "clickGuiClosed"].forEach(function (event, i) {
+            var eventTarget = m["on" + event[0].toUpperCase() + event.slice(1)];
+            (eventTarget || dynamicValues) && module.on(event, function () {
+                eventTarget && eventTarget.call(m);
+                dynamicValues && Core.dynamicValues.update(m, i);
+            });
+        });
+
+        //Built-in shutdown event is only called when module is enabled, that could lead into dynamic values not getting saved. Has to be hooked artificially.
+        dynamicValues && hookEvent(ClientShutdownEvent, function () Core.dynamicValues.update(m, true));
+
+        /*-------------------------*/
+        /* Artificial Events™ core */
+        /*-------------------------*/
+
+        for (var key in Core.artificialEvents) m[key] && hookEvent(Core.artificialEvents[key], m[key].bind(m), function () m.module.state, m);
     });
 }
 
@@ -86,7 +96,7 @@ function hookEvent(eventClass, func, handleEventsCallback, coreModule) {
     Core.eventManager.registry[eventClass] = targets;
 
     //Registering event in ScriptModule's events HashMap to make them callable via callEvent() function.
-    coreModule && coreModule.moduleReflector.events.put(eventClass.simpleName[0].toLowerCase() + eventClass.simpleName.slice(1, -5) /*BlockBBEvent -> blockBB, ...*/, func);
+    if (coreModule) coreModule.moduleReflector.events[eventClass.simpleName[0].toLowerCase() + eventClass.simpleName.slice(1, -5) /*BlockBBEvent -> blockBB, ...*/] = func;
 }
 
 /*--------------*/
@@ -155,7 +165,7 @@ Core.registerCommand = function (c, stale) {
         },
         tabComplete: function (args) {
             args = Java.from(args);
-            return Java.to(c.onTabComplete ? c.onTabComplete(args)/*.filter(function (string) string.toLowerCase().startsWith(args.last().toLowerCase()))*/ : [], "java.util.List");
+            return Java.to(c.onTabComplete ? toArray(c.onTabComplete(args))/*.filter(function (string) string.toLowerCase().startsWith(args.last().toLowerCase()))*/ : [], "java.util.List");
         }
     }
 
@@ -215,7 +225,7 @@ function setValues(module, values) {
     LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.valuesConfig);
 }
 
-function getValues(module) Java.from(module.values);
+function getValues(module) module instanceof ScriptModule ? Java.from(module.values) : module instanceof Module && module.getValues();
 
 function getNearestTarget(entityType, fromEntity, _entity) mc.theWorld.loadedEntityList.stream().filter(function (e) e != mc.thePlayer && (e instanceof entityType || (!entityType && EntityUtils.isSelected(e, true)))).min(function (a, b) (_entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - _entity.getDistanceToEntity(b)).orElse(null);
 
@@ -311,7 +321,7 @@ function sendPacket(packet, triggerEvent) {
 }
 
 function getSRGName(clazz, name, map) {
-    clazz = clazz instanceof Class ? clazz : clazz.class;
+    if (!clazz instanceof Class) clazz = clazz.class;
     if (map.containsKey(clazz.name)) {
         for each (var entry in map.get(clazz.name).entrySet()) {
             if (entry.getValue() == name) return entry.getKey().split("(")[0];
@@ -352,8 +362,8 @@ function downloadDirectory(url, destination, onSuccess, onFailure) {
 //mc.ingameGUI.getChatGUI().clearChatMessages() also clears message history cache that's accessible by pressing arrow up
 function clearChat() {
     var chatGui = new Reflector(mc.ingameGUI.getChatGUI());
-    chatGui.drawnChatLines.clear();
-    chatGui.chatLines.clear();
+    chatGui.drawnChatLines && chatGui.drawnChatLines.clear();
+    chatGui.chatLines && chatGui.chatLines.clear();
 }
 
 /*----------------------*/
@@ -388,7 +398,7 @@ function Reflector(object) object && object instanceof java.lang.Object ?
         },
         __call__: function (name) {
             switch (name) {
-                case "toString": return object + ""//.toString() doesn't work for beans
+                case "toString": return object + ""//.toString() doesn't work for java beans
                 case "valueOf": return object;
                 default: return getMethod(object, getSRGName(object, name, Core.remapperMethods)).invoke(object, Java.to(Array.prototype.slice.call(arguments, 1), "java.lang.Object[]"));
             }
@@ -428,7 +438,20 @@ function TextEditor(file) file instanceof File && (
 Core.dynamicValues = {
     update: function (coreModule, forceAll) {
         if (forceAll || mc.currentScreen instanceof ClickGui)
-            setValues(coreModule.module, coreModule.values.map(function (v) forceAll || !Array.isArray(v) || v[0].get() ? v : v[0]).flat())
+            setValues(coreModule.module, coreModule.values.map(
+                function (v) {
+                    var handler = Core.dynamicValues[v];
+                    return handler ? handler.getActive(forceAll) : v;
+                }
+            ).flat());
+    },
+    handler: function (static, dynamic) {
+        this.getActive = function (forceAll) {
+            if (arrayValues) return [static, static.get() || forceAll ? dynamic : null];
+            else return [static, forceAll ? Object.values(dynamic) : dynamic[static.get()]];
+        };
+
+        var arrayValues = Array.isArray(dynamic);
     }
 };
 
@@ -443,13 +466,24 @@ value = {
             }
         }
 
-        Core.dynamicValues[instance] = [instance, dynamicValues].flat();
-        return instance
+        Core.dynamicValues[instance] = new Core.dynamicValues.handler(instance, dynamicValues);
+        return instance;
     },
     createFloat: function (name, value, min, max) new FloatValue(name, value, min, max),
     createFont: function (name, value) new FontValue(name, value),
     createInteger: function (name, value, min, max) new IntegerValue(name, value, min, max),
-    createList: function (name, values, value) new ListValue(name, values, value),
+    createList: function (name, values, value, dynamicValuesObject) {
+        if (!dynamicValuesObject) return new ListValue(name, values, value);
+
+        var instance = new (Java.extend(ListValue)) (name, values, value) {
+            onChanged: function () {
+                for each (var coreModule in toArray(module)) Core.dynamicValues.update(coreModule);
+            }
+        }
+
+        Core.dynamicValues[instance] = new Core.dynamicValues.handler(instance, dynamicValuesObject);
+        return instance;
+    },
     createText: function (name, value) new TextValue(name, value),
     createSpacer: function () new BoolValue("", false),
     createHeader: function (title) {
@@ -531,7 +565,18 @@ Object.defineProperty(Array.prototype, "toLowerCase", {
 //Array.flat(boolean) - https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Array/flat
 //parameters: false -> doesn't flatten
 Object.defineProperty(Array.prototype, "flat", {
-    value: function (bool) bool === false ? this : Array.prototype.concat.apply([], this)
+    value: function (bool, _result) {
+        if (bool === false) return this
+
+        _result = _result || [];
+
+        for each (var element in this) {
+            if (Array.isArray(element)) element.flat(true, _result);
+            else _result.push(element);
+        }
+
+        return _result
+    }
 });
 
 Math.trunc = function (v) (v = +v, (v - v % 1) || (!isFinite(v) || v === 0 ? v : v < 0 ? -0 : 0));
@@ -541,6 +586,38 @@ Math.toRadians = function (degrees) degrees * 0.01745329252;
 Math.toDegrees = function (radians) radians * 57.29577951308;
 
 Math.sign = function (num) num ? num < 0 ? -1 : 1 : 0;
+
+Object.values = function (obj) Object.keys(obj).map(function (key) obj[key]);
+
+/*----------------*/
+/* Importing core */
+/*----------------*/
+
+function importPackage(/*package, ...*/) {
+    var packages = Array.prototype.slice.call(arguments);
+
+    Core.importedPackages = Core.importedPackages.concat(packages);
+}
+
+function importFromScript(scriptName, propertyName) {
+    for each (var script in scriptManager.scripts) if (script.scriptName == scriptName) return new Reflector(script).scriptEngine.get(propertyName);
+}
+
+__noSuchProperty__ = function (name) {
+    if (name.endsWith("Module")) {
+        var module = LiquidBounce.moduleManager.getModule(name.slice(0, -6));
+        if (module) return this[name] = module;
+    }
+
+    for each (var package in Core.importedPackages) {
+        try {
+            var type = Java.type(package + "." + name);
+            return this[name] = type;
+        } catch (e) {}
+    }
+
+    throw new ReferenceError(name + " is not defined");
+}
 
 /*----------------*/
 /* Java importing */
@@ -560,43 +637,23 @@ Core.importedPackages = [
     "net.ccbluex.liquidbounce.event"
 ];
 
-function importPackage() {
-    var packages = Array.prototype.slice.call(arguments);
-
-    Core.importedPackages = Core.importedPackages.concat(packages);
-}
-
-__noSuchProperty__ = function (name) {
-    if (name.endsWith("Module")) {
-        var module = LiquidBounce.moduleManager.getModule(name.slice(0, -6));
-        if (module) return this[name] = module;
-    }
-
-    for each (var package in Core.importedPackages) {
-        try {
-            var type = Java.type(package + "." + name);
-            return this[name] = type;
-        } catch (e) {}
-    }
-
-    throw new ReferenceError(name + " is not defined");
-}
-
 //Used variables
-URL = Java.type("java.net.URL");
-File = Java.type("java.io.File");
-List = Java.type("java.util.List");
-Timer = Java.type("java.util.Timer");
-Class = Java.type("java.lang.Class");
-Thread = Java.type("java.lang.Thread");
+URL = java.net.URL;
+File = java.io.File;
+List = java.util.List;
+Class = java.lang.Class;
+Timer = java.util.Timer;
+Thread = java.lang.Thread;
+System = java.lang.System;
+Field = java.lang.reflect.Field;
+ArrayList = java.util.ArrayList;
+Keyboard = org.lwjgl.input.Keyboard;
+Modifier = java.lang.reflect.Modifier;
+JOptionPane = javax.swing.JOptionPane;
 Desktop = java.awt.Desktop.getDesktop();
-ArrayList = Java.type("java.util.ArrayList");
-Field = Java.type("java.lang.reflect.Field");
-Keyboard = Java.type("org.lwjgl.input.Keyboard");
-Modifier = Java.type("java.lang.reflect.Modifier");
-JOptionPane = Java.type("javax.swing.JOptionPane");
-LinkedHashMap = Java.type("java.util.LinkedHashMap");
-FileUtils = Java.type("org.apache.commons.io.FileUtils");
+LinkedHashMap = java.util.LinkedHashMap;
+FileUtils = org.apache.commons.io.FileUtils;
+HoverEvent = Java.type("net.minecraft.event.HoverEvent");
 Script = Java.type("net.ccbluex.liquidbounce.script.Script");
 Enchantment = Java.type("net.minecraft.enchantment.Enchantment");
 LiquidBounce = Java.type("net.ccbluex.liquidbounce.LiquidBounce");
@@ -604,8 +661,8 @@ FileManager = Java.type("net.ccbluex.liquidbounce.file.FileManager");
 Module = Java.type("net.ccbluex.liquidbounce.features.module.Module");
 Command = Java.type("net.ccbluex.liquidbounce.features.command.Command");
 Remapper = Java.type("net.ccbluex.liquidbounce.script.remapper.Remapper");
-ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule");
 ClickGui = Java.type("net.ccbluex.liquidbounce.ui.client.clickgui.ClickGui");
+ScriptModule = Java.type("net.ccbluex.liquidbounce.script.api.ScriptModule");
 ValuesConfig = Java.type("net.ccbluex.liquidbounce.file.configs.ValuesConfig");
 ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory");
 PositionedSoundRecord = Java.type("net.minecraft.client.audio.PositionedSoundRecord");
@@ -665,9 +722,10 @@ Core.hookReloader = function () {
                 name: "Reloader",
                 aliases: ["reload", "r"],
                 author: "CzechHek",
-                version: "4.1",
+                version: "4.4",
                 handler: function (type) {
                     clearChat();
+                    var startMs = System.currentTimeMillis();
                     switch (type.toLowerCase()) {
                         case "scripts":
                             LiquidBounce.INSTANCE.setStarting(true);
@@ -697,44 +755,72 @@ Core.hookReloader = function () {
                             Core.hookClickGui();
                             LiquidBounce.INSTANCE.setStarting(false);
             
-                            scriptManager.scripts.length && print("§2▏ §a§lReloaded§a scripts§2! §8(§7§l" + scriptManager.scripts.length + "§8)");
+                            if (scriptManager.scripts.length) {
+                                var component = new ChatComponentText("§2▏ §a§lReloaded§a scripts in §9" + (System.currentTimeMillis() - startMs) + "ms§2! §8(§7§l" + scriptManager.scripts.length + "§8) ");
+                                component.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§a§l" + Java.from(scriptManager.scripts).map(function (script) script.scriptName).join("§2,§a§l "))));
+
+                                mc.thePlayer.addChatMessage(component);
+                            }
                             break
                         case "clickgui":
                             Core.hookClickGui();
-                            print("§2▏ §a§lReloaded§a ClickGUI§2!");
+                            print("§2▏ §a§lReloaded§a ClickGUI in §9" + (System.currentTimeMillis() - startMs) + "ms§2!");
                             break
                         case "fonts":
                             Fonts.loadFonts();
-                            print("§2▏ §a§lReloaded§a all fonts§2! §8(§7§l" + Fonts.getFonts().length + "§8)");
+
+                            var component = new ChatComponentText("§2▏ §a§lReloaded§a all fonts in §9" + (System.currentTimeMillis() - startMs) + "ms§2! §8(§7§l" + Fonts.getFonts().length + "§8)");
+                            component.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§a§l" + Java.from(Fonts.getFonts()).map(function (font, i) i ? font.getDefaultFont().getFont().getName() : "Minecraft").join("§2,§a§l "))));
+
+                            mc.thePlayer.addChatMessage(component);
                             break
                         case "configs":
                             LiquidBounce.fileManager.loadAllConfigs();
-                            print("§2▏ §a§lReloaded§a all configs§2! §8(§7§l" + Java.from(LiquidBounce.fileManager.class.superclass.getDeclaredFields()).filter(function (field) field.getType() == FileConfigClass).length + "§8)");
+
+                            var configs = Java.from(LiquidBounce.fileManager.class.superclass.getDeclaredFields()).filter(function (field) field.getType() == FileConfigClass),
+                                component = new ChatComponentText("§2▏ §a§lReloaded§a all configs in §9" + (System.currentTimeMillis() - startMs) + "ms§2! §8(§7§l" + configs.length + "§8)");
+                            component.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§a§l" + configs.map(function (config) {
+                                var name = config.getName();
+                                return name[0].toUpperCase() + name.slice(1, -6);
+                            }).join("§2,§a§l "))));
+                            
+                            mc.thePlayer.addChatMessage(component);
                             break
                         default:
-                            var targetScript = Java.from(scriptManager.scripts).find(function (script) script.scriptName.equalsIgnoreCase(type));
-                            if (!targetScript) return print("§4▏ §cScript „§4" + type + "§c“ §lnot found§4!");
+                            var target = Java.from(scriptManager.scripts).find(function (script) script.scriptName.equalsIgnoreCase(type)),
+                                importing;
+                            if (!target) {
+                                target = Java.from(scriptManager.scriptsFolder.listFiles()).find(function (file) file.getName().endsWith(".js") && file.getName().slice(0, -3).equalsIgnoreCase(type));
+
+                                if (!target) return print("§4▏ §cScript „§4" + type + "§c“ §lnot found§4!");
+                                importing = true;
+                            }
             
                             LiquidBounce.INSTANCE.setStarting(true);
-            
-                            targetScript.onDisable();
-                            scriptManager.scripts.remove(targetScript);
-            
-                            var registeredModules = Core.registeredModulesField.get(targetScript);
-                            if (registeredModules.length) {
-                                for each (var command in LiquidBounce.commandManager.commands.clone()) {
-                                    if (!(command instanceof ModuleCommand)) continue
-                                    for each (var module in registeredModules) {
-                                        if (command.getModule() == module) {
-                                            LiquidBounce.commandManager.unregisterCommand(command);
-                                            registeredModules.remove(module);
-                                            break
+
+                            if (!importing) {
+                                target.onDisable();
+                                scriptManager.scripts.remove(target);
+                
+                                var registeredModules = Core.registeredModulesField.get(target);
+                                if (registeredModules.length) {
+                                    for each (var module in registeredModules) module.state && module.onDisable();
+    
+                                    for each (var command in LiquidBounce.commandManager.commands.clone()) {
+                                        if (!(command instanceof ModuleCommand)) continue
+                                        for each (var module in registeredModules) {
+                                            if (command.getModule() == module) {
+                                                LiquidBounce.commandManager.unregisterCommand(command);
+                                                registeredModules.remove(module);
+                                                break
+                                            }
                                         }
                                     }
                                 }
                             }
+
                             try {
-                                var newScript = new Script(targetScript.scriptFile);
+                                var newScript = new Script(importing ? target : target.scriptFile);
                                 newScript.initScript();
                             } catch (e) {
                                 print("§4▏ §c§lFailed§c to reload script „§4" + type + "§c“§4!");
@@ -750,11 +836,18 @@ Core.hookReloader = function () {
                             Core.hookClickGui();
                             LiquidBounce.INSTANCE.setStarting(false);
         
-                            print("§2▏ §aScript „§2" + type + "§a“ §lreloaded§2!");
+                            print("§2▏ §a§l" + (importing ? "L" : "Rel") + "oaded §ascript „§2" + type + "§a“ in §9" + (System.currentTimeMillis() - startMs) + "ms§2!");
                     }
                 },
                 onTabComplete: function (args) {
-                    var options = Java.from(scriptManager.scripts).map(function (script) script.scriptName);
+                    if (args.length > 1) return
+
+                    var scripts = Java.from(scriptManager.scripts),
+                        options = scripts.map(function (script) script.scriptName);
+
+                    for each (var file in scriptManager.scriptsFolder.listFiles())
+                        file.getName().endsWith(".js") && !scripts.some(function (script) script.scriptFile.getName() === file.getName()) && options.push(file.getName().slice(0, -3));
+
                     options.push("Fonts", "ClickGUI", "Scripts", "Configs");
                     return options.filter(function (name) name.toLowerCase().startsWith(args[0].toLowerCase()));
                 }
