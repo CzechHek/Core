@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.11",
+    version: "4.12",
     API_V2: typeof _AdaptedModule === "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -229,11 +229,11 @@ function getValues(module) module instanceof ScriptModule ? Java.from(module.val
 
 function getNearestTarget(entityType, fromEntity, _entity) mc.theWorld.loadedEntityList.stream().filter(function (e) e != mc.thePlayer && (e instanceof entityType || (!entityType && EntityUtils.isSelected(e, true)))).min(function (a, b) (_entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - _entity.getDistanceToEntity(b)).orElse(null);
 
-function getTargetsInRange(range, entityType) Java.from(mc.theWorld.loadedEntityList).filter(function (e) e != mc.thePlayer && (e instanceof entityType || (!entityType && EntityUtils.isSelected(e, true))) && (!range || PlayerExtensionKt.getDistanceToEntityBox(e, mc.thePlayer) <= range));
+function getTargetsInRange(range, entityType) Java.from(mc.theWorld.loadedEntityList).filter(function (e) e != mc.thePlayer && ((entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)) && (!range || PlayerExtensionKt.getDistanceToEntityBox(e, mc.thePlayer) <= range)));
 
 function getPlayer(nick) Java.from(mc.theWorld.playerEntities).find(function (e) StringUtils.stripControlCodes(e.getName()).equals(nick));
 
-function rand(min, max) (Array.isArray(min) && (max = min[1], min = min[0]), Math.random() * (max - min) + min);
+function rand(min /*[min, max]*/, max) (Array.isArray(min) && (min = min[0], max = min[1]), Math.random() * (max - min) + min);
 
 function getDurability(stack) stack && stack.getMaxDamage() - stack.getItemDamage();
 
@@ -321,7 +321,7 @@ function sendPacket(packet, triggerEvent) {
 }
 
 function getSRGName(clazz, name, map) {
-    if (!clazz instanceof Class) clazz = clazz.class;
+    if (!(clazz instanceof Class)) clazz = clazz.class;
     if (map.containsKey(clazz.name)) {
         for each (var entry in map.get(clazz.name).entrySet()) {
             if (entry.getValue() == name) return entry.getKey().split("(")[0];
@@ -362,8 +362,8 @@ function downloadDirectory(url, destination, onSuccess, onFailure) {
 //mc.ingameGUI.getChatGUI().clearChatMessages() also clears message history cache that's accessible by pressing arrow up
 function clearChat() {
     var chatGui = new Reflector(mc.ingameGUI.getChatGUI());
-    chatGui.drawnChatLines && chatGui.drawnChatLines.clear();
-    chatGui.chatLines && chatGui.chatLines.clear();
+    chatGui.drawnChatLines.clear();
+    chatGui.chatLines.clear();
 }
 
 /*----------------------*/
@@ -371,7 +371,7 @@ function clearChat() {
 /*----------------------*/
 
 function EditableEnum(target) {
-    var valuesField = getField(target, "$VALUES")
+    var valuesField = getField(target, "$VALUES");
     getField(Field, "modifiers").setInt(valuesField, valuesField.getModifiers() & ~Modifier.FINAL);
     var accessor = getMethod(java.lang.reflect.Constructor, "acquireConstructorAccessor").invoke(getConstructor(target, 0)), a;
 
@@ -600,13 +600,24 @@ function importPackage(/*package, ...*/) {
 }
 
 function importFromScript(scriptName, propertyName) {
-    for each (var script in scriptManager.scripts) if (script.scriptName == scriptName) return new Reflector(script).scriptEngine.get(propertyName);
+    for each (var script in scriptManager.scripts) if (script.scriptName == scriptName) return this[propertyName] = Core.scriptEngineField.get(script).get(propertyName);
+}
+
+function importProperties(scriptName) {
+    for each (var script in scriptManager.scripts) if (script.scriptName == scriptName) Core.importedScripts.push(Core.scriptEngineField.get(script));
 }
 
 __noSuchProperty__ = function (name) {
     if (name.endsWith("Module")) {
         var module = LiquidBounce.moduleManager.getModule(name.slice(0, -6));
         if (module) return this[name] = module;
+    }
+
+    for each (var engine in Core.importedScripts) {
+        try {
+            var property = engine.get(name);
+            return this[name] = property;
+        } catch (e) {}
     }
 
     for each (var package in Core.importedPackages) {
@@ -636,6 +647,8 @@ Core.importedPackages = [
     "net.ccbluex.liquidbounce.value",
     "net.ccbluex.liquidbounce.event"
 ];
+
+Core.importedScripts = [];
 
 //Used variables
 URL = java.net.URL;
@@ -676,6 +689,7 @@ Core.registeredModulesField = getField(Script, "registeredModules");
 Core.remapperMethods = getField(Remapper, "methods").get(Remapper);
 Core.remapperFields = getField(Remapper, "fields").get(Remapper);
 Core.callEventMethod = getMethod(ScriptModule, "callEvent");
+Core.scriptEngineField = getField(Script, "scriptEngine");
 
 /*-------------*/
 /* Event hooks */
@@ -722,7 +736,7 @@ Core.hookReloader = function () {
                 name: "Reloader",
                 aliases: ["reload", "r"],
                 author: "CzechHek",
-                version: "4.4",
+                version: "4.5",
                 handler: function (type) {
                     clearChat();
                     var startMs = System.currentTimeMillis();
@@ -730,7 +744,12 @@ Core.hookReloader = function () {
                         case "scripts":
                             LiquidBounce.INSTANCE.setStarting(true);
             
-                            scriptManager.disableScripts();
+                            for each (var script in scriptManager.scripts) {
+                                var registeredModules = Core.registeredModulesField.get(script);
+                                for each (var module in registeredModules) module.state && module.onDisable();
+
+                                script.onDisable();
+                            }
                             scriptManager.unloadScripts();
             
                             for each (var command in LiquidBounce.commandManager.commands.clone())
@@ -769,8 +788,9 @@ Core.hookReloader = function () {
                         case "fonts":
                             Fonts.loadFonts();
 
-                            var component = new ChatComponentText("§2▏ §a§lReloaded§a all fonts in §9" + (System.currentTimeMillis() - startMs) + "ms§2! §8(§7§l" + Fonts.getFonts().length + "§8)");
-                            component.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§a§l" + Java.from(Fonts.getFonts()).map(function (font, i) i ? font.getDefaultFont().getFont().getName() : "Minecraft").join("§2,§a§l "))));
+                            var fonts = Java.from(Fonts.getFonts()),
+                                component = new ChatComponentText("§2▏ §a§lReloaded§a all fonts in §9" + (System.currentTimeMillis() - startMs) + "ms§2! §8(§7§l" + fonts.length + "§8)");
+                            component.getChatStyle().setChatHoverEvent(new HoverEvent(HoverEvent.Action.SHOW_TEXT, new ChatComponentText("§a§l" + fonts.map(function (font, i) i ? font.getDefaultFont().getFont().getName() : "Minecraft").join("§2,§a§l "))));
 
                             mc.thePlayer.addChatMessage(component);
                             break
@@ -787,22 +807,22 @@ Core.hookReloader = function () {
                             mc.thePlayer.addChatMessage(component);
                             break
                         default:
-                            var target = Java.from(scriptManager.scripts).find(function (script) script.scriptName.equalsIgnoreCase(type)),
+                            var script = Java.from(scriptManager.scripts).find(function (script) script.scriptName.equalsIgnoreCase(type)),
                                 importing;
-                            if (!target) {
-                                target = Java.from(scriptManager.scriptsFolder.listFiles()).find(function (file) file.getName().endsWith(".js") && file.getName().slice(0, -3).equalsIgnoreCase(type));
+                            if (!script) {
+                                script = Java.from(scriptManager.scriptsFolder.listFiles()).find(function (file) file.getName().endsWith(".js") && file.getName().slice(0, -3).equalsIgnoreCase(type));
 
-                                if (!target) return print("§4▏ §cScript „§4" + type + "§c“ §lnot found§4!");
+                                if (!script) return print("§4▏ §cScript „§4" + type + "§c“ §lnot found§4!");
                                 importing = true;
                             }
             
                             LiquidBounce.INSTANCE.setStarting(true);
 
                             if (!importing) {
-                                target.onDisable();
-                                scriptManager.scripts.remove(target);
+                                script.onDisable();
+                                scriptManager.scripts.remove(script);
                 
-                                var registeredModules = Core.registeredModulesField.get(target);
+                                var registeredModules = Core.registeredModulesField.get(script);
                                 if (registeredModules.length) {
                                     for each (var module in registeredModules) module.state && module.onDisable();
     
@@ -820,7 +840,7 @@ Core.hookReloader = function () {
                             }
 
                             try {
-                                var newScript = new Script(importing ? target : target.scriptFile);
+                                var newScript = new Script(importing ? script : script.scriptFile);
                                 newScript.initScript();
                             } catch (e) {
                                 print("§4▏ §c§lFailed§c to reload script „§4" + type + "§c“§4!");
@@ -836,7 +856,7 @@ Core.hookReloader = function () {
                             Core.hookClickGui();
                             LiquidBounce.INSTANCE.setStarting(false);
         
-                            print("§2▏ §a§l" + (importing ? "L" : "Rel") + "oaded §ascript „§2" + type + "§a“ in §9" + (System.currentTimeMillis() - startMs) + "ms§2!");
+                            print("§2▏ §a§l" + (importing ? "L" : "Rel") + "oaded §ascript „§2" + script.scriptName + "§a“ in §9" + (System.currentTimeMillis() - startMs) + "ms§2!");
                     }
                 },
                 onTabComplete: function (args) {
