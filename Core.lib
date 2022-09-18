@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.12",
+    version: "4.13",
     API_V2: typeof _AdaptedModule === "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -251,7 +251,7 @@ function showMessage(text, title, alwaysOnTop, type, _dialog)
         _dialog.setVisible(true);
     }).start();
 
-function getMethod(clazz, name, _method) ((_method = getMethods(clazz).find(function (m) m.getName() == name)) && _method.setAccessible(true), _method);
+function getMethod(clazz, name, argumentArr, _method) ((_method = getMethods(clazz).find(function (m) m.getName() == name && (!argumentArr || (m.getParameterCount() == argumentArr.length && !Java.from(m.getParameterTypes()).some(function (clazz, i) !clazz.isAssignableFrom(argumentArr[i].class)))))) && _method.setAccessible(true), _method);
 
 function getField(clazz, name, _field) ((_field = getFields(clazz).find(function (f) f.getName() == name)) && _field.setAccessible(true), _field);
 
@@ -400,7 +400,9 @@ function Reflector(object) object && object instanceof java.lang.Object ?
             switch (name) {
                 case "toString": return object + ""//.toString() doesn't work for java beans
                 case "valueOf": return object;
-                default: return getMethod(object, getSRGName(object, name, Core.remapperMethods)).invoke(object, Java.to(Array.prototype.slice.call(arguments, 1), "java.lang.Object[]"));
+                default:
+                    args = Array.prototype.slice.call(arguments, 1);
+                    return getMethod(object, getSRGName(object, name, Core.remapperMethods), args).invoke(object, Java.to(args, "java.lang.Object[]"));
             }
         }
     } : object;
@@ -445,13 +447,23 @@ Core.dynamicValues = {
                 }
             ).flat());
     },
-    handler: function (static, dynamic) {
-        this.getActive = function (forceAll) {
-            if (arrayValues) return [static, static.get() || forceAll ? dynamic : null];
-            else return [static, forceAll ? Object.values(dynamic) : dynamic[static.get()]];
-        };
+    Handler: function (static, dynamic) {
+        dynamic = isObject(dynamic) ? dynamic : toArray(dynamic);
 
-        var arrayValues = Array.isArray(dynamic);
+        var objectValues = isObject(dynamic);
+
+        this.getActive = function (forceAll, _activeValues) {
+            _activeValues = _activeValues || [static];
+            
+            for each (var subvalue in (objectValues ? toArray(forceAll ? Object.values(dynamic) : dynamic[static.get()]) : static.get() || forceAll ? dynamic : null)) {
+                _activeValues.push(subvalue);
+
+                if (Core.dynamicValues[subvalue])
+                    Core.dynamicValues[subvalue].getActive(forceAll, _activeValues);
+            }
+
+            return _activeValues;
+        };
     }
 };
 
@@ -466,7 +478,7 @@ value = {
             }
         }
 
-        Core.dynamicValues[instance] = new Core.dynamicValues.handler(instance, dynamicValues);
+        Core.dynamicValues[instance] = new Core.dynamicValues.Handler(instance, dynamicValues);
         return instance;
     },
     createFloat: function (name, value, min, max) new FloatValue(name, value, min, max),
@@ -481,7 +493,7 @@ value = {
             }
         }
 
-        Core.dynamicValues[instance] = new Core.dynamicValues.handler(instance, dynamicValuesObject);
+        Core.dynamicValues[instance] = new Core.dynamicValues.Handler(instance, dynamicValuesObject);
         return instance;
     },
     createText: function (name, value) new TextValue(name, value),
@@ -856,7 +868,7 @@ Core.hookReloader = function () {
                             Core.hookClickGui();
                             LiquidBounce.INSTANCE.setStarting(false);
         
-                            print("§2▏ §a§l" + (importing ? "L" : "Rel") + "oaded §ascript „§2" + script.scriptName + "§a“ in §9" + (System.currentTimeMillis() - startMs) + "ms§2!");
+                            print("§2▏ §a§l" + (importing ? "L" : "Rel") + "oaded §ascript „§2" + newScript.scriptName + "§a“ in §9" + (System.currentTimeMillis() - startMs) + "ms§2!");
                     }
                 },
                 onTabComplete: function (args) {
@@ -868,7 +880,7 @@ Core.hookReloader = function () {
                     for each (var file in scriptManager.scriptsFolder.listFiles())
                         file.getName().endsWith(".js") && !scripts.some(function (script) script.scriptFile.getName() === file.getName()) && options.push(file.getName().slice(0, -3));
 
-                    options.push("Fonts", "ClickGUI", "Scripts", "Configs");
+                    options.push("ClickGUI", "fonts", "scripts", "configs");
                     return options.filter(function (name) name.toLowerCase().startsWith(args[0].toLowerCase()));
                 }
             }, true);
@@ -943,7 +955,7 @@ script.on("load", function () {
     module = toArray(module || {}); command = toArray(command || {});
 
     if (!Core.API_V2) {
-        script.scriptName = (script.scriptName === "Legacy Script" ? scriptName || module[0].name || command[0].name || (command[0].aliases && command[0].aliases[0]) || script.getScriptFile().getName().slice(0, -3) : script.scriptName).toString();
+        script.scriptName = (script.scriptName === "Legacy Script" ? scriptName || module[0].name || command[0].name || (command[0].aliases && command[0].aliases[0]) || script.scriptFile.getName().slice(0, -3) : script.scriptName).toString();
         script.scriptAuthors = script.scriptAuthors[0] === "Please Update Script" ? toArray((scriptAuthor || module[0].author || command[0].author || "Author").toString()) : script.scriptAuthors;
         script.scriptVersion = (script.scriptVersion === "1.0.0" ? scriptVersion || module[0].version || command[0].version || "1.0.0" : script.scriptVersion).toString();
     }
@@ -951,8 +963,9 @@ script.on("load", function () {
     Core.runUpdater();
 
     if (Core.shouldReload) {
-        script.on("enable", function () timeout(1000, function () scriptManager.scripts.remove(script))); //Prevents ConcurrentModificationException if a script gets updated after reloading scripts.
-        scriptManager.scripts.add(new Script(script.getScriptFile()));
+        scriptManager.loadScript(script.scriptFile);
+
+        script.on("enable", function () timeout(1000, function () scriptManager.scripts.remove(script))); //Prevents ConcurrentModificationException because you cannot alter ArrayList when for looping through it.
         return
     }
 
