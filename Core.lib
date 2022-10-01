@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.13",
+    version: "4.14",
     API_V2: typeof _AdaptedModule === "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -109,63 +109,92 @@ Core.registerCommand = function (c, stale) {
     var aliases = toArray(c.aliases || c.name || script.scriptName).toLowerCase();
     var command = new (Java.extend(Command)) (aliases[0], Java.to(aliases, "java.lang.String[]")) {
         execute: function (args) {
-            args = Java.from(args);
-            var formattedArgs = args.toLowerCase(), scope = c, scopePos = 0, parameters = [], found;
-            formattedArgs[0] = "handler";
+            try {
+                args = Java.from(args);
+                var formattedArgs = args.toLowerCase().slice(1), scope, subcommands, parametersMap, scopePos = 1;
 
-            for each (var arg in formattedArgs) {
-                var scopeArray = toArray(scope);
-                found = scopeArray.find(function (e) e.hasOwnProperty(arg));
-
-                if (found) {
-                    scope = found[arg];
-                    scopePos++;
-
-                    var scopeArray = toArray(scope),
-                        objects = scopeArray.filter(function (e) isObject(e)),
-                        scopeSubcommands = objects.map(function (o) Object.keys(o)).flat();
-
-                    if (scopeSubcommands.includes(formattedArgs[scopePos])) continue
-
-                    var functions = scopeArray.filter(function (e) e instanceof Function).sort(function (a, b) getFunctionParameters(b).length - getFunctionParameters(a).length);
-                    if (functions.length) {
-                        for each (func in functions) {
-                            var parameters = getFunctionParameters(func);
-                            if (scopePos + parameters.length <= args.length) return func.apply(command, args.slice(scopePos));
+                var setScope = function (obj) {
+                    scope = toArray(obj);
+        
+                    subcommands = [];
+                    parametersMap = new LinkedHashMap;
+                
+                    for each (var target in scope) {
+                        if (isObject(target)) subcommands.pushArray(Object.keys(target));
+                        else if (target instanceof Function) {
+                            var paramArgs = getFunctionParameters(target);
+                            if (!paramArgs.length && args.length <= scopePos + 1) return target(), true;
+                            parametersMap[paramArgs] = target;
                         }
-                        parameters = functions.map(function (func) getFunctionParameters(func));
-                        break
                     }
-                } else {
-                    args = args.slice(0, formattedArgs.indexOf(arg));
-                    clearChat();
-                    print("§4▏ §c§lInvalid subcommand§4:");
-                    print("§4▏§c", args.join(" "), "„§4§l" + arg + "§c“");
-                    break
                 }
-            }
-            
-            if (args.length == 1) {
-                found !== null && clearChat();
-                print("§8▏§7§l", c.name || script.scriptName, "§8v§l" + (c.version || script.scriptVersion), "§7by§8§l", toArray(c.author || Java.from(script.scriptAuthors)).join("§7, §8§l"));
-                if (c.aliases.length > 1) {
-                    print("§8▏ §7§lAvailable aliases§8: (§7§l" + c.aliases.length + "§8)");
-                    print("§8▏ §f" + c.aliases.map(function (alias) LiquidBounce.commandManager.prefix + alias).join("§7, §f"));
+    
+                if (setScope(c.handler)) return;
+    
+                for (var i in formattedArgs) {
+                    var arg = formattedArgs[i];
+                    if (!subcommands.includes(arg)) {
+                        for (var parameterArgs in parametersMap) {
+                            if (parameterArgs.length == (formattedArgs.length - i))
+                                return parametersMap[parameterArgs].apply(c.handler, args.slice(-parameterArgs.length));
+                        }
+                        break
+                    } else {
+                        if (setScope(Array.isArray(scope) ? scope.find(function (target) isObject(target) && target[arg])[arg] : scope[arg])) return;
+                        scopePos = parseInt(i) + 2;
+                    }
                 }
-            }
-            var subcommands = Array.isArray(scope) ? scope.filter(function (e) isObject(e)).map(function (o) Object.keys(o)).flat() : Object.keys(scope);
-            if (subcommands.length && scopePos == args.length) {
-                print("§8▏ §7§lValid subcommand" + (subcommands.length > 1 ? "s" : "") + "§8: (§7§l" + subcommands.length + "§8)");
-                print("§8▏§f", args.join(" "), "§8[§f" + subcommands.join("§7, §f") + "§8]");
-            }
-            if (parameters.length) {
-                print("§8▏ §7§lRequired parameters§8: (§7§l" + parameters.map(function (params) params.length).join("§8/§7§l") + "§8)");
-                for each (params in parameters) print("§8▏§f", args.join(" "), "„§7" + params.slice(args.length - scopePos).map(function (param) param.replaceAll("_", " ")).join("§f“ „§7") + "§f“");
+
+                var parameters = Java.from(parametersMap.keySet());
+
+                clearChat();                
+                if (args.length == 1) {
+                    print("§8▏§7§l", c.name || script.scriptName, "§8v§l" + (c.version || script.scriptVersion), "§7by§8§l", toArray(c.author || Java.from(script.scriptAuthors)).join("§7, §8§l"));
+                    if (aliases.length > 1) {
+                        print("§8▏ §7§lAvailable aliases§8: (§7§l" + aliases.length + "§8)");
+                        print("§8▏ §f" + aliases.map(function (alias) LiquidBounce.commandManager.prefix + alias).join("§7, §f"));
+                    }
+                } else if (args.length != scopePos) {
+                    if (parameters.length) {
+                        var limitPos = scopePos + Math.max.apply(null, parameters.map(function (params) params.length));
+                        print("§4▏ §c§lInvalid parameter count§4: (§c§l" + (args.length - scopePos) + "§4)");
+                        if (args.length > limitPos) print("§4▏§c", args.slice(0, limitPos).join(" "), "„§4§l" + args.slice(limitPos).join("§c“ „§4§l") + "§c“");
+                    } else if (subcommands.length) {
+                        print("§4▏ §c§lInvalid subcommand§4:");
+                        print("§4▏§c", args.slice(0, scopePos).join(" "), "„§4§l" + args[scopePos] + "§c“");
+                    }
+                }
+    
+                if (subcommands.length) {
+                    print("§8▏ §7§lValid subcommand" + (subcommands.length > 1 ? "s" : "") + "§8: (§7§l" + subcommands.length + "§8)");
+                    print("§8▏§f", args.slice(0, scopePos).join(" "), "§8[§f" + subcommands.join("§7, §f") + "§8]");
+                }
+                
+                if (parameters.length) {
+                    print("§8▏ §7§lValid parameters§8: (§7§l" + parameters.map(function (paramArgs) paramArgs.length).join("§8/§7§l") + "§8)");
+                    for each (paramArgs in parameters) print("§8▏§f", args.slice(0, scopePos).join(" "), paramArgs.length ? "„§7" + paramArgs.map(function (param) param.replaceAll("_", " ")).join("§f“ „§7") + "§f“" : "");
+                }
+            } catch (e) {
+                print("§4▏ §c§lFailed§c to execute command§4!");
+                print(e);
             }
         },
         tabComplete: function (args) {
             args = Java.from(args);
-            return Java.to(c.onTabComplete ? toArray(c.onTabComplete(args))/*.filter(function (string) string.toLowerCase().startsWith(args.last().toLowerCase()))*/ : [], "java.util.List");
+
+            var options = toArray(c.onTabComplete && toArray(c.onTabComplete(args)));
+            var scope = toArray(c.handler);
+            for each (var arg in args.slice(0, -1).toLowerCase()) {
+                if (!scope.some(function (element) {
+                    if (isObject(element) && element[arg]) return scope = toArray(element[arg]);
+                })) {
+                    scope = null;
+                    break
+                }
+            }
+            if (scope) options.pushArray(toArray(scope.map(function (element) isObject(element) && Object.keys(element))).filter(function (string) string.toLowerCase().startsWith(args.last().toLowerCase())));
+
+            return Java.to(c.filterTabCompletions !== false ? options.filter(function (string) string.toLowerCase().startsWith(args.last().toLowerCase())) : options, "java.util.List");
         }
     }
 
@@ -205,7 +234,7 @@ function setValues(module, values) {
     values = toArray(values);
 
     if (module instanceof ScriptModule) {
-        var valuesMap = new LinkedHashMap();
+        var valuesMap = new LinkedHashMap;
         for each (var v in values) valuesMap[v.getName() || ("spacer" + valuesMap.size())] = v instanceof Value ? v : v.getValue();
         Core.ignoreValueChange = true;
         getField(module, "_values").set(module, valuesMap);
@@ -225,7 +254,7 @@ function setValues(module, values) {
     LiquidBounce.fileManager.saveConfig(LiquidBounce.fileManager.valuesConfig);
 }
 
-function getValues(module) module instanceof ScriptModule ? Java.from(module.values) : module instanceof Module && module.getValues();
+function getValues(module) Java.from(module.getValues());
 
 function getNearestTarget(entityType, fromEntity, _entity) mc.theWorld.loadedEntityList.stream().filter(function (e) e != mc.thePlayer && (e instanceof entityType || (!entityType && EntityUtils.isSelected(e, true)))).min(function (a, b) (_entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - _entity.getDistanceToEntity(b)).orElse(null);
 
@@ -243,7 +272,7 @@ function getBreakingSpeed(stack, block, _item) stack && (_item = stack.getItem()
 
 function getFacing(blockData) blockData && (blockData instanceof BlockPos ? mc.theWorld.getBlockState(blockData) : blockData).getProperties().get(BlockDirectional.FACING);
 
-print = (Chat = chat = { print: function () { ClientUtils.displayChatMessage(Array.prototype.slice.call(arguments).join(" ")) } }).print;
+Chat = chat = { print: print = function () { ClientUtils.displayChatMessage(getArguments(arguments).join(" ")) } };
 
 function showMessage(text, title, alwaysOnTop, type, _dialog)
     new Thread(function () {
@@ -251,19 +280,28 @@ function showMessage(text, title, alwaysOnTop, type, _dialog)
         _dialog.setVisible(true);
     }).start();
 
-function getMethod(clazz, name, argumentArr, _method) ((_method = getMethods(clazz).find(function (m) m.getName() == name && (!argumentArr || (m.getParameterCount() == argumentArr.length && !Java.from(m.getParameterTypes()).some(function (clazz, i) !clazz.isAssignableFrom(argumentArr[i].class)))))) && _method.setAccessible(true), _method);
+function getMethod(clazz, name, argumentArr) {
+    var method = getMethods(clazz).find(function (m)
+        m.getName() == name && (!argumentArr || (m.getParameterCount() == argumentArr.length && !Java.from(m.getParameterTypes()).some(function (clazz, i) {
+            if (clazz.isPrimitive() && argumentArr[i] instanceof java.lang.Number) return
+            return !clazz.isAssignableFrom(argumentArr[i].class)
+        })))
+    );
+    method.setAccessible(true);
+    return method;
+}
 
 function getField(clazz, name, _field) ((_field = getFields(clazz).find(function (f) f.getName() == name)) && _field.setAccessible(true), _field);
 
 function getFields(clazz) {
     var _fields = Java.from((clazz = clazz instanceof Class ? clazz : clazz.class).getDeclaredFields());
-    while (clazz = clazz.superclass) _fields = _fields.concat(Java.from(clazz.getDeclaredFields()));
+    while (clazz = clazz.superclass) _fields.pushArray(Java.from(clazz.getDeclaredFields()));
     return _fields;
 }
 
 function getMethods(clazz) {
     var _methods = Java.from((clazz = clazz instanceof Class ? clazz : clazz.class).getDeclaredMethods());
-    while (clazz = clazz.superclass) _methods = _methods.concat(Java.from(clazz.getDeclaredMethods()));
+    while (clazz = clazz.superclass) _methods.pushArray(Java.from(clazz.getDeclaredMethods()));
     return _methods;
 }
 
@@ -338,6 +376,8 @@ function getFunctionParameters(func) {
     return []
 }
 
+function getArguments(argumentsObj, from, to) Array.prototype.slice.call(argumentsObj, from, to);
+
 //Downloads a GitHub directory.
 //Uses GitHub's API URL (for example https://api.github.com/repos/CzechHek/Core/contents/Scripts)
 function downloadDirectory(url, destination, onSuccess, onFailure) {
@@ -401,7 +441,7 @@ function Reflector(object) object && object instanceof java.lang.Object ?
                 case "toString": return object + ""//.toString() doesn't work for java beans
                 case "valueOf": return object;
                 default:
-                    args = Array.prototype.slice.call(arguments, 1);
+                    args = getArguments(arguments, 1);
                     return getMethod(object, getSRGName(object, name, Core.remapperMethods), args).invoke(object, Java.to(args, "java.lang.Object[]"));
             }
         }
@@ -448,18 +488,16 @@ Core.dynamicValues = {
             ).flat());
     },
     Handler: function (static, dynamic) {
-        dynamic = isObject(dynamic) ? dynamic : toArray(dynamic);
-
-        var objectValues = isObject(dynamic);
-
         this.getActive = function (forceAll, _activeValues) {
             _activeValues = _activeValues || [static];
-            
-            for each (var subvalue in (objectValues ? toArray(forceAll ? Object.values(dynamic) : dynamic[static.get()]) : static.get() || forceAll ? dynamic : null)) {
-                _activeValues.push(subvalue);
 
-                if (Core.dynamicValues[subvalue])
-                    Core.dynamicValues[subvalue].getActive(forceAll, _activeValues);
+            for each (var val in dynamic) {
+                for each (var subvalue in (isObject(val) ? toArray(forceAll ? Object.values(val) : val[static.get()]) : static.get() || forceAll ? toArray(val) : null)) {
+                    _activeValues.push(subvalue);
+
+                    if (Core.dynamicValues[subvalue])
+                        Core.dynamicValues[subvalue].getActive(forceAll, _activeValues);
+                }
             }
 
             return _activeValues;
@@ -469,8 +507,8 @@ Core.dynamicValues = {
 
 value = {
     createBlock: function (name, value) new BlockValue(name, value),
-    createBoolean: function (name, value, dynamicValues) {
-        if (!dynamicValues) return new BoolValue(name, value);
+    createBoolean: function (name, value, dynamic/*...*/) {
+        if (!dynamic) return new BoolValue(name, value);
 
         var instance = new (Java.extend(BoolValue)) (name, value) {
             onChanged: function () {
@@ -478,14 +516,14 @@ value = {
             }
         }
 
-        Core.dynamicValues[instance] = new Core.dynamicValues.Handler(instance, dynamicValues);
+        Core.dynamicValues[instance] = new Core.dynamicValues.Handler(instance, getArguments(arguments, 2).flat());
         return instance;
     },
     createFloat: function (name, value, min, max) new FloatValue(name, value, min, max),
     createFont: function (name, value) new FontValue(name, value),
     createInteger: function (name, value, min, max) new IntegerValue(name, value, min, max),
-    createList: function (name, values, value, dynamicValuesObject) {
-        if (!dynamicValuesObject) return new ListValue(name, values, value);
+    createList: function (name, values, value, dynamic/*...*/) {
+        if (!dynamic) return new ListValue(name, values, value);
 
         var instance = new (Java.extend(ListValue)) (name, values, value) {
             onChanged: function () {
@@ -493,7 +531,7 @@ value = {
             }
         }
 
-        Core.dynamicValues[instance] = new Core.dynamicValues.Handler(instance, dynamicValuesObject);
+        Core.dynamicValues[instance] = new Core.dynamicValues.Handler(instance, getArguments(arguments, 3).flat());
         return instance;
     },
     createText: function (name, value) new TextValue(name, value),
@@ -591,6 +629,12 @@ Object.defineProperty(Array.prototype, "flat", {
     }
 });
 
+//Array.pushArray(array) - pushes all elements of an array to a different array
+Object.defineProperty(Array.prototype, "pushArray", {
+    writable: true,
+    value: function (arr) Array.prototype.push.apply(this, arr)
+})
+
 Math.trunc = function (v) (v = +v, (v - v % 1) || (!isFinite(v) || v === 0 ? v : v < 0 ? -0 : 0));
 
 Math.toRadians = function (degrees) degrees * 0.01745329252;
@@ -605,18 +649,16 @@ Object.values = function (obj) Object.keys(obj).map(function (key) obj[key]);
 /* Importing core */
 /*----------------*/
 
-function importPackage(/*package, ...*/) {
-    var packages = Array.prototype.slice.call(arguments);
+function importPackage(/*package, ...*/) Core.importedPackages.pushArray(getArguments(arguments));
 
-    Core.importedPackages = Core.importedPackages.concat(packages);
+function importFromScript(scriptInfo, propertyName) {
+    if (scriptInfo instanceof Script) return this[propertyName] = Core.scriptEngineField.get(scriptInfo).get(propertyName);
+    for each (var script in scriptManager.scripts) if (script.scriptName == scriptInfo) return this[propertyName] = Core.scriptEngineField.get(script).get(propertyName);
 }
 
-function importFromScript(scriptName, propertyName) {
-    for each (var script in scriptManager.scripts) if (script.scriptName == scriptName) return this[propertyName] = Core.scriptEngineField.get(script).get(propertyName);
-}
-
-function importProperties(scriptName) {
-    for each (var script in scriptManager.scripts) if (script.scriptName == scriptName) Core.importedScripts.push(Core.scriptEngineField.get(script));
+function importProperties(scriptInfo) {
+    if (scriptInfo instanceof Script) return Core.importedScripts.push(Core.scriptEngineField.get(scriptInfo));
+    for each (var script in scriptManager.scripts) if (script.scriptName == scriptInfo) return Core.importedScripts.push(Core.scriptEngineField.get(script));
 }
 
 __noSuchProperty__ = function (name) {
@@ -692,6 +734,7 @@ ValuesConfig = Java.type("net.ccbluex.liquidbounce.file.configs.ValuesConfig");
 ModuleCategory = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCategory");
 PositionedSoundRecord = Java.type("net.minecraft.client.audio.PositionedSoundRecord");
 
+Core.defaultAnnotation = getMethod(LiquidBounce.moduleManager, "onKey").getAnnotation(EventTarget.class);
 Core.outboundPacketsQueueField = getField(NetworkManager, "field_150745_j");
 Core.flushOutboundQueueMethod = getMethod(NetworkManager, "func_150733_h");
 Core.dispatchPacketMethod = getMethod(NetworkManager, "func_150732_b");
@@ -700,8 +743,21 @@ Core.readWriteLockField = getField(NetworkManager, "field_181680_j");
 Core.registeredModulesField = getField(Script, "registeredModules");
 Core.remapperMethods = getField(Remapper, "methods").get(Remapper);
 Core.remapperFields = getField(Remapper, "fields").get(Remapper);
+Core.eventManager = new Reflector(LiquidBounce.eventManager);
 Core.callEventMethod = getMethod(ScriptModule, "callEvent");
 Core.scriptEngineField = getField(Script, "scriptEngine");
+Core.categories = new EditableEnum(ModuleCategory);
+Core.scriptReflector = new Reflector(script);
+Core.artificialEvents = {
+    onBlockBB: BlockBBEvent.class,
+    onClickWindow: ClickWindowEvent.class,
+    onEntityMovement: EntityMovementEvent.class,
+    onPushOut: PushOutEvent.class,
+    onRenderEntity: RenderEntityEvent.class,
+    onScreen: ScreenEvent.class,
+    onText: TextEvent.class,
+    onTick: TickEvent.class
+};
 
 /*-------------*/
 /* Event hooks */
@@ -963,26 +1019,18 @@ script.on("load", function () {
     Core.runUpdater();
 
     if (Core.shouldReload) {
-        scriptManager.loadScript(script.scriptFile);
+        var newScript = new Script(script.scriptFile);
+        newScript.initScript();
+        scriptManager.scripts.add(newScript);
+
+        if (script.scriptVersion != newScript.scriptVersion) {
+            var coreObj = importFromScript(newScript, "Core");
+            if (coreObj.onScriptUpdate) coreObj.onScriptUpdate(script.scriptVersion, newScript.scriptVersion);
+        }
 
         script.on("enable", function () timeout(1000, function () scriptManager.scripts.remove(script))); //Prevents ConcurrentModificationException because you cannot alter ArrayList when for looping through it.
         return
     }
-
-    Core.categories = new EditableEnum(ModuleCategory);
-    Core.eventManager = new Reflector(LiquidBounce.eventManager);
-    Core.scriptReflector = new Reflector(script);
-    Core.defaultAnnotation = getMethod(LiquidBounce.moduleManager, "onKey").getAnnotation(EventTarget.class);
-    Core.artificialEvents = {
-        onBlockBB: BlockBBEvent.class,
-        onClickWindow: ClickWindowEvent.class,
-        onEntityMovement: EntityMovementEvent.class,
-        onPushOut: PushOutEvent.class,
-        onRenderEntity: RenderEntityEvent.class,
-        onScreen: ScreenEvent.class,
-        onText: TextEvent.class,
-        onTick: TickEvent.class
-    };
 
     [module, command].forEach(function (c, i) c.forEach(function (v) Core[["registerModule", "registerCommand"][i]](v)));
 
