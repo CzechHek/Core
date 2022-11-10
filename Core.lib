@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.14",
+    version: "4.15",
     API_V2: typeof _AdaptedModule === "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -137,6 +137,8 @@ Core.registerCommand = function (c, stale) {
                         for (var parameterArgs in parametersMap) {
                             if (parameterArgs.length == (formattedArgs.length - i))
                                 return parametersMap[parameterArgs].apply(c.handler, args.slice(-parameterArgs.length));
+                            else if ((formattedArgs.length - i) > parameterArgs.length && Math.max.apply(null, Java.from(parametersMap.keySet()).map(function (params) params.length)) == parameterArgs.length)
+                                return parametersMap[parameterArgs].apply(c.handler, args.slice(+i + 1, +i + parameterArgs.length).concat(args.slice(+i + parameterArgs.length).join(" ")));
                         }
                         break
                     } else {
@@ -192,9 +194,9 @@ Core.registerCommand = function (c, stale) {
                     break
                 }
             }
-            if (scope) options.pushArray(toArray(scope.map(function (element) isObject(element) && Object.keys(element))).filter(function (string) string.toLowerCase().startsWith(args.last().toLowerCase())));
+            if (scope) options.pushArray(toArray(scope.map(function (element) isObject(element) && Object.keys(element))).filter(function (string) string.startsWithIgnoreCase(args.last())));
 
-            return Java.to(c.filterTabCompletions !== false ? options.filter(function (string) string.toLowerCase().startsWith(args.last().toLowerCase())) : options, "java.util.List");
+            return Java.to(c.filterTabCompletions !== false ? options.filter(function (string) string.startsWithIgnoreCase(args.last())) : options, "java.util.List");
         }
     }
 
@@ -256,7 +258,7 @@ function setValues(module, values) {
 
 function getValues(module) Java.from(module.getValues());
 
-function getNearestTarget(entityType, fromEntity, _entity) mc.theWorld.loadedEntityList.stream().filter(function (e) e != mc.thePlayer && (e instanceof entityType || (!entityType && EntityUtils.isSelected(e, true)))).min(function (a, b) (_entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - _entity.getDistanceToEntity(b)).orElse(null);
+function getNearestTarget(entityType, fromEntity, _entity) mc.theWorld.loadedEntityList.stream().filter(function (e) e != mc.thePlayer && (entityType ? e instanceof entityType : EntityUtils.isSelected(e, true))).min(function (a, b) (_entity = fromEntity || mc.thePlayer).getDistanceToEntity(a) - _entity.getDistanceToEntity(b)).orElse(null);
 
 function getTargetsInRange(range, entityType) Java.from(mc.theWorld.loadedEntityList).filter(function (e) e != mc.thePlayer && ((entityType ? e instanceof entityType : EntityUtils.isSelected(e, true)) && (!range || PlayerExtensionKt.getDistanceToEntityBox(e, mc.thePlayer) <= range)));
 
@@ -280,16 +282,13 @@ function showMessage(text, title, alwaysOnTop, type, _dialog)
         _dialog.setVisible(true);
     }).start();
 
-function getMethod(clazz, name, argumentArr) {
-    var method = getMethods(clazz).find(function (m)
+function getMethod(clazz, name, argumentArr, _method)
+    ((_method = getMethods(clazz).find(function (m)
         m.getName() == name && (!argumentArr || (m.getParameterCount() == argumentArr.length && !Java.from(m.getParameterTypes()).some(function (clazz, i) {
             if (clazz.isPrimitive() && argumentArr[i] instanceof java.lang.Number) return
             return !clazz.isAssignableFrom(argumentArr[i].class)
         })))
-    );
-    method.setAccessible(true);
-    return method;
-}
+    )) && _method.setAccessible(true), _method);
 
 function getField(clazz, name, _field) ((_field = getFields(clazz).find(function (f) f.getName() == name)) && _field.setAccessible(true), _field);
 
@@ -401,6 +400,7 @@ function downloadDirectory(url, destination, onSuccess, onFailure) {
 
 //mc.ingameGUI.getChatGUI().clearChatMessages() also clears message history cache that's accessible by pressing arrow up
 function clearChat() {
+    if (!mc.ingameGUI) return
     var chatGui = new Reflector(mc.ingameGUI.getChatGUI());
     chatGui.drawnChatLines.clear();
     chatGui.chatLines.clear();
@@ -425,7 +425,7 @@ function Reflector(object) object && object instanceof java.lang.Object ?
     new JSAdapter() {
         __get__: function (name) {
             var field = getField(object, getSRGName(object, name, Core.remapperFields));
-            if (field) return field.get(object);
+            if (field) return new Reflector(field.get(object));
 
             var method = getMethod(object, getSRGName(object, name, Core.remapperMethods));
             if (method) return method;
@@ -536,16 +536,30 @@ value = {
     },
     createText: function (name, value) new TextValue(name, value),
     createSpacer: function () new BoolValue("", false),
-    createHeader: function (title) {
+    createHeader: function (title, indent) {
         if (!title) return this.createSpacer();
 
         title = title.replace(":", "");
-        var Adapter = Java.extend(TextValue);
-        return (Core.headers = Core.headers || {})[Adapter] = new Adapter(title, "") {
-            onChanged: function () {
-                Core.headers[Adapter].set("");
+        var Adapter = Java.extend(TextValue),
+            header = (Core.headers = Core.headers || {})[Adapter] = new Adapter(title, "") {
+                onChanged: function () {
+                    Core.headers[Adapter].set("");
+                }
+            }
+        return indent ? [value.createSpacer(), header] : header;
+    },
+    createButton: function (name, func) {
+        if (!name || !func) return
+
+        var instance = new (Java.extend(BoolValue)) (name, false) {
+            onChanged: function (o) {
+                if (o) return
+                instance.set(false);
+                func();
             }
         }
+
+        return instance
     }
 }
 
@@ -578,7 +592,7 @@ Object.defineProperty(Array.prototype, "find", {
     }
 });
 
-//Array.includes(element) - checks if array has an element, returns boolean
+//Array.includes(element) - checks whether an array has specified element, returns boolean
 //parameters: element - element of the array to check for
 Object.defineProperty(Array.prototype, "includes", {
     value: function (element) this.indexOf(element) !== -1
@@ -633,7 +647,18 @@ Object.defineProperty(Array.prototype, "flat", {
 Object.defineProperty(Array.prototype, "pushArray", {
     writable: true,
     value: function (arr) Array.prototype.push.apply(this, arr)
+});
+
+//Array.unique() - filters out all duplicates from an array and returns it
+//parameters: true -> overwrites the array
+Object.defineProperty(Array.prototype, "unique", {
+    writable: true,
+    value: function (overwrite) overwrite ? (this = this.filter(function (e, i, a) a.indexOf(e) === i)) : this.filter(function (e, i, a) a.indexOf(e) === i)
 })
+
+Object.defineProperty(String.prototype, "startsWithIgnoreCase", {
+    value: function (string) this.toLowerCase().startsWith(string.toLowerCase())
+});
 
 Math.trunc = function (v) (v = +v, (v - v % 1) || (!isFinite(v) || v === 0 ? v : v < 0 ? -0 : 0));
 
@@ -795,7 +820,7 @@ Core.hookReloader = function () {
     var ReloadCommand = Java.type("net.ccbluex.liquidbounce.features.command.commands.ReloadCommand"),
         ModuleCommand = Java.type("net.ccbluex.liquidbounce.features.module.ModuleCommand"),
         Fonts = Java.type("net.ccbluex.liquidbounce.ui.font.Fonts"),
-        FileConfigClass = Java.type("net.ccbluex.liquidbounce.file.FileConfig").class;
+        FileConfigClass = Class.forName("net.ccbluex.liquidbounce.file.FileConfig");
     for each (var command in LiquidBounce.commandManager.commands.clone()) {
         if (command instanceof ReloadCommand) {
             LiquidBounce.commandManager.commands.remove(command);
@@ -937,7 +962,7 @@ Core.hookReloader = function () {
                         file.getName().endsWith(".js") && !scripts.some(function (script) script.scriptFile.getName() === file.getName()) && options.push(file.getName().slice(0, -3));
 
                     options.push("ClickGUI", "fonts", "scripts", "configs");
-                    return options.filter(function (name) name.toLowerCase().startsWith(args[0].toLowerCase()));
+                    return options.filter(function (name) name.startsWithIgnoreCase(args[0]));
                 }
             }, true);
         }
