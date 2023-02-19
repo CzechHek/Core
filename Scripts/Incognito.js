@@ -2,14 +2,14 @@
 (script = registerScript({
     name: "Incognito",
     authors: ["CzechHek"],
-    version: "1.0"
+    version: "1.1"
 })).import("Core.lib");
 
 module = {
     category: "Misc",
     description: "Changes your nickname after starting LB or getting kicked. Handles logins.",
     values: [
-        handlesessions = value.createBoolean("HandleSessions", true, 
+        handlesessions = value.createBoolean("HandleSessions", true,
             value.createButton("Change Now", function () {
                 changeSession();
                 mc.theWorld.sendQuittingDisconnectingPacket();
@@ -56,7 +56,7 @@ module = {
     onClickGuiLoaded: function () {
         //Checks if LB is actually starting up in order to prevent your name from getting changed after every reload.
         //By doing this when ClickGui gets loaded guarantees that module values were loaded before.
-        !LiquidBounce.hud && afterstartup.get() && changeSession();
+        !LiquidBounce.hud && afterstartup.get() && this.module.state && changeSession();
     }
 }
 
@@ -81,5 +81,7 @@ function changeSession() {
 }
 
 var wasKicked;
-ADJECTIVES = HttpUtils.get("https://raw.githubusercontent.com/ShareX/ShareX/master/ShareX.HelpersLib/Resources/adjectives.txt").split("\n").filter(function (str) str.length <= 13);
-ANIMALS = HttpUtils.get("https://raw.githubusercontent.com/ShareX/ShareX/master/ShareX.HelpersLib/Resources/animals.txt").split("\n").filter(function (str) str.length <= 13);
+new Thread(function () {
+    ADJECTIVES = HttpUtils.get("https://raw.githubusercontent.com/ShareX/ShareX/master/ShareX.HelpersLib/Resources/adjectives.txt").split("\n").filter(function (str) str.length <= 13);
+    ANIMALS = HttpUtils.get("https://raw.githubusercontent.com/ShareX/ShareX/master/ShareX.HelpersLib/Resources/animals.txt").split("\n").filter(function (str) str.length <= 13);
+}).start();
