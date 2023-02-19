@@ -2,7 +2,7 @@
 (script = registerScript({
     name: "BlinkFall",
     authors: ["CzechHek"],
-    version: "5.2"
+    version: "5.3"
 })).import("Core.lib");
 
 module = {
@@ -105,7 +105,7 @@ function isSafe(e) {
         if (mc.thePlayer.onGround && (wasInAir || mc.thePlayer.isSneaking() || !isMovingHorizontally())) return true;
 
         yaw = MovementUtils.getDirection();
-        speed = MovementUtils.getSpeed();
+        speed = MovementUtils.INSTANCE.getSpeed();
 
         if (!mc.theWorld.getCollidingBoundingBoxes(mc.thePlayer, mc.thePlayer.getEntityBoundingBox().offset(-Math.sin(yaw) * speed, -2, Math.cos(yaw) * speed).expand(0, 2, 0)).isEmpty()) return true;
         blockPos = new BlockPos(mc.thePlayer.posX - Math.sin(yaw) * speed, mc.thePlayer.posY + 2, mc.thePlayer.posZ + Math.cos(yaw) * speed);
