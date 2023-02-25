@@ -1,7 +1,7 @@
 //Core - Simple, yet powerful ScriptAPI base
 
 var Core = {
-    version: "4.15",
+    version: "4.16",
     API_V2: typeof _AdaptedModule === "undefined"
 }, module, command, scriptName, scriptVersion, scriptAuthor;
 
@@ -1013,10 +1013,10 @@ Core.runUpdater = function () {
     if (!Core.shouldReload && (!Core.log.eventHooks || Core.log.eventHooks == script.scriptName)) {
         Core.log.eventHooks = script.scriptName;
         LiquidBounce.clickGui = null;
+        Core.hookFileManager();
         var timer = interval(250, function () {
             if (LiquidBounce.clickGui) {
                 Core.hookClickGui();
-                Core.hookFileManager();
                 Core.hookReloader();
                 
                 timer.cancel();
@@ -1051,6 +1051,7 @@ script.on("load", function () {
         if (script.scriptVersion != newScript.scriptVersion) {
             var coreObj = importFromScript(newScript, "Core");
             if (coreObj.onScriptUpdate) coreObj.onScriptUpdate(script.scriptVersion, newScript.scriptVersion);
+            //Calls Core.onScriptUpdate(oldVersion, newVersion) in the script that got updated.
         }
 
         script.on("enable", function () timeout(1000, function () scriptManager.scripts.remove(script))); //Prevents ConcurrentModificationException because you cannot alter ArrayList when for looping through it.
