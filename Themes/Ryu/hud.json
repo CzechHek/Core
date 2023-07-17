@@ -1,0 +1,138 @@
+[
+  {
+    "Type": "Scoreboard",
+    "X": 5.0,
+    "Y": 0.0,
+    "Scale": 1.0,
+    "HorizontalFacing": "Right",
+    "VerticalFacing": "Middle",
+    "Text-R": 255,
+    "Text-G": 255,
+    "Text-B": 255,
+    "Background-R": 0,
+    "Background-G": 0,
+    "Background-B": 0,
+    "Background-Alpha": 95,
+    "Rect": false,
+    "Rect-Color": "Custom",
+    "Rect-R": 0,
+    "Rect-G": 111,
+    "Rect-B": 255,
+    "Rect-Alpha": 255,
+    "Shadow": false,
+    "Font": {
+      "fontName": "Minecraft Font",
+      "fontSize": -1
+    }
+  },
+  {
+    "Type": "Armor",
+    "X": -8.0,
+    "Y": 57.0,
+    "Scale": 1.0,
+    "HorizontalFacing": "Middle",
+    "VerticalFacing": "Down",
+    "Alignment": "Horizontal"
+  },
+  {
+    "Type": "Effects",
+    "X": 2.0,
+    "Y": 10.0,
+    "Scale": 1.0,
+    "HorizontalFacing": "Right",
+    "VerticalFacing": "Down",
+    "Font": {
+      "fontName": "Roboto Medium",
+      "fontSize": 35
+    },
+    "Shadow": true
+  },
+  {
+    "Type": "Notifications",
+    "X": 0.0,
+    "Y": 30.0,
+    "Scale": 1.0,
+    "HorizontalFacing": "Right",
+    "VerticalFacing": "Down"
+  },
+  {
+    "Type": "Arraylist",
+    "X": 3.0,
+    "Y": 15.0,
+    "Scale": 1.0,
+    "HorizontalFacing": "Left",
+    "VerticalFacing": "Up",
+    "Text-Color": "Custom",
+    "Text-R": 255,
+    "Text-G": 255,
+    "Text-B": 255,
+    "Rect": "None",
+    "Rect-Color": "Rainbow",
+    "Rect-R": 255,
+    "Rect-G": 255,
+    "Rect-B": 255,
+    "Rect-Alpha": 100,
+    "Background-Color": "Custom",
+    "Background-R": 0,
+    "Background-G": 0,
+    "Background-B": 0,
+    "Background-Alpha": 100,
+    "Random-Saturation": 0.9,
+    "Random-Brightness": 1.0,
+    "Rainbow-X": -1000.0,
+    "Rainbow-Y": -1000.0,
+    "Tags": false,
+    "TagsStyle": "Space",
+    "TagsArrayColor": false,
+    "Font": {
+      "fontName": "Roboto Medium",
+      "fontSize": 40
+    },
+    "ShadowText": false,
+    "UpperCase": false,
+    "Space": 0.0,
+    "TextHeight": 10.0,
+    "TextY": 1.5,
+    "SpacedModules": false
+  },
+  {
+    "Type": "Text",
+    "X": 3.0,
+    "Y": 4.4,
+    "Scale": 1.0,
+    "HorizontalFacing": "Left",
+    "VerticalFacing": "Up",
+    "DisplayText": "Ryu # %fps%fps",
+    "Rainbow": false,
+    "Rainbow-X": -1000.0,
+    "Rainbow-Y": -1000.0,
+    "Red": 75,
+    "Green": 17,
+    "Blue": 75,
+    "Shadow": false,
+    "Font": {
+      "fontName": "Roboto Medium",
+      "fontSize": 40
+    }
+  },
+  {
+    "Type": "Text",
+    "X": 3.0,
+    "Y": 4.0,
+    "Scale": 1.0,
+    "HorizontalFacing": "Left",
+    "VerticalFacing": "Up",
+    "DisplayText": "Ryu §7# §f%fps%fps",
+    "Rainbow": false,
+    "Rainbow-X": -1000.0,
+    "Rainbow-Y": -1000.0,
+    "Red": 110,
+    "Green": 110,
+    "Blue": 180,
+    "Shadow": false,
+    "Font": {
+      "fontName": "Roboto Medium",
+      "fontSize": 40
+    }
+  }
+]
